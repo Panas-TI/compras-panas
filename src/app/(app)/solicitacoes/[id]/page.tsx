@@ -1,0 +1,123 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { formatDateBR } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LinhasTable, type Linha } from "./linhas-table";
+
+export default async function SolicitacaoDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  // Quem é o usuário + role
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) notFound();
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const isAprovador = profile?.role === "aprovador";
+
+  const { data: solic } = await supabase
+    .from("solicitacoes_semanais")
+    .select(
+      `
+      id, data_inicio, data_fim, observacoes, enviada_em, finalizada, finalizada_em, comprador_id, criado_em,
+      comprador:profiles!solicitacoes_semanais_comprador_id_fkey(nome)
+    `
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!solic) notFound();
+
+  const { data: linhasRaw } = await supabase
+    .from("solicitacao_linhas")
+    .select(
+      `
+      id, item_id, volume_estoque, volume_solicitado, preco, valor,
+      fornecedor_id, forma_pagto_id, prazo, status,
+      item:itens(nome, codigo_queops,
+        classificacao:classificacoes(nome),
+        unidade:unidades_medida(nome)
+      )
+    `
+    )
+    .eq("solicitacao_id", id)
+    .order("criado_em", { ascending: true });
+
+  const linhas: Linha[] = (linhasRaw ?? []).map((l) => ({
+    id: l.id,
+    item_id: l.item_id,
+    nome_item: l.item?.nome ?? "(item removido)",
+    codigo_queops: l.item?.codigo_queops ?? null,
+    classificacao_nome: l.item?.classificacao?.nome ?? null,
+    unidade_nome: l.item?.unidade?.nome ?? null,
+    volume_estoque: l.volume_estoque,
+    volume_solicitado: l.volume_solicitado,
+    preco: l.preco,
+    valor: l.valor,
+    fornecedor_id: l.fornecedor_id,
+    forma_pagto_id: l.forma_pagto_id,
+    prazo: l.prazo,
+    status: l.status,
+  }));
+
+  const [{ data: items }, { data: fornecedores }, { data: formasPagto }] = await Promise.all([
+    supabase
+      .from("itens")
+      .select("id, nome, codigo_queops")
+      .eq("ativo", true)
+      .order("nome"),
+    supabase.from("fornecedores").select("id, nome").eq("ativo", true).order("nome"),
+    supabase.from("formas_pagamento").select("id, nome").eq("ativo", true).order("nome"),
+  ]);
+
+  const isDraft = solic.enviada_em === null;
+  const isMine = solic.comprador_id === user.id;
+  const canEdit = isDraft && isMine;
+
+  const status = solic.finalizada
+    ? "Finalizada"
+    : solic.enviada_em
+      ? "Em aprovação"
+      : "Rascunho";
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold">
+            Solicitação {formatDateBR(solic.data_inicio)} a {formatDateBR(solic.data_fim)}
+          </h1>
+          <p className="text-sm text-zinc-600">
+            Comprador: {solic.comprador?.nome ?? "—"} · Status: <strong>{status}</strong>
+            {solic.observacoes && <> · {solic.observacoes}</>}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {!isDraft && (
+            <a
+              href={`/api/solicitacoes/${solic.id}/csv`}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
+            >
+              Exportar CSV
+            </a>
+          )}
+          <Link href="/solicitacoes" className="text-sm text-zinc-600 hover:underline">
+            ← Voltar
+          </Link>
+        </div>
+      </div>
+
+      <LinhasTable
+        solicitacaoId={solic.id}
+        initialLinhas={linhas}
+        items={items ?? []}
+        fornecedores={fornecedores ?? []}
+        formasPagto={formasPagto ?? []}
+        isDraft={canEdit}
+        isAprovador={isAprovador}
+      />
+    </div>
+  );
+}
