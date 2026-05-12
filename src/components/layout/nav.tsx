@@ -14,11 +14,14 @@ const items: NavItem[] = [
   { href: "/itens", label: "Itens" },
   { href: "/cadastros", label: "Cadastros" },
   { href: "/relatorios", label: "Relatórios" },
+  { href: "/usuarios", label: "Usuários" },
 ];
+
+const APROVADOR_ONLY = new Set(["/aprovacoes", "/usuarios"]);
 
 export function Nav({ role, nome }: { role: "comprador" | "aprovador"; nome: string }) {
   const path = usePathname();
-  const visible = role === "aprovador" ? items : items.filter((i) => i.href !== "/aprovacoes");
+  const visible = role === "aprovador" ? items : items.filter((i) => !APROVADOR_ONLY.has(i.href));
 
   return (
     <header className="border-b border-zinc-200 bg-white">
