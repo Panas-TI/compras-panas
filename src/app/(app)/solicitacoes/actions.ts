@@ -171,8 +171,15 @@ export async function excluirSolicitacaoAction(
     return { error: "Sem permissão pra excluir esta solicitação." };
   }
 
-  const { error } = await supabase.from("solicitacoes_semanais").delete().eq("id", solicitacao_id);
+  const { error, data: deleted } = await supabase
+    .from("solicitacoes_semanais")
+    .delete()
+    .eq("id", solicitacao_id)
+    .select("id");
   if (error) return { error: error.message };
+  if (!deleted || deleted.length === 0) {
+    return { error: "Não foi possível excluir (sem permissão ou já removida)." };
+  }
 
   revalidatePath("/solicitacoes");
   return { ok: true };
