@@ -489,7 +489,7 @@ function LookupCell({
     <Select
       value={value ?? ""}
       onChange={(e) => onCommit(e.target.value || null)}
-      className="h-7 max-w-[160px] text-xs"
+      className="h-8 w-full min-w-[180px] pr-8 text-xs"
     >
       <option value="">—</option>
       {options.map((o) => (
