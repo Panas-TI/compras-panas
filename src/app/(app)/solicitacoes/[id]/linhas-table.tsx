@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   addLinhaAction,
   updateLinhaAction,
@@ -66,6 +67,7 @@ export function LinhasTable({
   isDraft: boolean;
   isAprovador: boolean;
 }) {
+  const router = useRouter();
   const [linhas, setLinhas] = useState(initialLinhas);
   const [addingItem, setAddingItem] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -119,14 +121,23 @@ export function LinhasTable({
     });
   };
 
-  const handleEnviar = () => {
+  const handleLancar = () => {
     setErrorMsg(null);
-    if (!confirm("Enviar para aprovação? Após isso o aprovador poderá rever as linhas.")) return;
+    const msg =
+      "Tem certeza que deseja LANÇAR essa solicitação?\n\n" +
+      "Depois de lançada, você (comprador) não poderá mais editar nada. " +
+      "Só o aprovador conseguirá fazer alterações.";
+    if (!confirm(msg)) return;
     startTransition(async () => {
       const res = await enviarParaAprovacaoAction(solicitacaoId);
       if (res.error) setErrorMsg(res.error);
       else window.location.reload();
     });
+  };
+
+  const handleSalvar = () => {
+    // As edições já foram salvas inline (auto-save no blur). "Salvar" só sai da tela.
+    router.push("/solicitacoes");
   };
 
   const handleStatusChange = (linhaId: string, action: "aprovar" | "recusar" | "alterar" | "receber") => {
@@ -229,11 +240,20 @@ export function LinhasTable({
         </table>
       </div>
 
-      {isDraft && linhas.length > 0 && (
-        <div className="flex justify-end">
-          <Button onClick={handleEnviar} disabled={isPending}>
-            Enviar para aprovação
+      {isDraft && (
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="outline" onClick={handleSalvar} disabled={isPending}>
+            Salvar
           </Button>
+          {linhas.length > 0 && (
+            <Button onClick={handleLancar} disabled={isPending}>
+              Lançar
+            </Button>
+          )}
+          <p className="w-full text-right text-xs text-zinc-500">
+            "Salvar" sai da tela — você pode voltar e editar.
+            "Lançar" envia pra aprovação e congela a edição.
+          </p>
         </div>
       )}
 

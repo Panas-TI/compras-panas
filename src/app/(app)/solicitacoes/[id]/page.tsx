@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateBR } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinhasTable, type Linha } from "./linhas-table";
+import { DeleteButton } from "./delete-button";
 
 export default async function SolicitacaoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -102,6 +103,9 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
             >
               Exportar CSV
             </a>
+          )}
+          {!solic.finalizada && (isMine || isAprovador) && (
+            <DeleteButton solicitacaoId={solic.id} />
           )}
           <Link href="/solicitacoes" className="text-sm text-zinc-600 hover:underline">
             ← Voltar

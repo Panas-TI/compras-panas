@@ -3,9 +3,21 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
 type LinhaUpdate = Database["public"]["Tables"]["solicitacao_linhas"]["Update"];
+
+async function verifySenha(email: string, senha: string): Promise<boolean> {
+  // Cliente novo (sem persistência) só pra checar a senha — não toca a sessão SSR
+  const tmp = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+  const { error } = await tmp.auth.signInWithPassword({ email, password: senha });
+  return !error;
+}
 
 export type CreateSolicState = { error?: string } | null;
 
@@ -131,6 +143,39 @@ export async function removeLinhaAction(linha_id: string): Promise<{ error?: str
 
   revalidatePath(`/solicitacoes/${linha.solicitacao_id}`);
   return {};
+}
+
+export async function excluirSolicitacaoAction(
+  solicitacao_id: string,
+  senha: string
+): Promise<{ error?: string; ok?: boolean }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !user.email) return { error: "Não autenticado." };
+
+  const valida = await verifySenha(user.email, senha);
+  if (!valida) return { error: "Senha incorreta." };
+
+  // Bloqueia exclusão de solicitação já finalizada (segurança extra)
+  const { data: solic } = await supabase
+    .from("solicitacoes_semanais")
+    .select("comprador_id, finalizada")
+    .eq("id", solicitacao_id)
+    .maybeSingle();
+  if (!solic) return { error: "Solicitação não encontrada." };
+  if (solic.finalizada) return { error: "Não é possível excluir solicitação finalizada." };
+
+  // Só o próprio comprador ou um aprovador podem excluir
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (profile?.role !== "aprovador" && solic.comprador_id !== user.id) {
+    return { error: "Sem permissão pra excluir esta solicitação." };
+  }
+
+  const { error } = await supabase.from("solicitacoes_semanais").delete().eq("id", solicitacao_id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/solicitacoes");
+  return { ok: true };
 }
 
 export async function enviarParaAprovacaoAction(solicitacao_id: string): Promise<{ error?: string }> {
