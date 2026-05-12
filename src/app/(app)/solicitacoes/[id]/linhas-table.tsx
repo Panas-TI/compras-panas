@@ -186,21 +186,20 @@ export function LinhasTable({
       )}
 
       <div className="overflow-x-auto rounded-md border border-zinc-200 bg-white">
-        <table className="min-w-full text-sm">
+        <table className="w-full text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-left">
             <tr>
               <th className="px-2 py-2 font-medium">Item</th>
-              <th className="px-2 py-2 font-medium">Cód.</th>
-              <th className="px-2 py-2 text-right font-medium">Estoque</th>
-              <th className="px-2 py-2 text-right font-medium">Solic.</th>
-              <th className="px-2 py-2 font-medium">Un.</th>
-              <th className="px-2 py-2 text-right font-medium">Preço</th>
-              <th className="px-2 py-2 text-right font-medium">Valor</th>
-              <th className="px-2 py-2 font-medium">Fornecedor</th>
-              <th className="px-2 py-2 font-medium">Pagto</th>
-              <th className="px-2 py-2 font-medium">Prazo</th>
-              <th className="px-2 py-2 font-medium">Status</th>
-              <th className="px-2 py-2"></th>
+              <th className="px-1 py-2 text-right font-medium">Estoque</th>
+              <th className="px-1 py-2 text-right font-medium">Solic.</th>
+              <th className="px-1 py-2 font-medium">Un.</th>
+              <th className="px-1 py-2 text-right font-medium">Preço</th>
+              <th className="px-1 py-2 text-right font-medium">Valor</th>
+              <th className="px-1 py-2 font-medium">Fornecedor</th>
+              <th className="px-1 py-2 font-medium">Pagto</th>
+              <th className="px-1 py-2 font-medium">Prazo</th>
+              <th className="px-1 py-2 font-medium">Status</th>
+              <th className="px-1 py-2"></th>
             </tr>
           </thead>
           <tbody>
@@ -220,7 +219,7 @@ export function LinhasTable({
             ))}
             {!linhas.length && (
               <tr>
-                <td colSpan={12} className="px-3 py-10 text-center text-zinc-500">
+                <td colSpan={11} className="px-3 py-10 text-center text-zinc-500">
                   {isDraft ? "Nenhuma linha. Use o campo acima pra adicionar itens." : "Sem linhas."}
                 </td>
               </tr>
@@ -228,10 +227,10 @@ export function LinhasTable({
           </tbody>
           <tfoot className="border-t border-zinc-200 bg-zinc-50">
             <tr>
-              <td colSpan={6} className="px-3 py-2 text-right text-sm font-medium">
+              <td colSpan={5} className="px-3 py-2 text-right text-sm font-medium">
                 Total ({linhas.length} {linhas.length === 1 ? "linha" : "linhas"})
               </td>
-              <td className="px-3 py-2 text-right text-sm font-semibold tabular-nums">
+              <td className="px-1 py-2 text-right text-sm font-semibold tabular-nums">
                 {formatCurrencyBRL(total)}
               </td>
               <td colSpan={5}></td>
@@ -314,17 +313,19 @@ function LinhaTr({
   return (
     <tr className="border-b border-zinc-100 last:border-0">
       <td className="px-2 py-1.5">
-        <div className="max-w-[220px] truncate" title={linha.nome_item}>
-          {linha.nome_item}
+        <div className="flex flex-col">
+          <span className="truncate font-medium" title={linha.nome_item}>{linha.nome_item}</span>
+          <span className="flex items-center gap-2 text-xs text-zinc-500">
+            {linha.codigo_queops ? (
+              <span className="font-mono">{linha.codigo_queops}</span>
+            ) : (
+              <span className="text-amber-600">sem código</span>
+            )}
+            {linha.classificacao_nome && <span>· {linha.classificacao_nome}</span>}
+          </span>
         </div>
-        {linha.classificacao_nome && (
-          <div className="text-xs text-zinc-500">{linha.classificacao_nome}</div>
-        )}
       </td>
-      <td className="px-2 py-1.5 font-mono text-xs">
-        {linha.codigo_queops ?? <span className="text-amber-600">—</span>}
-      </td>
-      <td className="px-2 py-1.5">
+      <td className="px-1 py-1.5">
         <NumberCell
           value={linha.volume_estoque}
           editable={editable}
@@ -334,7 +335,7 @@ function LinhaTr({
           }}
         />
       </td>
-      <td className="px-2 py-1.5">
+      <td className="px-1 py-1.5">
         <NumberCell
           value={linha.volume_solicitado}
           editable={editable}
@@ -344,8 +345,8 @@ function LinhaTr({
           }}
         />
       </td>
-      <td className="px-2 py-1.5 text-zinc-600">{linha.unidade_nome ?? "—"}</td>
-      <td className="px-2 py-1.5">
+      <td className="px-1 py-1.5 text-zinc-600">{linha.unidade_nome ?? "—"}</td>
+      <td className="px-1 py-1.5">
         <NumberCell
           value={linha.preco}
           editable={editable}
@@ -356,8 +357,8 @@ function LinhaTr({
           }}
         />
       </td>
-      <td className="px-2 py-1.5 text-right tabular-nums">{formatCurrencyBRL(linha.valor ?? 0)}</td>
-      <td className="px-2 py-1.5">
+      <td className="px-1 py-1.5 text-right tabular-nums">{formatCurrencyBRL(linha.valor ?? 0)}</td>
+      <td className="px-1 py-1.5">
         <LookupCell
           value={linha.fornecedor_id}
           options={fornecedores}
@@ -368,7 +369,7 @@ function LinhaTr({
           }}
         />
       </td>
-      <td className="px-2 py-1.5">
+      <td className="px-1 py-1.5">
         <LookupCell
           value={linha.forma_pagto_id}
           options={formasPagto}
@@ -379,7 +380,7 @@ function LinhaTr({
           }}
         />
       </td>
-      <td className="px-2 py-1.5">
+      <td className="px-1 py-1.5">
         <TextCell
           value={linha.prazo}
           editable={editable}
@@ -389,12 +390,12 @@ function LinhaTr({
           }}
         />
       </td>
-      <td className="px-2 py-1.5">
-        <span className={cn("inline-flex rounded-full border px-2 py-0.5 text-xs", statusStyle)}>
+      <td className="px-1 py-1.5">
+        <span className={cn("inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-xs", statusStyle)}>
           {status}
         </span>
       </td>
-      <td className="px-2 py-1.5 text-right">
+      <td className="px-1 py-1.5 text-right">
         {isDraft && (
           <button
             type="button"
@@ -459,7 +460,7 @@ function NumberCell({
       onKeyDown={(e) => {
         if (e.key === "Enter") (e.target as HTMLInputElement).blur();
       }}
-      className="h-7 w-24 rounded border border-zinc-200 bg-white px-1.5 text-right text-sm tabular-nums focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+      className="h-7 w-full max-w-[88px] rounded border border-zinc-200 bg-white px-1.5 text-right text-sm tabular-nums focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
     />
   );
 }
@@ -489,7 +490,7 @@ function LookupCell({
     <Select
       value={value ?? ""}
       onChange={(e) => onCommit(e.target.value || null)}
-      className="h-8 w-full min-w-[180px] pr-8 text-xs"
+      className="h-8 w-full min-w-[120px] pr-7 text-xs"
     >
       <option value="">—</option>
       {options.map((o) => (
@@ -526,7 +527,7 @@ function TextCell({
       onKeyDown={(e) => {
         if (e.key === "Enter") (e.target as HTMLInputElement).blur();
       }}
-      className="h-7 w-24 rounded border border-zinc-200 bg-white px-1.5 text-sm focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+      className="h-7 w-full max-w-[110px] rounded border border-zinc-200 bg-white px-1.5 text-sm focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
     />
   );
 }
