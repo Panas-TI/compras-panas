@@ -45,12 +45,20 @@ export function ContagemTable({
   const handleImport = () => {
     if (!selectedTpl) return;
     setError(null);
+    // Confirma se já tem linhas (evita re-importar a mesma pasta sem querer)
+    if (linhas.length > 0) {
+      if (!confirm(`Já tem ${linhas.length} itens nessa contagem. Importar a pasta vai ADICIONAR todos os itens da pasta ao final. Continuar?`)) {
+        return;
+      }
+    }
     startTransition(async () => {
       const res = await importarTemplateAction(contagemId, selectedTpl);
-      if (res.error) setError(res.error);
-      else {
+      if (res.error) {
+        setError(res.error);
+      } else {
         setShowImport(false);
-        router.refresh();
+        // Recarrega tudo pra refletir os itens importados
+        window.location.reload();
       }
     });
   };
