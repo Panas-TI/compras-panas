@@ -36,7 +36,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
     .select(
       `
       id, item_id, volume_estoque, volume_solicitado, preco, valor,
-      fornecedor_id, forma_pagto_id, prazo, status,
+      fornecedor_id, forma_pagto_id, prazo, status, alteracao_confirmada,
       item:itens(nome, codigo_queops,
         classificacao:classificacoes(nome),
         unidade:unidades_medida(nome)
@@ -61,6 +61,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
     forma_pagto_id: l.forma_pagto_id,
     prazo: l.prazo,
     status: l.status,
+    alteracao_confirmada: l.alteracao_confirmada,
   }));
 
   const [{ data: items }, { data: fornecedores }, { data: formasPagto }] = await Promise.all([

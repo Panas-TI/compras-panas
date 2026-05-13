@@ -10,6 +10,7 @@ import {
   aprovarLinhaAction,
   recusarLinhaAction,
   aprovarComAlteracaoAction,
+  confirmarAlteracaoAction,
   marcarRecebidoAction,
   bulkAprovarAction,
 } from "../actions";
@@ -35,6 +36,7 @@ export type Linha = {
   forma_pagto_id: string | null;
   prazo: string | null;
   status: string;
+  alteracao_confirmada: boolean;
 };
 
 function formatNumberBR(n: number | null | undefined, fraction = 2): string {
@@ -140,23 +142,26 @@ export function LinhasTable({
     router.push("/solicitacoes");
   };
 
-  const handleStatusChange = (linhaId: string, action: "aprovar" | "recusar" | "alterar" | "receber") => {
+  const handleStatusChange = (
+    linhaId: string,
+    action: "aprovar" | "recusar" | "alterar" | "confirmar" | "receber"
+  ) => {
     setErrorMsg(null);
     startTransition(async () => {
       const fn =
         action === "aprovar" ? aprovarLinhaAction :
         action === "recusar" ? recusarLinhaAction :
         action === "alterar" ? aprovarComAlteracaoAction :
+        action === "confirmar" ? confirmarAlteracaoAction :
         marcarRecebidoAction;
       const res = await fn(linhaId);
       if (res.error) setErrorMsg(res.error);
       else {
-        const novoStatus =
-          action === "aprovar" ? "Aprovada" :
-          action === "recusar" ? "Recusada" :
-          action === "alterar" ? "Volumes ou Preço Alterados" :
-          "Aprovada & Recebida";
-        updateLinhaLocal(linhaId, { status: novoStatus });
+        if (action === "aprovar") updateLinhaLocal(linhaId, { status: "Aprovada" });
+        else if (action === "recusar") updateLinhaLocal(linhaId, { status: "Recusada" });
+        else if (action === "alterar") updateLinhaLocal(linhaId, { status: "Volumes ou Preço Alterados", alteracao_confirmada: false });
+        else if (action === "confirmar") updateLinhaLocal(linhaId, { alteracao_confirmada: true });
+        else if (action === "receber") updateLinhaLocal(linhaId, { status: "Aprovada & Recebida" });
       }
     });
   };
@@ -302,15 +307,21 @@ function LinhaTr({
   onUpdateLocal: (patch: Partial<Linha>) => void;
   onPersist: (field: keyof Linha, value: unknown) => void;
   onRemove: () => void;
-  onStatusChange: (action: "aprovar" | "recusar" | "alterar" | "receber") => void;
+  onStatusChange: (action: "aprovar" | "recusar" | "alterar" | "confirmar" | "receber") => void;
 }) {
   // Edição permitida:
   // - em rascunho (comprador): tudo
-  // - após lançado: SÓ se aprovador já marcou como "Volumes ou Preço Alterados"
-  //   (caso contrário, linhas são read-only mesmo pro aprovador)
+  // - aprovador, status "Volumes ou Preço Alterados" E não-confirmado: linha aberta pra edição
   const editable =
-    isDraft || (isAprovador && linha.status === "Volumes ou Preço Alterados");
+    isDraft ||
+    (isAprovador &&
+      linha.status === "Volumes ou Preço Alterados" &&
+      !linha.alteracao_confirmada);
   const status = linha.status;
+  const emEdicao =
+    !isDraft &&
+    linha.status === "Volumes ou Preço Alterados" &&
+    !linha.alteracao_confirmada;
   const statusStyle = STATUS_STYLES[status] ?? "bg-zinc-100 text-zinc-700 border-zinc-200";
 
   return (
@@ -421,7 +432,12 @@ function LinhaTr({
             </button>
           </div>
         )}
-        {!isDraft && (status === "Aprovada" || status === "Volumes ou Preço Alterados") && (
+        {emEdicao && isAprovador && (
+          <button type="button" onClick={() => onStatusChange("confirmar")} className="text-xs font-medium text-blue-700 hover:underline">
+            Confirmar alteração
+          </button>
+        )}
+        {!isDraft && !emEdicao && (status === "Aprovada" || status === "Volumes ou Preço Alterados") && (
           <button type="button" onClick={() => onStatusChange("receber")} className="text-xs text-emerald-700 hover:underline">
             Marcar recebido
           </button>

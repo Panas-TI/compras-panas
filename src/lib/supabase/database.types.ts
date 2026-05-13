@@ -221,6 +221,7 @@ export type Database = {
       }
       solicitacao_linhas: {
         Row: {
+          alteracao_confirmada: boolean
           aprovado_em: string | null
           aprovado_por: string | null
           atualizado_em: string
@@ -248,6 +249,7 @@ export type Database = {
           volume_solicitado: number
         }
         Insert: {
+          alteracao_confirmada?: boolean
           aprovado_em?: string | null
           aprovado_por?: string | null
           atualizado_em?: string
@@ -275,6 +277,7 @@ export type Database = {
           volume_solicitado?: number
         }
         Update: {
+          alteracao_confirmada?: boolean
           aprovado_em?: string | null
           aprovado_por?: string | null
           atualizado_em?: string

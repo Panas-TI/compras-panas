@@ -236,7 +236,21 @@ export async function aprovarComAlteracaoAction(linha_id: string): Promise<{ err
   const supabase = await createClient();
   const { error, data } = await supabase
     .from("solicitacao_linhas")
-    .update({ status: "Volumes ou Preço Alterados" })
+    .update({ status: "Volumes ou Preço Alterados", alteracao_confirmada: false })
+    .eq("id", linha_id)
+    .select("solicitacao_id")
+    .single();
+  if (error) return { error: error.message };
+  revalidatePath(`/solicitacoes/${data!.solicitacao_id}`);
+  revalidatePath("/aprovacoes");
+  return {};
+}
+
+export async function confirmarAlteracaoAction(linha_id: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { error, data } = await supabase
+    .from("solicitacao_linhas")
+    .update({ alteracao_confirmada: true })
     .eq("id", linha_id)
     .select("solicitacao_id")
     .single();
