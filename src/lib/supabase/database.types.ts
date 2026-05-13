@@ -246,6 +246,7 @@ export type Database = {
           valor: number | null
           vencimento: string | null
           volume_estoque: number | null
+          volume_recebido: number | null
           volume_solicitado: number
         }
         Insert: {
@@ -274,6 +275,7 @@ export type Database = {
           valor?: number | null
           vencimento?: string | null
           volume_estoque?: number | null
+          volume_recebido?: number | null
           volume_solicitado?: number
         }
         Update: {
@@ -302,6 +304,7 @@ export type Database = {
           valor?: number | null
           vencimento?: string | null
           volume_estoque?: number | null
+          volume_recebido?: number | null
           volume_solicitado?: number
         }
         Relationships: [
