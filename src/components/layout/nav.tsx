@@ -19,10 +19,16 @@ const items: NavItem[] = [
 ];
 
 const APROVADOR_ONLY = new Set(["/usuarios"]);
+const ESTOQUISTA_ALLOWED = new Set(["/", "/recebimento", "/contagem"]);
 
-export function Nav({ role, nome }: { role: "comprador" | "aprovador"; nome: string }) {
+export function Nav({ role, nome }: { role: "comprador" | "aprovador" | "estoquista"; nome: string }) {
   const path = usePathname();
-  const visible = role === "aprovador" ? items : items.filter((i) => !APROVADOR_ONLY.has(i.href));
+  const visible =
+    role === "estoquista"
+      ? items.filter((i) => ESTOQUISTA_ALLOWED.has(i.href))
+      : role === "aprovador"
+        ? items
+        : items.filter((i) => !APROVADOR_ONLY.has(i.href));
 
   return (
     <header className="border-b border-zinc-200 bg-white">

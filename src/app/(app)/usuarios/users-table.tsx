@@ -13,10 +13,12 @@ import {
   type CreateUserState,
 } from "./actions";
 
+type Role = "comprador" | "aprovador" | "estoquista";
+
 export type UserRow = {
   id: string;
   nome: string;
-  role: "comprador" | "aprovador";
+  role: "comprador" | "aprovador" | "estoquista";
   ativo: boolean;
 };
 
@@ -43,8 +45,9 @@ export function UsersTable({ currentUserId, users }: { currentUserId: string; us
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="role">Perfil</Label>
             <Select id="role" name="role" defaultValue="comprador">
-              <option value="comprador">Comprador</option>
-              <option value="aprovador">Aprovador</option>
+              <option value="comprador">Comprador (cria solicitações)</option>
+              <option value="aprovador">Aprovador (acesso total)</option>
+              <option value="estoquista">Estoquista (recebimento + contagem)</option>
             </Select>
           </div>
         </div>
@@ -89,8 +92,8 @@ function UserTr({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
     });
   };
 
-  const flipRole = () => {
-    const novo = user.role === "comprador" ? "aprovador" : "comprador";
+  const changeRole = (novo: Role) => {
+    if (novo === user.role) return;
     startTransition(async () => {
       const res = await alterarRoleAction(user.id, novo);
       if (res.error) setError(res.error);
@@ -113,7 +116,22 @@ function UserTr({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
         {user.nome}
         {isSelf && <span className="ml-2 text-xs text-zinc-500">(você)</span>}
       </td>
-      <td className="px-3 py-2 text-zinc-600">{user.role}</td>
+      <td className="px-3 py-2 text-zinc-600">
+        {isSelf ? (
+          user.role
+        ) : (
+          <Select
+            value={user.role}
+            onChange={(e) => changeRole(e.target.value as Role)}
+            disabled={isPending}
+            className="h-8 max-w-[180px] text-xs"
+          >
+            <option value="comprador">comprador</option>
+            <option value="aprovador">aprovador</option>
+            <option value="estoquista">estoquista</option>
+          </Select>
+        )}
+      </td>
       <td className="px-3 py-2">
         {user.ativo ? (
           <span className="text-xs text-emerald-700">ativo</span>
@@ -123,15 +141,7 @@ function UserTr({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
         {error && <p className="text-xs text-red-600">{error}</p>}
       </td>
       <td className="px-3 py-2 text-right">
-        <div className="flex flex-wrap justify-end gap-1">
-          <button
-            type="button"
-            onClick={flipRole}
-            disabled={isPending || isSelf}
-            className="text-xs text-zinc-700 hover:underline disabled:opacity-50"
-          >
-            Trocar pra {user.role === "comprador" ? "aprovador" : "comprador"}
-          </button>
+        <div className="flex flex-wrap justify-end gap-2">
           <button
             type="button"
             onClick={resetPwd}

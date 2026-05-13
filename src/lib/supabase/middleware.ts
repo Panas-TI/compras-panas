@@ -51,5 +51,27 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Restrição de rotas para estoquista — só pode acessar /, /recebimento, /contagem
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, ativo")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.role === "estoquista" && profile.ativo) {
+      const estoquistaAllowed =
+        path === "/" ||
+        path === "/recebimento" ||
+        path.startsWith("/recebimento/") ||
+        path === "/contagem" ||
+        path.startsWith("/contagem/");
+      if (!estoquistaAllowed) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/recebimento";
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
   return response;
 }

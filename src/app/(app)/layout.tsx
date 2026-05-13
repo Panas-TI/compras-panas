@@ -23,7 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50">
-      <Nav role={profile.role as "comprador" | "aprovador"} nome={profile.nome} />
+      <Nav role={profile.role as "comprador" | "aprovador" | "estoquista"} nome={profile.nome} />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">{children}</main>
     </div>
   );

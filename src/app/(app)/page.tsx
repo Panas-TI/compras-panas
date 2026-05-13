@@ -1,9 +1,25 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function HomePage() {
   const supabase = await createClient();
+
+  // Estoquista cai direto no /recebimento
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.role === "estoquista") {
+      redirect("/recebimento");
+    }
+  }
 
   const [{ count: itensCount }, { count: solicCount }, { count: itensSemCodigo }] = await Promise.all([
     supabase.from("itens").select("*", { count: "exact", head: true }).eq("ativo", true),
