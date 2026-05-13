@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
+import { computeSolicStatus, statusColorClass } from "./status";
 
 export default async function SolicitacoesPage() {
   const supabase = await createClient();
@@ -17,19 +18,24 @@ export default async function SolicitacoesPage() {
     )
     .order("data_inicio", { ascending: false });
 
-  // Per-solicitation totals
+  // Per-solicitation totals + line statuses for computing display status
   const ids = (solics ?? []).map((s) => s.id);
   let totalsBy = new Map<string, { linhas: number; valor: number }>();
+  let lineStatusesBy = new Map<string, Array<{ status: string; alteracao_confirmada: boolean }>>();
   if (ids.length) {
     const { data: linhas } = await supabase
       .from("solicitacao_linhas")
-      .select("solicitacao_id, valor")
+      .select("solicitacao_id, valor, status, alteracao_confirmada")
       .in("solicitacao_id", ids);
     for (const l of linhas ?? []) {
       const cur = totalsBy.get(l.solicitacao_id) ?? { linhas: 0, valor: 0 };
       cur.linhas += 1;
       cur.valor += Number(l.valor ?? 0);
       totalsBy.set(l.solicitacao_id, cur);
+
+      const arr = lineStatusesBy.get(l.solicitacao_id) ?? [];
+      arr.push({ status: l.status, alteracao_confirmada: l.alteracao_confirmada });
+      lineStatusesBy.set(l.solicitacao_id, arr);
     }
   }
 
@@ -62,17 +68,9 @@ export default async function SolicitacoesPage() {
               <tbody>
                 {(solics ?? []).map((s) => {
                   const totals = totalsBy.get(s.id) ?? { linhas: 0, valor: 0 };
-                  const status = s.finalizada
-                    ? "Finalizada"
-                    : s.enviada_em
-                      ? "Em aprovação"
-                      : "Rascunho";
-                  const statusClass =
-                    status === "Finalizada"
-                      ? "text-zinc-500"
-                      : status === "Em aprovação"
-                        ? "text-blue-700"
-                        : "text-amber-700";
+                  const lineStatuses = lineStatusesBy.get(s.id) ?? [];
+                  const status = computeSolicStatus(s.enviada_em, lineStatuses);
+                  const statusClass = statusColorClass(status);
                   return (
                     <tr key={s.id} className="border-b border-zinc-100 last:border-0">
                       <td className="px-3 py-2 font-medium">

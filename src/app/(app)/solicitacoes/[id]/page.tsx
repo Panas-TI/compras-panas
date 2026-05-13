@@ -5,6 +5,7 @@ import { formatDateBR } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinhasTable, type Linha } from "./linhas-table";
 import { DeleteButton } from "./delete-button";
+import { computeSolicStatus } from "../status";
 
 export default async function SolicitacaoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -78,11 +79,10 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
   const isMine = solic.comprador_id === user.id;
   const canEdit = isDraft && isMine;
 
-  const status = solic.finalizada
-    ? "Finalizada"
-    : solic.enviada_em
-      ? "Em aprovação"
-      : "Rascunho";
+  const status = computeSolicStatus(
+    solic.enviada_em,
+    linhas.map((l) => ({ status: l.status, alteracao_confirmada: l.alteracao_confirmada }))
+  );
 
   return (
     <div className="flex flex-col gap-4">
