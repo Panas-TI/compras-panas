@@ -10,7 +10,6 @@ type NavItem = { href: string; label: string };
 const items: NavItem[] = [
   { href: "/", label: "Início" },
   { href: "/solicitacoes", label: "Solicitações" },
-  { href: "/aprovacoes", label: "Aprovações" },
   { href: "/recebimento", label: "Recebimento" },
   { href: "/itens", label: "Itens" },
   { href: "/cadastros", label: "Cadastros" },
@@ -18,7 +17,7 @@ const items: NavItem[] = [
   { href: "/usuarios", label: "Usuários" },
 ];
 
-const APROVADOR_ONLY = new Set(["/aprovacoes", "/usuarios"]);
+const APROVADOR_ONLY = new Set(["/usuarios"]);
 
 export function Nav({ role, nome }: { role: "comprador" | "aprovador"; nome: string }) {
   const path = usePathname();
