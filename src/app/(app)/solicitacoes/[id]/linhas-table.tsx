@@ -304,9 +304,12 @@ function LinhaTr({
   onRemove: () => void;
   onStatusChange: (action: "aprovar" | "recusar" | "alterar" | "receber") => void;
 }) {
-  // Em "Aprovada"/"Aprovada & Recebida"/"Recusada" no fluxo do aprovador, ainda pode editar volume/preço.
-  // Em rascunho: edita tudo.
-  const editable = isDraft || isAprovador;
+  // Edição permitida:
+  // - em rascunho (comprador): tudo
+  // - após lançado: SÓ se aprovador já marcou como "Volumes ou Preço Alterados"
+  //   (caso contrário, linhas são read-only mesmo pro aprovador)
+  const editable =
+    isDraft || (isAprovador && linha.status === "Volumes ou Preço Alterados");
   const status = linha.status;
   const statusStyle = STATUS_STYLES[status] ?? "bg-zinc-100 text-zinc-700 border-zinc-200";
 
