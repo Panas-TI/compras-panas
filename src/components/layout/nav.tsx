@@ -11,6 +11,7 @@ const items: NavItem[] = [
   { href: "/", label: "Início" },
   { href: "/solicitacoes", label: "Solicitações" },
   { href: "/recebimento", label: "Recebimento" },
+  { href: "/contagem", label: "Contagem" },
   { href: "/itens", label: "Itens" },
   { href: "/cadastros", label: "Cadastros" },
   { href: "/relatorios", label: "Relatórios" },

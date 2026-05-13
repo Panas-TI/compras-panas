@@ -79,6 +79,101 @@ export type Database = {
         }
         Relationships: []
       }
+      contagem_linhas: {
+        Row: {
+          atualizado_em: string
+          contagem_id: string
+          criado_em: string
+          id: string
+          item_id: string | null
+          observacao: string | null
+          ordem: number
+          quantidade: number | null
+          secao: string | null
+          texto: string
+        }
+        Insert: {
+          atualizado_em?: string
+          contagem_id: string
+          criado_em?: string
+          id?: string
+          item_id?: string | null
+          observacao?: string | null
+          ordem: number
+          quantidade?: number | null
+          secao?: string | null
+          texto: string
+        }
+        Update: {
+          atualizado_em?: string
+          contagem_id?: string
+          criado_em?: string
+          id?: string
+          item_id?: string | null
+          observacao?: string | null
+          ordem?: number
+          quantidade?: number | null
+          secao?: string | null
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contagem_linhas_contagem_id_fkey"
+            columns: ["contagem_id"]
+            isOneToOne: false
+            referencedRelation: "contagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contagem_linhas_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contagens: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          data_contagem: string
+          finalizada: boolean
+          finalizada_em: string | null
+          id: string
+          nome: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          data_contagem?: string
+          finalizada?: boolean
+          finalizada_em?: string | null
+          id?: string
+          nome?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          data_contagem?: string
+          finalizada?: boolean
+          finalizada_em?: string | null
+          id?: string
+          nome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contagens_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formas_pagamento: {
         Row: {
           ativo: boolean
@@ -398,6 +493,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      template_itens: {
+        Row: {
+          criado_em: string
+          id: string
+          item_id: string | null
+          ordem: number
+          secao: string | null
+          template_id: string
+          texto: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          item_id?: string | null
+          ordem: number
+          secao?: string | null
+          template_id: string
+          texto: string
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          item_id?: string | null
+          ordem?: number
+          secao?: string | null
+          template_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_itens_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_itens_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates_contagem"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates_contagem: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          descricao: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       unidades_medida: {
         Row: {
