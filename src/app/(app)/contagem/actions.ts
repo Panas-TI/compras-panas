@@ -151,7 +151,7 @@ export async function finalizarContagemAction(contagem_id: string): Promise<{ er
 
 export async function enviarParaSolicitacaoAction(
   contagem_id: string
-): Promise<{ error?: string; solicitacao_id?: string; enviadas?: number; criadas?: number }> {
+): Promise<{ error?: string; solicitacao_id?: string; enviadas?: number; criadas?: number; solic_criada?: boolean }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Não autenticado." };
@@ -173,28 +173,50 @@ export async function enviarParaSolicitacaoAction(
     return { error: "Nada pra enviar. Preencha o campo Solicitação em pelo menos uma linha." };
   }
 
-  // Cria solicitação semanal (segunda a sexta da semana atual)
-  const today = new Date();
-  const dow = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((dow + 6) % 7));
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  // Procura solicitação em aberto (rascunho) — prioriza a do próprio usuário
+  let solic_id: string | null = null;
+  let solicCriada = false;
 
-  const { data: solic, error: serr } = await supabase
+  const isAprovador = profile.role === "aprovador";
+
+  // Aprovador pode usar qualquer rascunho; comprador só os seus
+  let openQ = supabase
     .from("solicitacoes_semanais")
-    .insert({
-      data_inicio: fmt(monday),
-      data_fim: fmt(friday),
-      comprador_id: user.id,
-      observacoes: "Gerada a partir da contagem de estoque",
-    })
-    .select("id")
-    .single();
-  if (serr) return { error: `Erro criando solicitação: ${serr.message}` };
+    .select("id, comprador_id")
+    .is("enviada_em", null)
+    .order("criado_em", { ascending: false })
+    .limit(10);
+  if (!isAprovador) openQ = openQ.eq("comprador_id", user.id);
+  const { data: drafts } = await openQ;
 
-  const solic_id = solic!.id;
+  if (drafts && drafts.length > 0) {
+    // Prefere o próprio rascunho do usuário; se não houver, pega o mais recente
+    const mine = drafts.find((d) => d.comprador_id === user.id);
+    solic_id = (mine ?? drafts[0]).id;
+  } else {
+    // Cria nova solicitação (segunda a sexta da semana atual)
+    const today = new Date();
+    const dow = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((dow + 6) % 7));
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+    const { data: solic, error: serr } = await supabase
+      .from("solicitacoes_semanais")
+      .insert({
+        data_inicio: fmt(monday),
+        data_fim: fmt(friday),
+        comprador_id: user.id,
+        observacoes: "Gerada a partir da contagem de estoque",
+      })
+      .select("id")
+      .single();
+    if (serr) return { error: `Erro criando solicitação: ${serr.message}` };
+    solic_id = solic!.id;
+    solicCriada = true;
+  }
 
   // Helper: pega ou cria item por nome
   async function findOrCreateItemId(nome: string): Promise<string | null> {
@@ -249,7 +271,7 @@ export async function enviarParaSolicitacaoAction(
 
   revalidatePath(`/contagem/${contagem_id}`);
   revalidatePath("/solicitacoes");
-  return { solicitacao_id: solic_id, enviadas, criadas };
+  return { solicitacao_id: solic_id, enviadas, criadas, solic_criada: solicCriada };
 }
 
 export async function excluirContagemAction(contagem_id: string): Promise<{ error?: string }> {

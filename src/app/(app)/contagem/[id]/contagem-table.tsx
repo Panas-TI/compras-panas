@@ -112,9 +112,10 @@ export function ContagemTable({
         setError(res.error);
         return;
       }
+      const verbo = res.solic_criada ? "Solicitação criada" : "Solicitação atualizada";
       alert(
-        `Solicitação criada com ${res.enviadas} itens` +
-        (res.criadas ? ` (${res.criadas} itens novos cadastrados automaticamente)` : "")
+        `${verbo} com ${res.enviadas} ${res.enviadas === 1 ? "item" : "itens"}` +
+        (res.criadas ? ` (${res.criadas} ${res.criadas === 1 ? "item novo cadastrado" : "itens novos cadastrados"} automaticamente)` : "")
       );
       if (res.solicitacao_id) {
         router.push(`/solicitacoes/${res.solicitacao_id}`);
