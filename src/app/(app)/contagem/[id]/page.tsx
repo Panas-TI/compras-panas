@@ -19,10 +19,17 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     .maybeSingle();
   if (!contagem) notFound();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: meProfile } = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
+    : { data: null };
+  const role = meProfile?.role as "comprador" | "aprovador" | "estoquista" | undefined;
+  const canRequestPurchase = role === "comprador" || role === "aprovador";
+
   const [{ data: linhasRaw }, { data: templates }] = await Promise.all([
     supabase
       .from("contagem_linhas")
-      .select("id, ordem, secao, texto, quantidade, observacao")
+      .select("id, ordem, secao, texto, quantidade, observacao, solicitacao_qtd, enviado_em, enviado_solicitacao_id")
       .eq("contagem_id", id)
       .order("ordem"),
     supabase.from("templates_contagem").select("id, nome, descricao").eq("ativo", true).order("nome"),
@@ -35,6 +42,9 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     texto: l.texto,
     quantidade: l.quantidade,
     observacao: l.observacao,
+    solicitacao_qtd: l.solicitacao_qtd,
+    enviado_em: l.enviado_em,
+    enviado_solicitacao_id: l.enviado_solicitacao_id,
   }));
 
   const opts: TemplateOpt[] = (templates ?? []).map((t) => ({ id: t.id, nome: t.nome, descricao: t.descricao }));
@@ -61,6 +71,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
         finalizada={contagem.finalizada}
         initialLinhas={linhas}
         templates={opts}
+        canRequestPurchase={canRequestPurchase}
       />
     </div>
   );

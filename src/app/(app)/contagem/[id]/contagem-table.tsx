@@ -11,6 +11,7 @@ import {
   removerLinhaContagemAction,
   finalizarContagemAction,
   excluirContagemAction,
+  enviarParaSolicitacaoAction,
 } from "../actions";
 
 export type LinhaC = {
@@ -20,6 +21,9 @@ export type LinhaC = {
   texto: string;
   quantidade: number | null;
   observacao: string | null;
+  solicitacao_qtd: number | null;
+  enviado_em: string | null;
+  enviado_solicitacao_id: string | null;
 };
 
 export type TemplateOpt = { id: string; nome: string; descricao: string | null };
@@ -29,11 +33,13 @@ export function ContagemTable({
   finalizada,
   initialLinhas,
   templates,
+  canRequestPurchase,
 }: {
   contagemId: string;
   finalizada: boolean;
   initialLinhas: LinhaC[];
   templates: TemplateOpt[];
+  canRequestPurchase: boolean;
 }) {
   const router = useRouter();
   const [linhas, setLinhas] = useState(initialLinhas);
@@ -69,6 +75,9 @@ export function ContagemTable({
   const updateObsLocal = (id: string, o: string | null) => {
     setLinhas((p) => p.map((l) => (l.id === id ? { ...l, observacao: o } : l)));
   };
+  const updateSolicLocal = (id: string, q: number | null) => {
+    setLinhas((p) => p.map((l) => (l.id === id ? { ...l, solicitacao_qtd: q } : l)));
+  };
 
   const persistQtd = (id: string, str: string) => {
     startTransition(async () => {
@@ -80,6 +89,38 @@ export function ContagemTable({
     startTransition(async () => {
       const res = await updateLinhaContagemAction(id, { observacao: str });
       if (res.error) setError(res.error);
+    });
+  };
+  const persistSolic = (id: string, str: string) => {
+    startTransition(async () => {
+      const res = await updateLinhaContagemAction(id, { solicitacao_qtd: str });
+      if (res.error) setError(res.error);
+    });
+  };
+
+  const handleEnviar = () => {
+    const pendentes = linhas.filter((l) => (l.solicitacao_qtd ?? 0) > 0 && !l.enviado_em);
+    if (pendentes.length === 0) {
+      setError("Nenhuma linha com 'Solicitação' preenchida pendente de envio.");
+      return;
+    }
+    if (!confirm(`Criar uma nova solicitação de compra com ${pendentes.length} ${pendentes.length === 1 ? "item" : "itens"}?`)) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await enviarParaSolicitacaoAction(contagemId);
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      alert(
+        `Solicitação criada com ${res.enviadas} itens` +
+        (res.criadas ? ` (${res.criadas} itens novos cadastrados automaticamente)` : "")
+      );
+      if (res.solicitacao_id) {
+        router.push(`/solicitacoes/${res.solicitacao_id}`);
+      } else {
+        router.refresh();
+      }
     });
   };
 
@@ -151,10 +192,15 @@ export function ContagemTable({
             </>
           )}
         </div>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="text-zinc-600">{totalPreenchidas} de {linhas.length} preenchidas</span>
+          {canRequestPurchase && linhas.some((l) => (l.solicitacao_qtd ?? 0) > 0 && !l.enviado_em) && (
+            <Button onClick={handleEnviar} disabled={isPending}>
+              Enviar para solicitações
+            </Button>
+          )}
           {!finalizada && linhas.length > 0 && (
-            <Button onClick={handleFinalizar} disabled={isPending}>Finalizar contagem</Button>
+            <Button variant="outline" onClick={handleFinalizar} disabled={isPending}>Finalizar contagem</Button>
           )}
           {!finalizada && (
             <button onClick={handleExcluir} className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm text-red-700 hover:bg-red-50">
@@ -182,7 +228,8 @@ export function ContagemTable({
               <tr>
                 <th className="w-12 px-2 py-1 text-right">#</th>
                 <th className="px-2 py-1">Item</th>
-                <th className="w-32 px-2 py-1">Quantidade</th>
+                <th className="w-28 px-2 py-1">Quantidade</th>
+                {canRequestPurchase && <th className="w-28 px-2 py-1">Solicitação</th>}
                 <th className="px-2 py-1">Observação</th>
                 {!finalizada && <th className="w-20 px-2 py-1"></th>}
               </tr>
@@ -193,10 +240,13 @@ export function ContagemTable({
                   key={l.id}
                   linha={l}
                   finalizada={finalizada}
+                  canRequestPurchase={canRequestPurchase}
                   onUpdateQtdLocal={(q) => updateQtdLocal(l.id, q)}
                   onUpdateObsLocal={(o) => updateObsLocal(l.id, o)}
+                  onUpdateSolicLocal={(q) => updateSolicLocal(l.id, q)}
                   onPersistQtd={(s) => persistQtd(l.id, s)}
                   onPersistObs={(s) => persistObs(l.id, s)}
+                  onPersistSolic={(s) => persistSolic(l.id, s)}
                   onRemove={() => handleRemove(l.id)}
                 />
               ))}
@@ -216,25 +266,33 @@ function formatNumberBR(n: number | null | undefined): string {
 function LinhaRow({
   linha,
   finalizada,
+  canRequestPurchase,
   onUpdateQtdLocal,
   onUpdateObsLocal,
+  onUpdateSolicLocal,
   onPersistQtd,
   onPersistObs,
+  onPersistSolic,
   onRemove,
 }: {
   linha: LinhaC;
   finalizada: boolean;
+  canRequestPurchase: boolean;
   onUpdateQtdLocal: (q: number | null) => void;
   onUpdateObsLocal: (o: string | null) => void;
+  onUpdateSolicLocal: (q: number | null) => void;
   onPersistQtd: (s: string) => void;
   onPersistObs: (s: string) => void;
+  onPersistSolic: (s: string) => void;
   onRemove: () => void;
 }) {
   const [qtdStr, setQtdStr] = useState(formatNumberBR(linha.quantidade));
   const [obs, setObs] = useState(linha.observacao ?? "");
+  const [solicStr, setSolicStr] = useState(formatNumberBR(linha.solicitacao_qtd));
+  const jaEnviado = !!linha.enviado_em;
 
   return (
-    <tr className="border-b border-zinc-100 last:border-0">
+    <tr className={`border-b border-zinc-100 last:border-0 ${jaEnviado ? "bg-emerald-50/40" : ""}`}>
       <td className="px-2 py-1.5 text-right text-xs text-zinc-400 tabular-nums">{linha.ordem}</td>
       <td className="px-2 py-1.5">{linha.texto}</td>
       <td className="px-2 py-1.5">
@@ -253,10 +311,32 @@ function LinhaRow({
             }}
             inputMode="decimal"
             placeholder="0"
-            className="h-8 max-w-[100px] text-right tabular-nums"
+            className="h-8 max-w-[90px] text-right tabular-nums"
           />
         )}
       </td>
+      {canRequestPurchase && (
+        <td className="px-2 py-1.5">
+          {jaEnviado ? (
+            <span className="text-xs text-emerald-700">✓ enviado ({solicStr})</span>
+          ) : (
+            <Input
+              value={solicStr}
+              onChange={(e) => setSolicStr(e.target.value)}
+              onBlur={() => {
+                const normalized = solicStr.trim().replace(/\./g, "").replace(",", ".");
+                const n = normalized ? Number(normalized) : null;
+                const final = n !== null && Number.isFinite(n) ? n : null;
+                onUpdateSolicLocal(final);
+                onPersistSolic(solicStr);
+              }}
+              inputMode="decimal"
+              placeholder="0"
+              className="h-8 max-w-[90px] text-right tabular-nums"
+            />
+          )}
+        </td>
+      )}
       <td className="px-2 py-1.5">
         {finalizada ? (
           <span className="text-zinc-600">{obs || "—"}</span>

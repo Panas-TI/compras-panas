@@ -84,36 +84,45 @@ export type Database = {
           atualizado_em: string
           contagem_id: string
           criado_em: string
+          enviado_em: string | null
+          enviado_solicitacao_id: string | null
           id: string
           item_id: string | null
           observacao: string | null
           ordem: number
           quantidade: number | null
           secao: string | null
+          solicitacao_qtd: number | null
           texto: string
         }
         Insert: {
           atualizado_em?: string
           contagem_id: string
           criado_em?: string
+          enviado_em?: string | null
+          enviado_solicitacao_id?: string | null
           id?: string
           item_id?: string | null
           observacao?: string | null
           ordem: number
           quantidade?: number | null
           secao?: string | null
+          solicitacao_qtd?: number | null
           texto: string
         }
         Update: {
           atualizado_em?: string
           contagem_id?: string
           criado_em?: string
+          enviado_em?: string | null
+          enviado_solicitacao_id?: string | null
           id?: string
           item_id?: string | null
           observacao?: string | null
           ordem?: number
           quantidade?: number | null
           secao?: string | null
+          solicitacao_qtd?: number | null
           texto?: string
         }
         Relationships: [
@@ -122,6 +131,13 @@ export type Database = {
             columns: ["contagem_id"]
             isOneToOne: false
             referencedRelation: "contagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contagem_linhas_enviado_solicitacao_id_fkey"
+            columns: ["enviado_solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacoes_semanais"
             referencedColumns: ["id"]
           },
           {
