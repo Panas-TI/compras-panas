@@ -194,20 +194,14 @@ export async function enviarParaSolicitacaoAction(
     const mine = drafts.find((d) => d.comprador_id === user.id);
     solic_id = (mine ?? drafts[0]).id;
   } else {
-    // Cria nova solicitação (segunda a sexta da semana atual)
-    const today = new Date();
-    const dow = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - ((dow + 6) % 7));
-    const friday = new Date(monday);
-    friday.setDate(monday.getDate() + 4);
-    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    // Cria nova solicitação no dia atual (do dia ao dia)
+    const today = new Date().toISOString().slice(0, 10);
 
     const { data: solic, error: serr } = await supabase
       .from("solicitacoes_semanais")
       .insert({
-        data_inicio: fmt(monday),
-        data_fim: fmt(friday),
+        data_inicio: today,
+        data_fim: today,
         comprador_id: user.id,
         observacoes: "Gerada a partir da contagem de estoque",
       })
@@ -251,11 +245,22 @@ export async function enviarParaSolicitacaoAction(
     }
     if (!item_id) continue;
 
+    // Busca defaults do item (preço, fornecedor, pagamento, prazo)
+    const { data: itemRow } = await supabase
+      .from("itens")
+      .select("preco_referencia, fornecedor_padrao_id, forma_pagto_padrao_id, prazo_padrao")
+      .eq("id", item_id)
+      .maybeSingle();
+
     const { error: linErr } = await supabase.from("solicitacao_linhas").insert({
       solicitacao_id: solic_id,
       item_id,
       volume_estoque: l.quantidade,
       volume_solicitado: l.solicitacao_qtd ?? 0,
+      preco: itemRow?.preco_referencia ?? 0,
+      fornecedor_id: itemRow?.fornecedor_padrao_id ?? null,
+      forma_pagto_id: itemRow?.forma_pagto_padrao_id ?? null,
+      prazo: itemRow?.prazo_padrao ?? null,
     });
     if (linErr) {
       console.error("Falha linha:", linErr);
