@@ -212,16 +212,44 @@ export async function enviarParaSolicitacaoAction(
     solicCriada = true;
   }
 
-  // Helper: pega ou cria item por nome
-  async function findOrCreateItemId(nome: string): Promise<string | null> {
+  // Carrega catálogo ativo pra fazer match contains (catalog nome contido no texto)
+  const { data: catalogo } = await supabase
+    .from("itens")
+    .select("id, nome")
+    .eq("ativo", true);
+  const catEntries = (catalogo ?? []).map((c) => ({
+    id: c.id,
+    upper: c.nome.toUpperCase(),
+  }));
+  // Sort por comprimento desc — match mais específico vence
+  catEntries.sort((a, b) => b.upper.length - a.upper.length);
+
+  function matchInCatalog(texto: string): string | null {
+    const upper = texto.toUpperCase().trim();
+    // exato primeiro
+    const exact = catEntries.find((c) => c.upper === upper);
+    if (exact) return exact.id;
+    // contains: catálogo é palavra-chave dentro do texto
+    for (const c of catEntries) {
+      if (c.upper.length < 3) continue;
+      // Regex com word boundary pra não pegar substring no meio de outra palavra
+      const re = new RegExp(`(^|[^A-Za-zÀ-ÿ])${escapeRe(c.upper)}([^A-Za-zÀ-ÿ]|$)`);
+      if (re.test(upper)) return c.id;
+    }
+    return null;
+  }
+
+  function escapeRe(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  async function findOrCreateItemId(nome: string): Promise<{ id: string | null; criado: boolean }> {
     const trimmed = nome.trim();
-    if (!trimmed) return null;
-    const { data: found } = await supabase
-      .from("itens")
-      .select("id")
-      .ilike("nome", trimmed)
-      .limit(1);
-    if (found && found.length > 0) return found[0].id;
+    if (!trimmed) return { id: null, criado: false };
+
+    const matched = matchInCatalog(trimmed);
+    if (matched) return { id: matched, criado: false };
+
     const { data: created, error } = await supabase
       .from("itens")
       .insert({ nome: trimmed, ativo: true })
@@ -229,9 +257,11 @@ export async function enviarParaSolicitacaoAction(
       .single();
     if (error) {
       console.error("Falha ao criar item:", trimmed, error);
-      return null;
+      return { id: null, criado: false };
     }
-    return created!.id;
+    // Adiciona ao cache local pra próximos matches dentro do mesmo envio
+    catEntries.push({ id: created!.id, upper: trimmed.toUpperCase() });
+    return { id: created!.id, criado: true };
   }
 
   let criadas = 0;
@@ -240,8 +270,9 @@ export async function enviarParaSolicitacaoAction(
   for (const l of linhas) {
     let item_id = l.item_id;
     if (!item_id) {
-      item_id = await findOrCreateItemId(l.texto);
-      if (item_id) criadas++;
+      const res = await findOrCreateItemId(l.texto);
+      item_id = res.id;
+      if (res.criado) criadas++;
     }
     if (!item_id) continue;
 
