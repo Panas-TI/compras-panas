@@ -253,6 +253,30 @@ function formatNumberBR(n: number | null | undefined): string {
   return n.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
 }
 
+// Move foco para o input seguinte da mesma coluna (mesma `data-col`) com ordem maior
+function focusNextCell(currentEl: HTMLInputElement) {
+  const col = currentEl.dataset.col;
+  const ord = Number(currentEl.dataset.ord ?? 0);
+  if (!col) return;
+  const all = Array.from(
+    document.querySelectorAll<HTMLInputElement>(`input[data-col="${col}"]`)
+  ).sort((a, b) => Number(a.dataset.ord ?? 0) - Number(b.dataset.ord ?? 0));
+  const next = all.find((el) => Number(el.dataset.ord ?? 0) > ord);
+  if (next) {
+    next.focus();
+    next.select();
+  }
+}
+
+function handleEnterKey(e: React.KeyboardEvent<HTMLInputElement>) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const el = e.target as HTMLInputElement;
+    el.blur(); // dispara onBlur pra salvar
+    setTimeout(() => focusNextCell(el), 0);
+  }
+}
+
 function LinhaRow({
   linha,
   finalizada,
@@ -290,6 +314,8 @@ function LinhaRow({
           <span className="tabular-nums">{qtdStr || "—"}</span>
         ) : (
           <Input
+            data-col="qtd"
+            data-ord={linha.ordem}
             value={qtdStr}
             onChange={(e) => setQtdStr(e.target.value)}
             onBlur={() => {
@@ -299,6 +325,7 @@ function LinhaRow({
               onUpdateQtdLocal(final);
               onPersistQtd(qtdStr);
             }}
+            onKeyDown={handleEnterKey}
             inputMode="decimal"
             placeholder="0"
             className="h-8 max-w-[90px] text-right tabular-nums"
@@ -311,6 +338,8 @@ function LinhaRow({
             <span className="text-xs text-emerald-700">✓ enviado ({solicStr})</span>
           ) : (
             <Input
+              data-col="solic"
+              data-ord={linha.ordem}
               value={solicStr}
               onChange={(e) => setSolicStr(e.target.value)}
               onBlur={() => {
@@ -320,6 +349,7 @@ function LinhaRow({
                 onUpdateSolicLocal(final);
                 onPersistSolic(solicStr);
               }}
+              onKeyDown={handleEnterKey}
               inputMode="decimal"
               placeholder="0"
               className="h-8 max-w-[90px] text-right tabular-nums"
@@ -332,6 +362,8 @@ function LinhaRow({
           <span className="text-zinc-600">{obs || "—"}</span>
         ) : (
           <Input
+            data-col="obs"
+            data-ord={linha.ordem}
             value={obs}
             onChange={(e) => setObs(e.target.value)}
             onBlur={() => {
@@ -339,6 +371,7 @@ function LinhaRow({
               onUpdateObsLocal(t || null);
               onPersistObs(t);
             }}
+            onKeyDown={handleEnterKey}
             className="h-8"
           />
         )}
