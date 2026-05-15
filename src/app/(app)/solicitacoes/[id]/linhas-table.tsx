@@ -421,15 +421,34 @@ function LinhaTr({
         )}
         {!isDraft && isAprovador && status === "Para Aprovar" && (
           <div className="flex flex-wrap justify-end gap-1">
-            <button type="button" onClick={() => onStatusChange("aprovar")} className="text-xs text-emerald-700 hover:underline">
-              Aprovar
-            </button>
-            <button type="button" onClick={() => onStatusChange("alterar")} className="text-xs text-blue-700 hover:underline">
-              Aprovar c/ alteração
-            </button>
-            <button type="button" onClick={() => onStatusChange("recusar")} className="text-xs text-red-700 hover:underline">
-              Recusar
-            </button>
+            {linha.codigo_queops ? (
+              <>
+                <button type="button" onClick={() => onStatusChange("aprovar")} className="text-xs text-emerald-700 hover:underline">
+                  Aprovar
+                </button>
+                <button type="button" onClick={() => onStatusChange("alterar")} className="text-xs text-blue-700 hover:underline">
+                  Aprovar c/ alteração
+                </button>
+                <button type="button" onClick={() => onStatusChange("recusar")} className="text-xs text-red-700 hover:underline">
+                  Recusar
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href={`/itens/${linha.item_id}`}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-xs font-medium text-amber-700 hover:underline"
+                  title="Item sem código Queóps. Cadastre o código antes de aprovar."
+                >
+                  ⚠ Cadastrar código
+                </a>
+                <button type="button" onClick={() => onStatusChange("recusar")} className="text-xs text-red-700 hover:underline">
+                  Recusar
+                </button>
+              </>
+            )}
           </div>
         )}
         {emEdicao && isAprovador && (
