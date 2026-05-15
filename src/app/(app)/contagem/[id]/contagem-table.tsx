@@ -10,9 +10,9 @@ import {
   updateLinhaContagemAction,
   removerLinhaContagemAction,
   finalizarContagemAction,
-  excluirContagemAction,
   enviarParaSolicitacaoAction,
 } from "../actions";
+import { DeleteContagemButton } from "./delete-contagem-button";
 
 export type LinhaC = {
   id: string;
@@ -143,13 +143,6 @@ export function ContagemTable({
     });
   };
 
-  const handleExcluir = () => {
-    if (!confirm("Excluir esta contagem e todas as linhas? Não dá pra desfazer.")) return;
-    startTransition(async () => {
-      const res = await excluirContagemAction(contagemId);
-      if (res?.error) setError(res.error);
-    });
-  };
 
   // Agrupa por seção pra exibir como subgrupos
   const grupos: Array<{ secao: string | null; itens: LinhaC[] }> = [];
@@ -203,11 +196,7 @@ export function ContagemTable({
           {!finalizada && linhas.length > 0 && (
             <Button variant="outline" onClick={handleFinalizar} disabled={isPending}>Finalizar contagem</Button>
           )}
-          {!finalizada && (
-            <button onClick={handleExcluir} className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm text-red-700 hover:bg-red-50">
-              Excluir
-            </button>
-          )}
+          <DeleteContagemButton contagemId={contagemId} />
         </div>
       </div>
 

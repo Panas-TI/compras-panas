@@ -3,9 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
 type LinhaUpdate = Database["public"]["Tables"]["contagem_linhas"]["Update"];
+
+async function verifySenha(email: string, senha: string): Promise<boolean> {
+  const tmp = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+  const { error } = await tmp.auth.signInWithPassword({ email, password: senha });
+  return !error;
+}
 
 function parseNumberBR(value: string | null | undefined): number | null {
   if (!value || !value.trim()) return null;
@@ -310,15 +321,24 @@ export async function enviarParaSolicitacaoAction(
   return { solicitacao_id: solic_id, enviadas, criadas, solic_criada: solicCriada };
 }
 
-export async function excluirContagemAction(contagem_id: string): Promise<{ error?: string }> {
+export async function excluirContagemAction(
+  contagem_id: string,
+  senha: string
+): Promise<{ error?: string; ok?: boolean }> {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !user.email) return { error: "Não autenticado." };
+
+  const valida = await verifySenha(user.email, senha);
+  if (!valida) return { error: "Senha incorreta." };
+
   const { error, data } = await supabase
     .from("contagens")
     .delete()
     .eq("id", contagem_id)
     .select("id");
   if (error) return { error: error.message };
-  if (!data || data.length === 0) return { error: "Sem permissão pra excluir." };
+  if (!data || data.length === 0) return { error: "Sem permissão pra excluir esta contagem." };
   revalidatePath("/contagem");
-  redirect("/contagem");
+  return { ok: true };
 }
