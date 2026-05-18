@@ -16,7 +16,8 @@ function parseNumberBR(value: string | null | undefined): number | null {
 export async function receberLinhaAction(
   linha_id: string,
   volumeRecebidoStr: string,
-  dataRecebimento: string
+  dataRecebimento: string,
+  observacao?: string
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
 
@@ -31,6 +32,7 @@ export async function receberLinhaAction(
     status: "Aprovada & Recebida",
     volume_recebido: volume,
     data_recebimento: dataRecebimento,
+    observacao_recebimento: observacao?.trim() || null,
   };
 
   const { error } = await supabase

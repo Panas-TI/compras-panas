@@ -346,6 +346,7 @@ export type Database = {
           id: string
           item_id: string
           nome_item_congelado: string | null
+          observacao_recebimento: string | null
           observacoes: string | null
           prazo: string | null
           preco: number
@@ -375,6 +376,7 @@ export type Database = {
           id?: string
           item_id: string
           nome_item_congelado?: string | null
+          observacao_recebimento?: string | null
           observacoes?: string | null
           prazo?: string | null
           preco?: number
@@ -404,6 +406,7 @@ export type Database = {
           id?: string
           item_id?: string
           nome_item_congelado?: string | null
+          observacao_recebimento?: string | null
           observacoes?: string | null
           prazo?: string | null
           preco?: number
