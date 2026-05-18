@@ -11,7 +11,7 @@ import {
   recusarLinhaAction,
   aprovarComAlteracaoAction,
   confirmarAlteracaoAction,
-  marcarRecebidoAction,
+  reabrirLinhaAction,
   bulkAprovarAction,
 } from "../actions";
 import { ItemPicker, type PickableItem } from "./item-picker";
@@ -144,16 +144,19 @@ export function LinhasTable({
 
   const handleStatusChange = (
     linhaId: string,
-    action: "aprovar" | "recusar" | "alterar" | "confirmar" | "receber"
+    action: "aprovar" | "recusar" | "alterar" | "confirmar" | "reabrir"
   ) => {
     setErrorMsg(null);
+    if (action === "reabrir" && !confirm("Reabrir esta linha? Ela volta para 'Para Aprovar' pra você decidir de novo.")) {
+      return;
+    }
     startTransition(async () => {
       const fn =
         action === "aprovar" ? aprovarLinhaAction :
         action === "recusar" ? recusarLinhaAction :
         action === "alterar" ? aprovarComAlteracaoAction :
         action === "confirmar" ? confirmarAlteracaoAction :
-        marcarRecebidoAction;
+        reabrirLinhaAction;
       const res = await fn(linhaId);
       if (res.error) setErrorMsg(res.error);
       else {
@@ -161,7 +164,7 @@ export function LinhasTable({
         else if (action === "recusar") updateLinhaLocal(linhaId, { status: "Recusada" });
         else if (action === "alterar") updateLinhaLocal(linhaId, { status: "Volumes ou Preço Alterados", alteracao_confirmada: false });
         else if (action === "confirmar") updateLinhaLocal(linhaId, { alteracao_confirmada: true });
-        else if (action === "receber") updateLinhaLocal(linhaId, { status: "Aprovada & Recebida" });
+        else if (action === "reabrir") updateLinhaLocal(linhaId, { status: "Para Aprovar", alteracao_confirmada: false });
       }
     });
   };
@@ -307,7 +310,7 @@ function LinhaTr({
   onUpdateLocal: (patch: Partial<Linha>) => void;
   onPersist: (field: keyof Linha, value: unknown) => void;
   onRemove: () => void;
-  onStatusChange: (action: "aprovar" | "recusar" | "alterar" | "confirmar" | "receber") => void;
+  onStatusChange: (action: "aprovar" | "recusar" | "alterar" | "confirmar" | "reabrir") => void;
 }) {
   // Edição permitida:
   // - em rascunho (comprador): tudo
@@ -456,9 +459,9 @@ function LinhaTr({
             Confirmar alteração
           </button>
         )}
-        {!isDraft && !emEdicao && (status === "Aprovada" || status === "Volumes ou Preço Alterados") && (
-          <button type="button" onClick={() => onStatusChange("receber")} className="text-xs text-emerald-700 hover:underline">
-            Marcar recebido
+        {!isDraft && isAprovador && !emEdicao && status !== "Para Aprovar" && (
+          <button type="button" onClick={() => onStatusChange("reabrir")} className="text-xs text-zinc-600 hover:underline">
+            Reabrir
           </button>
         )}
       </td>

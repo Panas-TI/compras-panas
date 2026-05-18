@@ -276,6 +276,33 @@ export async function bulkAprovarAction(
   };
 }
 
+export async function reabrirLinhaAction(linha_id: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const patch: LinhaUpdate = {
+    status: "Para Aprovar",
+    aprovado_em: null,
+    aprovado_por: null,
+    recebido_em: null,
+    recebido_por: null,
+    data_recebimento: null,
+    alteracao_confirmada: false,
+    codigo_queops_congelado: null,
+    nome_item_congelado: null,
+    classificacao_congelada: null,
+    unidade_congelada: null,
+  };
+  const { error, data } = await supabase
+    .from("solicitacao_linhas")
+    .update(patch)
+    .eq("id", linha_id)
+    .select("solicitacao_id")
+    .single();
+  if (error) return { error: error.message };
+  revalidatePath(`/solicitacoes/${data!.solicitacao_id}`);
+  revalidatePath("/recebimento");
+  return {};
+}
+
 export async function marcarRecebidoAction(linha_id: string, data_recebimento?: string): Promise<{ error?: string }> {
   const supabase = await createClient();
   const patch: LinhaUpdate = { status: "Aprovada & Recebida" };
