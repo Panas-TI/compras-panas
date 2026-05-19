@@ -2,9 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
 type LinhaUpdate = Database["public"]["Tables"]["solicitacao_linhas"]["Update"];
+
+async function verifySenha(email: string, senha: string): Promise<boolean> {
+  const tmp = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+  const { error } = await tmp.auth.signInWithPassword({ email, password: senha });
+  return !error;
+}
 
 function parseNumberBR(value: string | null | undefined): number | null {
   if (!value || !value.trim()) return null;
@@ -79,6 +90,43 @@ export async function finalizarRecebimentoAction(linha_id: string): Promise<{ er
     observacao_recebimento: obs || null,
   };
 
+  const { error } = await supabase.from("solicitacao_linhas").update(patch).eq("id", linha_id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/recebimento");
+  revalidatePath("/solicitacoes");
+  return {};
+}
+
+/** Desfaz o recebimento de uma linha — volta pra pendente. Requer senha. */
+export async function desfazerRecebimentoAction(
+  linha_id: string,
+  senha: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "Não autenticado." };
+
+  const ok = await verifySenha(user.email, senha);
+  if (!ok) return { error: "Senha incorreta." };
+
+  // Status de volta: se a linha foi alterada e confirmada, volta pra "Volumes ou Preço Alterados"
+  const { data: linha } = await supabase
+    .from("solicitacao_linhas")
+    .select("alteracao_confirmada")
+    .eq("id", linha_id)
+    .maybeSingle();
+  const novoStatus = linha?.alteracao_confirmada ? "Volumes ou Preço Alterados" : "Aprovada";
+
+  // Apaga as entregas registradas
+  await supabase.from("recebimento_entregas").delete().eq("linha_id", linha_id);
+
+  const patch: LinhaUpdate = {
+    status: novoStatus,
+    volume_recebido: null,
+    data_recebimento: null,
+    observacao_recebimento: null,
+  };
   const { error } = await supabase.from("solicitacao_linhas").update(patch).eq("id", linha_id);
   if (error) return { error: error.message };
 
