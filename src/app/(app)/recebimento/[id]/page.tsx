@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateBR } from "@/lib/utils";
 import { ReceiveTable, type LinhaPendente } from "../receive-table";
+import { RecebidosList, type LinhaRecebida } from "../recebidos-list";
 
 export default async function RecebimentoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -77,6 +78,53 @@ export default async function RecebimentoDetailPage({ params }: { params: Promis
     entregas: entregasByLinha.get(l.id) ?? [],
   }));
 
+  // Itens JÁ recebidos desta solicitação
+  const { data: recebidasRaw } = await supabase
+    .from("solicitacao_linhas")
+    .select(
+      `
+      id, volume_solicitado, volume_recebido, data_recebimento, observacao_recebimento,
+      item:itens(nome, codigo_queops, unidade:unidades_medida(nome)),
+      fornecedor:fornecedores(nome)
+    `
+    )
+    .eq("solicitacao_id", id)
+    .eq("status", "Aprovada & Recebida")
+    .order("data_recebimento", { ascending: false });
+
+  const recebidaIds = (recebidasRaw ?? []).map((l) => l.id);
+  const entregasRecebidas = new Map<string, LinhaRecebida["entregas"]>();
+  if (recebidaIds.length) {
+    const { data: entregas } = await supabase
+      .from("recebimento_entregas")
+      .select("id, linha_id, quantidade, data_recebimento, observacao")
+      .in("linha_id", recebidaIds)
+      .order("data_recebimento", { ascending: true });
+    for (const e of entregas ?? []) {
+      const arr = entregasRecebidas.get(e.linha_id) ?? [];
+      arr.push({
+        id: e.id,
+        quantidade: Number(e.quantidade ?? 0),
+        data_recebimento: e.data_recebimento,
+        observacao: e.observacao,
+      });
+      entregasRecebidas.set(e.linha_id, arr);
+    }
+  }
+
+  const recebidas: LinhaRecebida[] = (recebidasRaw ?? []).map((l) => ({
+    id: l.id,
+    nome_item: l.item?.nome ?? "(item removido)",
+    codigo_queops: l.item?.codigo_queops ?? null,
+    unidade_nome: l.item?.unidade?.nome ?? null,
+    fornecedor_nome: l.fornecedor?.nome ?? null,
+    volume_solicitado: l.volume_solicitado,
+    volume_recebido: l.volume_recebido,
+    data_recebimento: l.data_recebimento,
+    observacao_recebimento: l.observacao_recebimento,
+    entregas: entregasRecebidas.get(l.id) ?? [],
+  }));
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -96,6 +144,8 @@ export default async function RecebimentoDetailPage({ params }: { params: Promis
       </div>
 
       <ReceiveTable linhas={linhas} />
+
+      {recebidas.length > 0 && <RecebidosList recebidas={recebidas} />}
     </div>
   );
 }
