@@ -1,11 +1,19 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
-import { receberLinhaAction } from "./actions";
+import { addEntregaAction, removerEntregaAction, finalizarRecebimentoAction } from "./actions";
+
+export type Entrega = {
+  id: string;
+  quantidade: number;
+  data_recebimento: string;
+  observacao: string | null;
+};
 
 export type LinhaPendente = {
   id: string;
@@ -22,12 +30,13 @@ export type LinhaPendente = {
   data_compra: string | null;
   solicitacao_id: string;
   solicitacao_inicio: string;
+  entregas: Entrega[];
 };
 
-const STATUS_BADGE: Record<string, string> = {
-  Aprovada: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  "Volumes ou Preço Alterados": "bg-blue-50 text-blue-800 border-blue-200",
-};
+function fmtNum(n: number | null | undefined): string {
+  if (n === null || n === undefined) return "0";
+  return n.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+}
 
 export function ReceiveTable({ linhas }: { linhas: LinhaPendente[] }) {
   const [query, setQuery] = useState("");
@@ -46,9 +55,7 @@ export function ReceiveTable({ linhas }: { linhas: LinhaPendente[] }) {
     }
     arr = [...arr].sort((a, b) => {
       if (sort === "fornecedor") {
-        const fa = a.fornecedor_nome ?? "zzz";
-        const fb = b.fornecedor_nome ?? "zzz";
-        const cmp = fa.localeCompare(fb, "pt-BR");
+        const cmp = (a.fornecedor_nome ?? "zzz").localeCompare(b.fornecedor_nome ?? "zzz", "pt-BR");
         if (cmp !== 0) return cmp;
       }
       return a.nome_item.localeCompare(b.nome_item, "pt-BR");
@@ -57,36 +64,37 @@ export function ReceiveTable({ linhas }: { linhas: LinhaPendente[] }) {
   }, [linhas, query, sort]);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 rounded-md border border-zinc-200 bg-white p-3 sm:flex-row sm:items-end">
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label htmlFor="q" className="text-sm font-medium">Buscar</label>
+    <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-white p-2.5 sm:flex-row sm:items-end">
+        <div className="flex flex-1 flex-col gap-1">
+          <label htmlFor="q" className="text-xs font-medium text-zinc-600">Buscar</label>
           <Input
             id="q"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Item, código ou fornecedor..."
+            className="h-9"
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="sort" className="text-sm font-medium">Ordenar por</label>
-          <Select id="sort" value={sort} onChange={(e) => setSort(e.target.value as "alfabetico" | "fornecedor")}>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="sort" className="text-xs font-medium text-zinc-600">Ordenar</label>
+          <Select id="sort" value={sort} onChange={(e) => setSort(e.target.value as "alfabetico" | "fornecedor")} className="h-9">
             <option value="alfabetico">Ordem alfabética</option>
             <option value="fornecedor">Fornecedor</option>
           </Select>
         </div>
-        <div className="text-sm text-zinc-600 sm:self-end sm:pb-2">
+        <div className="text-xs text-zinc-600 sm:self-end sm:pb-2">
           {filtered.length} {filtered.length === 1 ? "pendente" : "pendentes"}
         </div>
       </div>
 
       {filtered.length === 0 && (
-        <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-10 text-center text-sm text-zinc-500">
+        <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-8 text-center text-sm text-zinc-500">
           Nada pendente de recebimento.
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2.5">
         {filtered.map((l) => (
           <ItemCard key={l.id} linha={l} />
         ))}
@@ -96,116 +104,162 @@ export function ReceiveTable({ linhas }: { linhas: LinhaPendente[] }) {
 }
 
 function ItemCard({ linha }: { linha: LinhaPendente }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const [showForm, setShowForm] = useState(linha.entregas.length === 0);
+
+  // form da nova entrega
   const today = new Date().toISOString().slice(0, 10);
-  const [qtd, setQtd] = useState(
-    linha.volume_solicitado != null
-      ? linha.volume_solicitado.toLocaleString("pt-BR", { maximumFractionDigits: 3 })
-      : ""
-  );
+  const [qtd, setQtd] = useState("");
   const [data, setData] = useState(today);
   const [obs, setObs] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [done, setDone] = useState(false);
 
-  const handle = () => {
+  if (done) return null;
+
+  const totalRecebido = linha.entregas.reduce((s, e) => s + e.quantidade, 0);
+  const solicitado = linha.volume_solicitado ?? 0;
+  const falta = Math.max(0, solicitado - totalRecebido);
+
+  const salvarEntrega = () => {
     setError(null);
     startTransition(async () => {
-      const res = await receberLinhaAction(linha.id, qtd, data, obs);
+      const res = await addEntregaAction(linha.id, qtd, data, obs);
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      setQtd("");
+      setObs("");
+      setData(today);
+      setShowForm(false);
+      router.refresh();
+    });
+  };
+
+  const removerEntrega = (entregaId: string) => {
+    setError(null);
+    startTransition(async () => {
+      const res = await removerEntregaAction(entregaId);
+      if (res.error) setError(res.error);
+      else router.refresh();
+    });
+  };
+
+  const finalizar = () => {
+    setError(null);
+    if (!confirm(`Finalizar recebimento de "${linha.nome_item}"? Total recebido: ${fmtNum(totalRecebido)}.`)) return;
+    startTransition(async () => {
+      const res = await finalizarRecebimentoAction(linha.id);
       if (res.error) setError(res.error);
       else setDone(true);
     });
   };
 
-  if (done) return null;
-
-  const badgeStyle = STATUS_BADGE[linha.status] ?? "bg-zinc-100 text-zinc-700 border-zinc-200";
-
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-      {/* Cabeçalho do item */}
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <div className="text-base font-semibold leading-tight">{linha.nome_item}</div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">
+    <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
+      {/* Linha 1: nome + status */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold">{linha.nome_item}</div>
+          <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-500">
             {linha.codigo_queops ? (
               <span className="font-mono">{linha.codigo_queops}</span>
             ) : (
               <span className="text-amber-600">sem código</span>
             )}
-            {linha.classificacao_nome && <span>· {linha.classificacao_nome}</span>}
             {linha.unidade_nome && <span>· {linha.unidade_nome}</span>}
+            {linha.fornecedor_nome && <span>· {linha.fornecedor_nome}</span>}
           </div>
         </div>
-        <span className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-xs ${badgeStyle}`}>
-          {linha.status}
-        </span>
-      </div>
-
-      {/* Infos */}
-      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
-        <div>
-          <div className="text-xs text-zinc-500">Fornecedor</div>
-          <div>{linha.fornecedor_nome ?? "—"}</div>
-        </div>
-        <div>
-          <div className="text-xs text-zinc-500">Solicitado</div>
-          <div className="tabular-nums">
-            {linha.volume_solicitado?.toLocaleString("pt-BR", { maximumFractionDigits: 3 }) ?? "—"}
+        <div className="shrink-0 text-right text-xs">
+          <div className="text-zinc-500">Solic. <strong className="text-zinc-800">{fmtNum(solicitado)}</strong></div>
+          <div className={falta > 0 ? "text-amber-700" : "text-emerald-700"}>
+            Recebido <strong>{fmtNum(totalRecebido)}</strong>
+            {falta > 0 && ` · falta ${fmtNum(falta)}`}
           </div>
         </div>
-        <div>
-          <div className="text-xs text-zinc-500">Valor</div>
-          <div className="tabular-nums">{formatCurrencyBRL(linha.valor ?? 0)}</div>
-        </div>
-        <div>
-          <div className="text-xs text-zinc-500">Semana</div>
-          <div>{formatDateBR(linha.solicitacao_inicio)}</div>
-        </div>
       </div>
 
-      {/* Campos de recebimento */}
-      <div className="mt-4 flex flex-col gap-3 border-t border-zinc-100 pt-4 sm:flex-row sm:items-end">
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label className="text-sm font-medium">Quantidade recebida</label>
-          <Input
-            value={qtd}
-            onChange={(e) => setQtd(e.target.value)}
-            inputMode="decimal"
-            placeholder="0"
-            className="h-11 text-base tabular-nums"
-          />
+      {/* Entregas registradas */}
+      {linha.entregas.length > 0 && (
+        <div className="mt-2 flex flex-col gap-1">
+          {linha.entregas.map((e, i) => (
+            <div key={e.id} className="flex items-center justify-between rounded bg-zinc-50 px-2 py-1 text-xs">
+              <span>
+                <span className="font-medium">Entrega {i + 1}:</span> {fmtNum(e.quantidade)} em{" "}
+                {formatDateBR(e.data_recebimento)}
+                {e.observacao && <span className="text-zinc-500"> — {e.observacao}</span>}
+              </span>
+              <button
+                onClick={() => removerEntrega(e.id)}
+                disabled={isPending}
+                className="ml-2 shrink-0 text-red-600 hover:underline"
+              >
+                remover
+              </button>
+            </div>
+          ))}
         </div>
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label className="text-sm font-medium">Data recebimento</label>
-          <Input
-            type="date"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            className="h-11 text-base"
-          />
+      )}
+
+      {/* Form de nova entrega */}
+      {showForm ? (
+        <div className="mt-2 flex flex-col gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-2 sm:flex-row sm:items-end">
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-xs font-medium text-zinc-600">Quantidade recebida</label>
+            <Input
+              value={qtd}
+              onChange={(e) => setQtd(e.target.value)}
+              inputMode="decimal"
+              placeholder="0"
+              className="h-10 tabular-nums"
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-xs font-medium text-zinc-600">Data</label>
+            <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="h-10" />
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-xs font-medium text-zinc-600">Observação (opcional)</label>
+            <Input
+              value={obs}
+              onChange={(e) => setObs(e.target.value)}
+              placeholder="ex: veio danificado"
+              className="h-10"
+            />
+          </div>
+          <div className="flex gap-1">
+            <Button onClick={salvarEntrega} disabled={isPending} size="sm" className="h-10">
+              Salvar
+            </Button>
+            {linha.entregas.length > 0 && (
+              <Button onClick={() => setShowForm(false)} variant="ghost" size="sm" className="h-10">
+                Cancelar
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+          >
+            + Add entrega
+          </button>
+        </div>
+      )}
 
-      <div className="mt-3 flex flex-col gap-1.5">
-        <label className="text-sm font-medium">Observação</label>
-        <Input
-          value={obs}
-          onChange={(e) => setObs(e.target.value)}
-          placeholder="Ex: veio 2kg a menos, embalagem danificada..."
-          className="h-11 text-base"
-        />
-      </div>
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-
-      <Button
-        onClick={handle}
-        disabled={isPending}
-        className="mt-4 h-12 w-full text-base"
-      >
-        {isPending ? "Salvando..." : "Marcar recebido"}
-      </Button>
+      {/* Finalizar */}
+      {linha.entregas.length > 0 && (
+        <Button onClick={finalizar} disabled={isPending} className="mt-2.5 h-10 w-full text-sm">
+          Finalizar recebimento ({fmtNum(totalRecebido)})
+        </Button>
+      )}
     </div>
   );
 }

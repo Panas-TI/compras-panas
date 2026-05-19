@@ -330,6 +330,51 @@ export type Database = {
         }
         Relationships: []
       }
+      recebimento_entregas: {
+        Row: {
+          criado_em: string
+          criado_por: string | null
+          data_recebimento: string
+          id: string
+          linha_id: string
+          observacao: string | null
+          quantidade: number
+        }
+        Insert: {
+          criado_em?: string
+          criado_por?: string | null
+          data_recebimento: string
+          id?: string
+          linha_id: string
+          observacao?: string | null
+          quantidade: number
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string | null
+          data_recebimento?: string
+          id?: string
+          linha_id?: string
+          observacao?: string | null
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimento_entregas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimento_entregas_linha_id_fkey"
+            columns: ["linha_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacao_linhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solicitacao_linhas: {
         Row: {
           alteracao_confirmada: boolean
