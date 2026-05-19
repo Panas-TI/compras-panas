@@ -139,6 +139,7 @@ function ItemCard({ linha }: { linha: LinhaPendente }) {
   };
 
   const removerEntrega = (entregaId: string) => {
+    if (!confirm("Tem certeza que deseja remover esta entrega?")) return;
     setError(null);
     startTransition(async () => {
       const res = await removerEntregaAction(entregaId);
@@ -159,25 +160,36 @@ function ItemCard({ linha }: { linha: LinhaPendente }) {
 
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
-      {/* Linha 1: nome + status */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold">{linha.nome_item}</div>
-          <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-500">
-            {linha.codigo_queops ? (
-              <span className="font-mono">{linha.codigo_queops}</span>
-            ) : (
-              <span className="text-amber-600">sem código</span>
-            )}
-            {linha.unidade_nome && <span>· {linha.unidade_nome}</span>}
-            {linha.fornecedor_nome && <span>· {linha.fornecedor_nome}</span>}
-          </div>
+      {/* Nome + código */}
+      <div className="min-w-0">
+        <div className="truncate text-sm font-semibold">{linha.nome_item}</div>
+        <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-500">
+          {linha.codigo_queops ? (
+            <span className="font-mono">{linha.codigo_queops}</span>
+          ) : (
+            <span className="text-amber-600">sem código</span>
+          )}
+          {linha.unidade_nome && <span>· {linha.unidade_nome}</span>}
+          {linha.fornecedor_nome && <span>· {linha.fornecedor_nome}</span>}
         </div>
-        <div className="shrink-0 text-right text-xs">
-          <div className="text-zinc-500">Solic. <strong className="text-zinc-800">{fmtNum(solicitado)}</strong></div>
-          <div className={falta > 0 ? "text-amber-700" : "text-emerald-700"}>
-            Recebido <strong>{fmtNum(totalRecebido)}</strong>
-            {falta > 0 && ` · falta ${fmtNum(falta)}`}
+      </div>
+
+      {/* Stats — Solicitado / Recebido / Falta, centralizados */}
+      <div className="mt-2 grid grid-cols-3 divide-x divide-zinc-200 rounded-md border border-zinc-200 bg-zinc-50 py-2 text-center">
+        <div>
+          <div className="text-[11px] uppercase tracking-wide text-zinc-500">Solicitado</div>
+          <div className="text-xl font-semibold tabular-nums text-zinc-800">{fmtNum(solicitado)}</div>
+        </div>
+        <div>
+          <div className="text-[11px] uppercase tracking-wide text-zinc-500">Recebido</div>
+          <div className="text-xl font-semibold tabular-nums text-emerald-700">{fmtNum(totalRecebido)}</div>
+        </div>
+        <div>
+          <div className="text-[11px] uppercase tracking-wide text-zinc-500">Falta</div>
+          <div
+            className={`text-xl font-semibold tabular-nums ${falta > 0 ? "text-amber-700" : "text-emerald-700"}`}
+          >
+            {fmtNum(falta)}
           </div>
         </div>
       </div>
