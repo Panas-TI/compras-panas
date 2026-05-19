@@ -15,6 +15,12 @@ export function formatCurrencyBRL(value: number | null | undefined): string {
 
 export function formatDateBR(value: string | Date | null | undefined): string {
   if (!value) return "—";
+  // String de data pura "YYYY-MM-DD" (coluna DATE): formata direto, sem
+  // conversão de fuso (evita o bug de cair pro dia anterior em UTC-3).
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, mo, d] = value.split("-");
+    return `${d}/${mo}/${y}`;
+  }
   const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
