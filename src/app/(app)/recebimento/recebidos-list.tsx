@@ -150,8 +150,8 @@ function RecebidoCard({ linha: l }: { linha: LinhaRecebida }) {
       ) : (
         <form onSubmit={desfazer} className="mt-2 rounded-md border border-zinc-200 bg-white p-2">
           <p className="text-xs text-zinc-600">
-            Digite sua senha pra confirmar. O item volta pra lista de pendentes e as entregas
-            registradas serão apagadas.
+            Digite sua senha pra confirmar. O item volta pra lista de pendentes mantendo as
+            entregas já registradas — você pode então adicionar ou remover entregas.
           </p>
           <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex flex-1 flex-col gap-1">

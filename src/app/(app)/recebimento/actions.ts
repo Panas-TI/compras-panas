@@ -118,9 +118,8 @@ export async function desfazerRecebimentoAction(
     .maybeSingle();
   const novoStatus = linha?.alteracao_confirmada ? "Volumes ou Preço Alterados" : "Aprovada";
 
-  // Apaga as entregas registradas
-  await supabase.from("recebimento_entregas").delete().eq("linha_id", linha_id);
-
+  // Mantém as entregas registradas — o item volta pendente com o que já foi recebido.
+  // (limpa só os campos de finalização)
   const patch: LinhaUpdate = {
     status: novoStatus,
     volume_recebido: null,
