@@ -61,7 +61,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
             finalizada={contagem.finalizada}
           />
         </div>
-        <Link href="/contagem" className="text-sm text-zinc-600 hover:underline">
+        <Link href="/contagem" className="text-sm text-zinc-600 hover:underline print:hidden">
           ← Voltar
         </Link>
       </div>

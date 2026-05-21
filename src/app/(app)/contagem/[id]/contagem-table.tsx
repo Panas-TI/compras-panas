@@ -163,7 +163,7 @@ export function ContagemTable({
         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
         <div className="flex items-center gap-2">
           {!finalizada && (
             <>
@@ -192,6 +192,9 @@ export function ContagemTable({
             <Button onClick={handleEnviar} disabled={isPending}>
               Enviar para solicitações
             </Button>
+          )}
+          {finalizada && (
+            <Button variant="outline" onClick={() => window.print()}>Imprimir</Button>
           )}
           {!finalizada && linhas.length > 0 && (
             <Button variant="outline" onClick={handleFinalizar} disabled={isPending}>Finalizar contagem</Button>

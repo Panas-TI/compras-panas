@@ -22,9 +22,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50">
-      <Nav role={profile.role as "comprador" | "aprovador" | "estoquista"} nome={profile.nome} />
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">{children}</main>
+    <div className="flex min-h-screen flex-col bg-zinc-50 print:bg-white">
+      <div className="print:hidden">
+        <Nav role={profile.role as "comprador" | "aprovador" | "estoquista"} nome={profile.nome} />
+      </div>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 print:max-w-none print:px-0 print:py-2">
+        {children}
+      </main>
     </div>
   );
 }
