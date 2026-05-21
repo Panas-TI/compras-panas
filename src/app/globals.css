@@ -25,10 +25,23 @@ body {
   }
   body {
     background: white;
-    font-size: 11pt;
+    font-size: 10.5pt;
   }
-  /* Não cortar uma seção no meio quando possível */
-  table, thead, tbody, tr {
+  /* Só evita cortar uma LINHA no meio. Tabelas grandes podem (e devem)
+     quebrar entre páginas — caso contrário ficam folhas em branco. */
+  tr {
     page-break-inside: avoid;
+  }
+  /* O cabeçalho da tabela repete em cada página de impressão */
+  thead {
+    display: table-header-group;
+  }
+  /* Não pendurar o nome da seção sozinho no fim da página */
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  /* Remove overflow que pode esconder conteúdo na impressão */
+  .overflow-x-auto, .overflow-hidden {
+    overflow: visible !important;
   }
 }
