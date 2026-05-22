@@ -174,13 +174,13 @@ export function LinhasTable({
   return (
     <div className="flex flex-col gap-3">
       {errorMsg && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
           {errorMsg}
         </div>
       )}
 
       {isDraft && (
-        <div className="flex items-center gap-3 rounded-md border border-zinc-200 bg-white p-3">
+        <div className="flex items-center gap-3 rounded-md border border-zinc-200 bg-white p-3 print:hidden">
           <div className="flex-1">
             <ItemPicker
               items={items}
@@ -207,7 +207,7 @@ export function LinhasTable({
               <th className="px-1 py-2 font-medium">Pagto</th>
               <th className="px-1 py-2 font-medium">Prazo</th>
               <th className="px-1 py-2 font-medium">Status</th>
-              <th className="px-1 py-2"></th>
+              <th className="px-1 py-2 print:hidden"></th>
             </tr>
           </thead>
           <tbody>
@@ -248,7 +248,7 @@ export function LinhasTable({
       </div>
 
       {isDraft && (
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2 print:hidden">
           <Button variant="outline" onClick={handleSalvar} disabled={isPending}>
             Salvar
           </Button>
@@ -265,7 +265,7 @@ export function LinhasTable({
       )}
 
       {!isDraft && isAprovador && linhas.some((l) => l.status === "Para Aprovar") && (
-        <div className="flex justify-end">
+        <div className="flex justify-end print:hidden">
           <Button
             disabled={isPending}
             onClick={() => {
@@ -412,7 +412,7 @@ function LinhaTr({
           {status}
         </span>
       </td>
-      <td className="px-1 py-1.5 text-right">
+      <td className="px-1 py-1.5 text-right print:hidden">
         {isDraft && (
           <button
             type="button"

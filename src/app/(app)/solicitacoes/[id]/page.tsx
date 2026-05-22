@@ -5,6 +5,7 @@ import { formatDateBR } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinhasTable, type Linha } from "./linhas-table";
 import { DeleteButton } from "./delete-button";
+import { PrintButton } from "./print-button";
 import { computeSolicStatus } from "../status";
 
 export default async function SolicitacaoDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -85,7 +86,10 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="solicitacao-detail flex flex-col gap-4">
+      {/* Print: A4 deitado pra caber a planilha com todas as colunas */}
+      <style>{`@media print { @page { size: A4 landscape; } }`}</style>
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold">
@@ -96,7 +100,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
             {solic.observacoes && <> · {solic.observacoes}</>}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 print:hidden">
           {!isDraft && (
             <a
               href={`/api/solicitacoes/${solic.id}/csv`}
@@ -105,6 +109,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
               Exportar CSV
             </a>
           )}
+          {!isDraft && <PrintButton />}
           {!solic.finalizada && (isMine || isAprovador) && (
             <DeleteButton solicitacaoId={solic.id} />
           )}
