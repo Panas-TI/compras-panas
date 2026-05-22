@@ -78,16 +78,13 @@ NOISE_WORDS = {
     "pcot", "pacto",
     # NOTA: NÃO incluir aqui "sache", "lata", "tablete", "bloco" — esses
     # tipicamente distinguem SKUs diferentes (sache catchup ≠ bombona catchup).
-    # descritores genéricos
-    "inteira", "inteiras", "inteiro", "inteiros",
-    "fresco", "fresca", "frescos", "frescas",
-    "seco", "seca", "secos", "secas",
-    "congelado", "congelada",
-    "molho",
+    # descritores genéricos (poucos — a maioria distingue SKU)
     "marca", "tipo",
-    "novo", "nova", "modelo",
     # graus de qualidade
     "1o", "1a", "2o", "2a", "primeira", "primeiro", "segunda", "segundo",
+    # NOTA: NÃO remover daqui:
+    #   "fresco/seco/congelado/inteiro/molho/novo" — distinguem produtos
+    #   (tomate fresco ≠ tomate seco; brocolis fresco ≠ congelado)
     # genéricos misc
     "para", "pra", "com", "sem", "de", "do", "da", "dos", "das", "no", "na", "em",
     "ou", "e",
@@ -174,16 +171,40 @@ def main():
     itens = r["body"]
     print(f"  {len(itens)} itens ativos")
 
-    # Agrupa por (tokens, sizes) iguais
-    grupos: dict[tuple, list[dict]] = {}
+    # Passo 1: agrupa por TOKENS apenas (ignora sizes neste momento)
+    grupos_por_tokens: dict[frozenset, list[tuple[dict, frozenset]]] = {}
     for it in itens:
         tokens, sizes = normalize_tokens(it["nome"])
         if not tokens:
             continue
-        key = (tokens, sizes)
-        grupos.setdefault(key, []).append(it)
+        grupos_por_tokens.setdefault(tokens, []).append((it, sizes))
 
-    dup_grupos = [g for g in grupos.values() if len(g) > 1]
+    # Passo 2: dentro de cada grupo, decide o que fazer baseado nas sizes:
+    # - Todos com mesma size → duplicatas (merge)
+    # - Sizes diferentes não-vazias → produtos distintos (skip)
+    # - Mistura de com/sem size: se houver SÓ UM tamanho não-vazio → merge tudo nele
+    dup_grupos: list[list[dict]] = []
+    for tokens, lista in grupos_por_tokens.items():
+        if len(lista) < 2:
+            continue
+        sizes_distintas = {s for _, s in lista if s}
+        if len(sizes_distintas) == 0:
+            # Nenhum tem tamanho — merge se forem 2+
+            dup_grupos.append([it for it, _ in lista])
+        elif len(sizes_distintas) == 1:
+            # Único tamanho — todos pertencem (com ou sem tamanho registrado)
+            dup_grupos.append([it for it, _ in lista])
+        else:
+            # Múltiplos tamanhos distintos — tem produtos diferentes
+            # Só agrupa os que têm o MESMO tamanho
+            por_size: dict[frozenset, list[dict]] = {}
+            for it, s in lista:
+                if s:
+                    por_size.setdefault(s, []).append(it)
+            for sub in por_size.values():
+                if len(sub) >= 2:
+                    dup_grupos.append(sub)
+
     print(f"\nGrupos com 2+ itens (potenciais duplicatas): {len(dup_grupos)}")
 
     if not dup_grupos:
@@ -191,8 +212,8 @@ def main():
         return
 
     plano = []
-    for g in dup_grupos:
-        g_sorted = sorted(g, key=score_canonical, reverse=True)
+    for lista in dup_grupos:
+        g_sorted = sorted(lista, key=score_canonical, reverse=True)
         canon = g_sorted[0]
         dups = g_sorted[1:]
         print(f"\n[canônico] {canon['nome']!r}  (cod={canon.get('codigo_queops')})")
