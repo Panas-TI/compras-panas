@@ -71,6 +71,13 @@ NOISE_WORDS = {
     "rolo", "rolos",
     "peca", "pecas", "pç", "pca",
     "bandeija", "bandeijas", "bdj", "bandeja",
+    # recipientes que NÃO distinguem o SKU (mesmo produto, embalado diferente)
+    "vidro", "vidros",
+    "frasco", "frascos",
+    "plast", "plastico", "plastica",
+    "pcot", "pacto",
+    # NOTA: NÃO incluir aqui "sache", "lata", "tablete", "bloco" — esses
+    # tipicamente distinguem SKUs diferentes (sache catchup ≠ bombona catchup).
     # descritores genéricos
     "inteira", "inteiras", "inteiro", "inteiros",
     "fresco", "fresca", "frescos", "frescas",
