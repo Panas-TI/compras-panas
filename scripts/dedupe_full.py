@@ -79,7 +79,8 @@ NOISE_WORDS = {
     # NOTA: NÃO incluir aqui "sache", "lata", "tablete", "bloco" — esses
     # tipicamente distinguem SKUs diferentes (sache catchup ≠ bombona catchup).
     # descritores genéricos (poucos — a maioria distingue SKU)
-    "marca", "tipo",
+    "marca", "tipo", "cada", "uns",
+    "porcento", "porcentos", "porc", "percent",
     # graus de qualidade
     "1o", "1a", "2o", "2a", "primeira", "primeiro", "segunda", "segundo",
     # NOTA: NÃO remover daqui:
