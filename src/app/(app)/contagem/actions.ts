@@ -223,14 +223,16 @@ export async function enviarParaSolicitacaoAction(
     solicCriada = true;
   }
 
-  // Carrega catálogo ativo pra fazer match contains (catalog nome contido no texto)
+  // Carrega catálogo COMPLETO (incluindo inativos) pra evitar recriar duplicatas
+  // que já foram unificadas. Pra inativos com merged_into_id, redireciona.
   const { data: catalogo } = await supabase
     .from("itens")
-    .select("id, nome")
-    .eq("ativo", true);
+    .select("id, nome, ativo, merged_into_id");
   const catEntries = (catalogo ?? []).map((c) => ({
-    id: c.id,
+    // Se o item foi unificado num canônico, usa o id do canônico
+    id: c.merged_into_id ?? c.id,
     upper: c.nome.toUpperCase(),
+    ativo: c.ativo,
   }));
   // Sort por comprimento desc — match mais específico vence
   catEntries.sort((a, b) => b.upper.length - a.upper.length);
@@ -271,7 +273,7 @@ export async function enviarParaSolicitacaoAction(
       return { id: null, criado: false };
     }
     // Adiciona ao cache local pra próximos matches dentro do mesmo envio
-    catEntries.push({ id: created!.id, upper: trimmed.toUpperCase() });
+    catEntries.push({ id: created!.id, upper: trimmed.toUpperCase(), ativo: true });
     return { id: created!.id, criado: true };
   }
 

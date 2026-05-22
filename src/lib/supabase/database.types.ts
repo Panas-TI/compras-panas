@@ -242,6 +242,7 @@ export type Database = {
           forma_pagto_padrao_id: string | null
           fornecedor_padrao_id: string | null
           id: string
+          merged_into_id: string | null
           nome: string
           prazo_padrao: string | null
           preco_referencia: number | null
@@ -256,6 +257,7 @@ export type Database = {
           forma_pagto_padrao_id?: string | null
           fornecedor_padrao_id?: string | null
           id?: string
+          merged_into_id?: string | null
           nome: string
           prazo_padrao?: string | null
           preco_referencia?: number | null
@@ -270,6 +272,7 @@ export type Database = {
           forma_pagto_padrao_id?: string | null
           fornecedor_padrao_id?: string | null
           id?: string
+          merged_into_id?: string | null
           nome?: string
           prazo_padrao?: string | null
           preco_referencia?: number | null
@@ -295,6 +298,13 @@ export type Database = {
             columns: ["fornecedor_padrao_id"]
             isOneToOne: false
             referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "itens"
             referencedColumns: ["id"]
           },
           {

@@ -263,7 +263,12 @@ def main():
                     body={"item_id": canon_id},
                     prefer="return=minimal",
                 )
-            http("PATCH", f"{rest}/itens?id=eq.{d['id']}", secret, body={"ativo": False})
+            http(
+                "PATCH",
+                f"{rest}/itens?id=eq.{d['id']}",
+                secret,
+                body={"ativo": False, "merged_into_id": canon_id},
+            )
             total_inativados += 1
 
     print(f"\nOK. {total_inativados} duplicatas inativadas em {len(plano)} grupos.")

@@ -266,7 +266,12 @@ def main():
                     body={"item_id": canon_id},
                     prefer="return=minimal",
                 )
-            http("PATCH", f"{rest}/itens?id=eq.{d['id']}", secret, body={"ativo": False})
+            http(
+                "PATCH",
+                f"{rest}/itens?id=eq.{d['id']}",
+                secret,
+                body={"ativo": False, "merged_into_id": canon_id},
+            )
             print(f"   duplicata inativada: {d['nome']!r}")
 
     print("\nOK. Unificação concluída.")
