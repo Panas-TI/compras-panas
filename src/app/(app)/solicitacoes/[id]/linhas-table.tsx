@@ -179,7 +179,7 @@ export function LinhasTable({
         </div>
       )}
 
-      {isDraft && (
+      {(isDraft || isAprovador) && (
         <div className="flex items-center gap-3 rounded-md border border-zinc-200 bg-white p-3 print:hidden">
           <div className="flex-1">
             <ItemPicker
