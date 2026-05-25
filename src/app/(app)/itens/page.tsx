@@ -31,7 +31,13 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
     .order("nome");
 
   if (!incluirInativos) query = query.eq("ativo", true);
-  if (q) query = query.or(`nome.ilike.%${q}%,codigo_queops.ilike.%${q}%`);
+  if (q) {
+    // Escapa vírgula e parênteses no termo (são separadores do PostgREST .or)
+    const safe = q.replace(/[(),]/g, " ").trim();
+    if (safe) {
+      query = query.or(`nome.ilike.%${safe}%,codigo_queops.ilike.%${safe}%`);
+    }
+  }
   if (classifId) query = query.eq("classificacao_id", classifId);
   if (semCodigo) query = query.is("codigo_queops", null);
 
