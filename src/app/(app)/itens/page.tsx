@@ -14,6 +14,7 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
   const classifId = typeof sp.classif === "string" ? sp.classif : "";
   const semCodigo = sp.sem_codigo === "1";
   const incluirInativos = sp.inativos === "1";
+  const usadoContagem = sp.contagem === "1";
 
   const supabase = await createClient();
 
@@ -40,6 +41,20 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
   }
   if (classifId) query = query.eq("classificacao_id", classifId);
   if (semCodigo) query = query.is("codigo_queops", null);
+
+  // Filtro: apenas itens que aparecem em algum template de contagem
+  if (usadoContagem) {
+    const { data: linkedIds } = await supabase
+      .from("template_itens")
+      .select("item_id")
+      .not("item_id", "is", null);
+    const ids = Array.from(new Set((linkedIds ?? []).map((r) => r.item_id))).filter(Boolean) as string[];
+    if (ids.length === 0) {
+      query = query.eq("id", "00000000-0000-0000-0000-000000000000");
+    } else {
+      query = query.in("id", ids);
+    }
+  }
 
   const [{ data: itens, error }, { data: classificacoes }] = await Promise.all([
     query,
@@ -81,6 +96,10 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
         <label className="flex items-center gap-2 px-2 pb-2.5 text-sm">
           <input type="checkbox" name="sem_codigo" value="1" defaultChecked={semCodigo} />
           Apenas sem código Queóps
+        </label>
+        <label className="flex items-center gap-2 px-2 pb-2.5 text-sm">
+          <input type="checkbox" name="contagem" value="1" defaultChecked={usadoContagem} />
+          Usados em contagem
         </label>
         <label className="flex items-center gap-2 px-2 pb-2.5 text-sm">
           <input type="checkbox" name="inativos" value="1" defaultChecked={incluirInativos} />

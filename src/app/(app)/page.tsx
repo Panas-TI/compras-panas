@@ -31,6 +31,23 @@ export default async function HomePage() {
       .is("codigo_queops", null),
   ]);
 
+  // Itens da contagem sem código
+  const { data: linkedTpl } = await supabase
+    .from("template_itens")
+    .select("item_id")
+    .not("item_id", "is", null);
+  const usedInTplIds = Array.from(new Set((linkedTpl ?? []).map((r) => r.item_id))).filter(Boolean) as string[];
+  let contagemSemCodigo = 0;
+  if (usedInTplIds.length) {
+    const { count } = await supabase
+      .from("itens")
+      .select("*", { count: "exact", head: true })
+      .eq("ativo", true)
+      .is("codigo_queops", null)
+      .in("id", usedInTplIds);
+    contagemSemCodigo = count ?? 0;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -38,7 +55,7 @@ export default async function HomePage() {
         <p className="text-sm text-zinc-600">Visão rápida do sistema.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/itens">
           <Card className="transition-shadow hover:shadow-md">
             <CardHeader>
@@ -60,6 +77,14 @@ export default async function HomePage() {
             <CardHeader>
               <CardDescription>Itens sem código Queóps</CardDescription>
               <CardTitle className="text-3xl text-amber-600">{itensSemCodigo ?? 0}</CardTitle>
+            </CardHeader>
+          </Card>
+        </Link>
+        <Link href="/itens?sem_codigo=1&contagem=1">
+          <Card className="transition-shadow hover:shadow-md">
+            <CardHeader>
+              <CardDescription>Da contagem sem código</CardDescription>
+              <CardTitle className="text-3xl text-red-600">{contagemSemCodigo}</CardTitle>
             </CardHeader>
           </Card>
         </Link>
