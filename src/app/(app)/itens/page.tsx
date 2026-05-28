@@ -68,9 +68,17 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
           <h1 className="text-2xl font-semibold">Itens</h1>
           <p className="text-sm text-zinc-600">{itens?.length ?? 0} itens encontrados.</p>
         </div>
-        <Link href="/itens/novo">
-          <Button>Novo item</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/itens/grupos"
+            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
+          >
+            Grupos de itens
+          </Link>
+          <Link href="/itens/novo">
+            <Button>Novo item</Button>
+          </Link>
+        </div>
       </div>
 
       <form className="flex flex-wrap items-end gap-2" method="get">
