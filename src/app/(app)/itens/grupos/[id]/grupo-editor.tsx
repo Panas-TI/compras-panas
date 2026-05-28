@@ -154,7 +154,10 @@ function AdicionarItem({
   };
 
   return (
-    <form onSubmit={submit} className="rounded-md border border-zinc-200 bg-white p-3">
+    <form
+      onSubmit={submit}
+      className="sticky top-0 z-30 rounded-md border border-zinc-200 bg-white p-3 shadow-sm"
+    >
       <h2 className="mb-2 text-sm font-semibold">Adicionar item ao grupo</h2>
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex flex-1 min-w-[300px] flex-col gap-1">
