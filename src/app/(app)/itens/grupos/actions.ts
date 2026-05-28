@@ -62,24 +62,61 @@ export async function addItemAoGrupoAction(
   if (!item_id) return { error: "Selecione um item do cadastro." };
 
   const supabase = await createClient();
-  // Busca nome do item pra salvar como texto (compatibilidade)
   const { data: item } = await supabase.from("itens").select("nome").eq("id", item_id).maybeSingle();
   if (!item) return { error: "Item não encontrado no cadastro." };
 
-  // ordem = max + 1
-  const { data: maxRow } = await supabase
-    .from("template_itens")
-    .select("ordem")
-    .eq("template_id", template_id)
-    .order("ordem", { ascending: false })
-    .limit(1);
-  const ordem = (maxRow?.[0]?.ordem ?? 0) + 1;
+  const secaoLimpa = secao?.trim() || null;
+
+  let ordem: number;
+  if (secaoLimpa) {
+    // Insere no FINAL da seção (entre o último item da seção e o próximo bloco).
+    const { data: itensDaSecao } = await supabase
+      .from("template_itens")
+      .select("id, ordem")
+      .eq("template_id", template_id)
+      .eq("secao", secaoLimpa)
+      .order("ordem", { ascending: false })
+      .limit(1);
+
+    if (itensDaSecao && itensDaSecao.length > 0) {
+      const ultimoDaSecao = itensDaSecao[0].ordem;
+      ordem = ultimoDaSecao + 1;
+      // Shift todos os itens >= ordem por +1 pra abrir espaço
+      const { data: paraShift } = await supabase
+        .from("template_itens")
+        .select("id, ordem")
+        .eq("template_id", template_id)
+        .gte("ordem", ordem)
+        .order("ordem", { ascending: false });
+      for (const r of paraShift ?? []) {
+        await supabase.from("template_itens").update({ ordem: r.ordem + 1 }).eq("id", r.id);
+      }
+    } else {
+      // Seção nova — adiciona no final
+      const { data: maxRow } = await supabase
+        .from("template_itens")
+        .select("ordem")
+        .eq("template_id", template_id)
+        .order("ordem", { ascending: false })
+        .limit(1);
+      ordem = (maxRow?.[0]?.ordem ?? 0) + 1;
+    }
+  } else {
+    // Sem seção — adiciona no final
+    const { data: maxRow } = await supabase
+      .from("template_itens")
+      .select("ordem")
+      .eq("template_id", template_id)
+      .order("ordem", { ascending: false })
+      .limit(1);
+    ordem = (maxRow?.[0]?.ordem ?? 0) + 1;
+  }
 
   const { error } = await supabase.from("template_itens").insert({
     template_id,
     ordem,
     texto: item.nome,
-    secao: secao?.trim() || null,
+    secao: secaoLimpa,
     item_id,
   });
   if (error) return { error: error.message };

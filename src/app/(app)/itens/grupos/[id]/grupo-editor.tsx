@@ -58,7 +58,7 @@ export function GrupoEditor({
 
       <AdicionarItem grupoId={grupoId} catalogo={catalogo} onError={setError} />
 
-      <ListaItens itens={itensIniciais} catalogo={catalogo} onError={setError} />
+      <ListaItens grupoId={grupoId} itens={itensIniciais} catalogo={catalogo} onError={setError} />
     </div>
   );
 }
@@ -191,10 +191,12 @@ function AdicionarItem({
 }
 
 function ListaItens({
+  grupoId,
   itens,
   catalogo,
   onError,
 }: {
+  grupoId: string;
   itens: GrupoItem[];
   catalogo: CatalogItem[];
   onError: (s: string | null) => void;
@@ -223,9 +225,12 @@ function ListaItens({
       {grupos.map((g, gi) => (
         <div key={gi} className="overflow-hidden rounded-md border border-zinc-200 bg-white">
           {g.secao && (
-            <div className="border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-800">
-              {g.secao}
-            </div>
+            <SecaoHeader
+              grupoId={grupoId}
+              secao={g.secao}
+              catalogo={catalogo}
+              onError={onError}
+            />
           )}
           <table className="w-full text-sm">
             <thead className="border-b border-zinc-100 text-left text-xs text-zinc-500">
@@ -244,6 +249,75 @@ function ListaItens({
           </table>
         </div>
       ))}
+    </div>
+  );
+}
+
+function SecaoHeader({
+  grupoId,
+  secao,
+  catalogo,
+  onError,
+}: {
+  grupoId: string;
+  secao: string;
+  catalogo: CatalogItem[];
+  onError: (s: string | null) => void;
+}) {
+  const router = useRouter();
+  const [aberto, setAberto] = useState(false);
+  const [itemId, setItemId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [pickerKey, setPickerKey] = useState(0);
+
+  const adicionar = () => {
+    if (!itemId) return;
+    onError(null);
+    startTransition(async () => {
+      const res = await addItemAoGrupoAction(grupoId, itemId, secao);
+      if (res.error) {
+        onError(res.error);
+        return;
+      }
+      setItemId(null);
+      setPickerKey((k) => k + 1);
+      router.refresh();
+    });
+  };
+
+  return (
+    <div className="border-b border-zinc-200 bg-zinc-50 px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-zinc-800">{secao}</span>
+        <button
+          type="button"
+          onClick={() => setAberto((v) => !v)}
+          className="rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-xs font-medium hover:bg-zinc-100"
+        >
+          {aberto ? "Fechar" : "+ Adicionar item nesta seção"}
+        </button>
+      </div>
+      {aberto && (
+        <div className="mt-2 flex flex-wrap items-end gap-2 rounded-md border border-zinc-200 bg-white p-2">
+          <div className="flex flex-1 min-w-[260px] flex-col gap-1">
+            <Label className="text-xs">Item do cadastro</Label>
+            <ItemDropdown key={pickerKey} catalogo={catalogo} value={itemId} onChange={setItemId} autoFocus />
+          </div>
+          <Button onClick={adicionar} disabled={isPending || !itemId} size="sm">
+            {isPending ? "..." : "Adicionar"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setAberto(false);
+              setItemId(null);
+            }}
+          >
+            Cancelar
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
