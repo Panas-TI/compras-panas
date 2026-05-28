@@ -56,14 +56,16 @@ export async function renomearGrupoAction(
 
 export async function addItemAoGrupoAction(
   template_id: string,
-  texto: string,
-  secao: string | null,
-  item_id: string | null
+  item_id: string,
+  secao: string | null
 ): Promise<{ error?: string }> {
-  const txt = texto.trim();
-  if (!txt) return { error: "Texto do item obrigatório." };
+  if (!item_id) return { error: "Selecione um item do cadastro." };
 
   const supabase = await createClient();
+  // Busca nome do item pra salvar como texto (compatibilidade)
+  const { data: item } = await supabase.from("itens").select("nome").eq("id", item_id).maybeSingle();
+  if (!item) return { error: "Item não encontrado no cadastro." };
+
   // ordem = max + 1
   const { data: maxRow } = await supabase
     .from("template_itens")
@@ -76,9 +78,9 @@ export async function addItemAoGrupoAction(
   const { error } = await supabase.from("template_itens").insert({
     template_id,
     ordem,
-    texto: txt,
+    texto: item.nome,
     secao: secao?.trim() || null,
-    item_id: item_id || null,
+    item_id,
   });
   if (error) return { error: error.message };
 

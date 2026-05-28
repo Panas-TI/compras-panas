@@ -44,9 +44,7 @@ export function GrupoEditor({
   itensIniciais: GrupoItem[];
   catalogo: CatalogItem[];
 }) {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
 
   return (
     <div className="flex flex-col gap-4">
@@ -132,21 +130,24 @@ function AdicionarItem({
   onError: (s: string | null) => void;
 }) {
   const router = useRouter();
-  const [texto, setTexto] = useState("");
-  const [secao, setSecao] = useState("");
   const [itemId, setItemId] = useState<string | null>(null);
+  const [secao, setSecao] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [pickerKey, setPickerKey] = useState(0);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     onError(null);
-    if (!texto.trim()) return;
+    if (!itemId) {
+      onError("Selecione um item do cadastro.");
+      return;
+    }
     startTransition(async () => {
-      const res = await addItemAoGrupoAction(grupoId, texto, secao || null, itemId);
+      const res = await addItemAoGrupoAction(grupoId, itemId, secao || null);
       if (res.error) onError(res.error);
       else {
-        setTexto("");
         setItemId(null);
+        setPickerKey((k) => k + 1);
         router.refresh();
       }
     });
@@ -156,35 +157,31 @@ function AdicionarItem({
     <form onSubmit={submit} className="rounded-md border border-zinc-200 bg-white p-3">
       <h2 className="mb-2 text-sm font-semibold">Adicionar item ao grupo</h2>
       <div className="flex flex-wrap items-end gap-2">
-        <div className="flex flex-1 min-w-[240px] flex-col gap-1">
-          <Label htmlFor="add-texto" className="text-xs">Texto (como aparece pro estoquista)</Label>
-          <Input
-            id="add-texto"
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder="Ex: ACEM / AGULHA CONGELADA  peça +/- 20kg"
-            required
+        <div className="flex flex-1 min-w-[300px] flex-col gap-1">
+          <Label className="text-xs">Item do cadastro</Label>
+          <ItemDropdown
+            key={pickerKey}
+            catalogo={catalogo}
+            value={itemId}
+            onChange={setItemId}
+            autoFocus
           />
         </div>
-        <div className="flex w-44 flex-col gap-1">
+        <div className="flex w-56 flex-col gap-1">
           <Label htmlFor="add-secao" className="text-xs">Seção (opcional)</Label>
           <Input
             id="add-secao"
             value={secao}
             onChange={(e) => setSecao(e.target.value)}
-            placeholder="ITENS CAMARA REFRIGERADA"
+            placeholder="Ex: ITENS CAMARA REFRIGERADA"
           />
         </div>
-        <div className="flex flex-1 min-w-[240px] flex-col gap-1">
-          <Label htmlFor="add-cat" className="text-xs">Item do cadastro (opcional)</Label>
-          <ItemDropdown catalogo={catalogo} value={itemId} onChange={setItemId} />
-        </div>
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending || !itemId}>
           {isPending ? "..." : "Adicionar"}
         </Button>
       </div>
       <p className="mt-2 text-xs text-zinc-500">
-        Vincule ao item do cadastro pra puxar código Queóps automaticamente quando o estoquista enviar pra solicitação.
+        Busca por nome ou código Queóps. O item aparece pro estoquista exatamente como está no cadastro.
       </p>
     </form>
   );
@@ -231,8 +228,8 @@ function ListaItens({
             <thead className="border-b border-zinc-100 text-left text-xs text-zinc-500">
               <tr>
                 <th className="w-12 px-2 py-1 text-right">#</th>
-                <th className="px-2 py-1">Texto</th>
-                <th className="px-2 py-1">Item do cadastro</th>
+                <th className="w-24 px-2 py-1">Código</th>
+                <th className="px-2 py-1">Item</th>
                 <th className="w-44 px-2 py-1">Ações</th>
               </tr>
             </thead>
@@ -258,31 +255,30 @@ function ItemRow({
   onError: (s: string | null) => void;
 }) {
   const router = useRouter();
-  const [texto, setTexto] = useState(item.texto);
-  const [secao, setSecao] = useState(item.secao ?? "");
-  const [itemId, setItemId] = useState<string | null>(item.item_id);
   const [isPending, startTransition] = useTransition();
 
-  const persistText = () => {
-    if (texto === item.texto) return;
-    startTransition(async () => {
-      const res = await updateItemDoGrupoAction(item.id, { texto });
-      if (res.error) onError(res.error);
-      else router.refresh();
-    });
-  };
+  // Nome a mostrar: prioriza item do cadastro vinculado; senão usa o texto legacy
+  const displayName = item.item_nome ?? item.texto;
+  const displayCode = item.item_codigo;
 
   const persistLink = (newId: string | null) => {
-    setItemId(newId);
+    if (newId === item.item_id) return;
+    onError(null);
     startTransition(async () => {
-      const res = await updateItemDoGrupoAction(item.id, { item_id: newId });
+      // Se ligar a um item do cadastro, atualiza também o texto pro nome do catálogo
+      let patch: { item_id: string | null; texto?: string } = { item_id: newId };
+      if (newId) {
+        const found = catalogo.find((c) => c.id === newId);
+        if (found) patch.texto = found.nome;
+      }
+      const res = await updateItemDoGrupoAction(item.id, patch);
       if (res.error) onError(res.error);
       else router.refresh();
     });
   };
 
   const remover = () => {
-    if (!confirm(`Remover "${item.texto}" do grupo?`)) return;
+    if (!confirm(`Remover "${displayName}" do grupo?`)) return;
     startTransition(async () => {
       const res = await removerItemDoGrupoAction(item.id);
       if (res.error) onError(res.error);
@@ -298,56 +294,75 @@ function ItemRow({
     });
   };
 
+  // Se item não está linkado ao catálogo, mostra modo "vincular"
+  if (!item.item_id) {
+    return (
+      <tr className="border-b border-zinc-100 bg-amber-50/30 last:border-0">
+        <td className="px-2 py-1.5 text-right text-xs text-zinc-400">{item.ordem}</td>
+        <td className="px-2 py-1.5 text-xs text-amber-700">sem cadastro</td>
+        <td className="px-2 py-1.5">
+          <div className="mb-1 text-sm">{item.texto}</div>
+          <ItemDropdown
+            catalogo={catalogo}
+            value={null}
+            onChange={persistLink}
+            placeholder="Vincular ao item do cadastro..."
+          />
+        </td>
+        <td className="px-2 py-1.5">
+          <AcoesItem mover={mover} remover={remover} isPending={isPending} />
+        </td>
+      </tr>
+    );
+  }
+
   return (
     <tr className="border-b border-zinc-100 last:border-0">
       <td className="px-2 py-1.5 text-right text-xs text-zinc-400">{item.ordem}</td>
-      <td className="px-2 py-1.5">
-        <Input
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          onBlur={persistText}
-          className="h-8 w-full"
-        />
+      <td className="px-2 py-1.5 font-mono text-xs">
+        {displayCode ?? <span className="text-amber-600">—</span>}
       </td>
+      <td className="px-2 py-1.5">{displayName}</td>
       <td className="px-2 py-1.5">
-        <ItemDropdown catalogo={catalogo} value={itemId} onChange={persistLink} />
-        {item.item_nome && (
-          <div className="mt-0.5 text-xs text-zinc-500">
-            {item.item_codigo ? (
-              <span className="font-mono">{item.item_codigo}</span>
-            ) : (
-              <span className="text-amber-600">sem código</span>
-            )}{" "}
-            · {item.item_nome}
-          </div>
-        )}
-      </td>
-      <td className="px-2 py-1.5">
-        <div className="flex gap-1">
-          <button
-            onClick={() => mover("cima")}
-            disabled={isPending}
-            className="text-xs text-zinc-600 hover:underline disabled:opacity-50"
-          >
-            ↑
-          </button>
-          <button
-            onClick={() => mover("baixo")}
-            disabled={isPending}
-            className="text-xs text-zinc-600 hover:underline disabled:opacity-50"
-          >
-            ↓
-          </button>
-          <button
-            onClick={remover}
-            disabled={isPending}
-            className="text-xs text-red-600 hover:underline disabled:opacity-50"
-          >
-            Remover
-          </button>
-        </div>
+        <AcoesItem mover={mover} remover={remover} isPending={isPending} />
       </td>
     </tr>
+  );
+}
+
+function AcoesItem({
+  mover,
+  remover,
+  isPending,
+}: {
+  mover: (d: "cima" | "baixo") => void;
+  remover: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className="flex gap-2">
+      <button
+        onClick={() => mover("cima")}
+        disabled={isPending}
+        className="text-xs text-zinc-600 hover:underline disabled:opacity-50"
+      >
+        ↑
+      </button>
+      <button
+        onClick={() => mover("baixo")}
+        disabled={isPending}
+        className="text-xs text-zinc-600 hover:underline disabled:opacity-50"
+      >
+        ↓
+      </button>
+      <button
+        onClick={remover}
+        disabled={isPending}
+        className="text-xs text-red-600 hover:underline disabled:opacity-50"
+      >
+        Remover
+      </button>
+    </div>
   );
 }
 
@@ -355,10 +370,14 @@ function ItemDropdown({
   catalogo,
   value,
   onChange,
+  autoFocus,
+  placeholder,
 }: {
   catalogo: CatalogItem[];
   value: string | null;
   onChange: (id: string | null) => void;
+  autoFocus?: boolean;
+  placeholder?: string;
 }) {
   const [query, setQuery] = useState(() => {
     if (!value) return "";
@@ -373,37 +392,40 @@ function ItemDropdown({
             c.nome.toLowerCase().includes(q) ||
             (c.codigo ? c.codigo.toLowerCase().includes(q) : false)
         )
-        .slice(0, 12)
-    : catalogo.slice(0, 12);
+        .slice(0, 15)
+    : catalogo.slice(0, 15);
 
   return (
     <div className="relative">
       <input
         type="text"
         value={query}
+        autoFocus={autoFocus}
         onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="Buscar item..."
-        className="flex h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-1"
+        placeholder={placeholder ?? "Buscar nome ou código Queóps..."}
+        className="flex h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-1"
       />
       {open && filtered.length > 0 && (
-        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-zinc-200 bg-white shadow-lg">
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setQuery("");
-              setOpen(false);
-              onChange(null);
-            }}
-            className="block w-full px-2 py-1.5 text-left text-xs italic text-zinc-500 hover:bg-zinc-50"
-          >
-            — desvincular —
-          </button>
+        <div className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-md border border-zinc-200 bg-white shadow-lg">
+          {value && (
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setQuery("");
+                setOpen(false);
+                onChange(null);
+              }}
+              className="block w-full px-3 py-1.5 text-left text-xs italic text-zinc-500 hover:bg-zinc-50"
+            >
+              — desvincular —
+            </button>
+          )}
           {filtered.map((c) => (
             <button
               key={c.id}
@@ -414,11 +436,13 @@ function ItemDropdown({
                 setOpen(false);
                 onChange(c.id);
               }}
-              className="block w-full px-2 py-1.5 text-left text-xs hover:bg-zinc-50"
+              className="block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="truncate">{c.nome}</span>
-                <span className="font-mono text-[10px] text-zinc-500">{c.codigo ?? "—"}</span>
+                <span className="shrink-0 font-mono text-xs text-zinc-500">
+                  {c.codigo ?? "—"}
+                </span>
               </div>
             </button>
           ))}
