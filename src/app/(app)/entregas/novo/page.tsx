@@ -16,10 +16,9 @@ export default async function EntregasNovoPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">Nova entrega (foto do pedido)</h1>
+        <h1 className="text-2xl font-semibold">Nova entrega</h1>
         <p className="text-sm text-zinc-600">
-          Tira foto do pedido impresso ou seleciona um arquivo. O Claude lê o pedido e preenche os campos
-          automaticamente — você só revisa e salva.
+          Preenche os dados do pedido impresso do Queóps. Foto é opcional.
         </p>
       </div>
       <NovoForm />
