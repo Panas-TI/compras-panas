@@ -24,7 +24,7 @@ const ESTOQUE_ITEMS: NavItem[] = [
 const ENTREGAS_ITEMS: NavItem[] = [
   { href: "/entregas", label: "Início" },
   { href: "/entregas/dia", label: "Dia" },
-  { href: "/entregas/novo", label: "Novo (OCR)" },
+  { href: "/entregas/novo", label: "Novo" },
   { href: "/entregas/mapa", label: "Mapa" },
   { href: "/entregas/relatorios", label: "Relatórios" },
 ];
