@@ -61,6 +61,7 @@ export async function updateSession(request: NextRequest) {
     if (profile?.role === "estoquista" && profile.ativo) {
       const estoquistaAllowed =
         path === "/" ||
+        path === "/estoque" ||
         path === "/recebimento" ||
         path.startsWith("/recebimento/") ||
         path === "/contagem" ||
@@ -68,6 +69,20 @@ export async function updateSession(request: NextRequest) {
       if (!estoquistaAllowed) {
         const url = request.nextUrl.clone();
         url.pathname = "/recebimento";
+        return NextResponse.redirect(url);
+      }
+    }
+    // Motorista: só pode acessar /, /motorista e /entregas (próprias rotas dele)
+    if (profile?.role === "motorista" && profile.ativo) {
+      const motoristaAllowed =
+        path === "/" ||
+        path === "/motorista" ||
+        path.startsWith("/motorista/") ||
+        path === "/entregas" ||
+        path.startsWith("/entregas/");
+      if (!motoristaAllowed) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/motorista";
         return NextResponse.redirect(url);
       }
     }

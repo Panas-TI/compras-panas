@@ -3,112 +3,65 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default async function HomePage() {
+export default async function HubPage() {
   const supabase = await createClient();
-
-  // Estoquista cai direto no /recebimento
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .maybeSingle();
-    if (profile?.role === "estoquista") {
-      redirect("/recebimento");
-    }
-  }
-
-  const [{ count: itensCount }, { count: solicCount }, { count: itensSemCodigo }] = await Promise.all([
-    supabase.from("itens").select("*", { count: "exact", head: true }).eq("ativo", true),
-    supabase.from("solicitacoes_semanais").select("*", { count: "exact", head: true }),
-    supabase
-      .from("itens")
-      .select("*", { count: "exact", head: true })
-      .eq("ativo", true)
-      .is("codigo_queops", null),
-  ]);
-
-  // Itens da contagem sem código
-  const { data: linkedTpl } = await supabase
-    .from("template_itens")
-    .select("item_id")
-    .not("item_id", "is", null);
-  const usedInTplIds = Array.from(new Set((linkedTpl ?? []).map((r) => r.item_id))).filter(Boolean) as string[];
-  let contagemSemCodigo = 0;
-  if (usedInTplIds.length) {
-    const { count } = await supabase
-      .from("itens")
-      .select("*", { count: "exact", head: true })
-      .eq("ativo", true)
-      .is("codigo_queops", null)
-      .in("id", usedInTplIds);
-    contagemSemCodigo = count ?? 0;
+    // Perfis com módulo único caem direto onde devem trabalhar
+    if (profile?.role === "estoquista") redirect("/recebimento");
+    if (profile?.role === "motorista") redirect("/motorista");
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Início</h1>
-        <p className="text-sm text-zinc-600">Visão rápida do sistema.</p>
+    <div className="mx-auto flex max-w-4xl flex-col gap-8 py-8">
+      <div className="text-center">
+        <h1 className="text-3xl font-semibold">Compras Panas</h1>
+        <p className="mt-2 text-sm text-zinc-600">Escolha o módulo que deseja acessar.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Link href="/itens">
-          <Card className="transition-shadow hover:shadow-md">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link href="/estoque" className="group">
+          <Card className="h-full transition-shadow group-hover:shadow-lg">
             <CardHeader>
-              <CardDescription>Itens cadastrados</CardDescription>
-              <CardTitle className="text-3xl">{itensCount ?? 0}</CardTitle>
+              <div className="mb-2 text-4xl">📦</div>
+              <CardTitle className="text-xl">Estoque</CardTitle>
+              <CardDescription>
+                Cadastro de itens, solicitações semanais, contagem, recebimento e relatórios.
+              </CardDescription>
             </CardHeader>
+            <CardContent>
+              <span className="text-sm font-medium text-zinc-700 group-hover:underline">
+                Entrar →
+              </span>
+            </CardContent>
           </Card>
         </Link>
-        <Link href="/solicitacoes">
-          <Card className="transition-shadow hover:shadow-md">
+
+        <Link href="/entregas" className="group">
+          <Card className="h-full transition-shadow group-hover:shadow-lg">
             <CardHeader>
-              <CardDescription>Solicitações semanais</CardDescription>
-              <CardTitle className="text-3xl">{solicCount ?? 0}</CardTitle>
+              <div className="mb-2 text-4xl">🚚</div>
+              <CardTitle className="text-xl">Entregas</CardTitle>
+              <CardDescription>
+                Pedidos do Queóps, rota do motorista, comprovantes com assinatura e mapa.
+              </CardDescription>
             </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/itens?sem_codigo=1">
-          <Card className="transition-shadow hover:shadow-md">
-            <CardHeader>
-              <CardDescription>Itens sem código Queóps</CardDescription>
-              <CardTitle className="text-3xl text-amber-600">{itensSemCodigo ?? 0}</CardTitle>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/itens?sem_codigo=1&contagem=1">
-          <Card className="transition-shadow hover:shadow-md">
-            <CardHeader>
-              <CardDescription>Da contagem sem código</CardDescription>
-              <CardTitle className="text-3xl text-red-600">{contagemSemCodigo}</CardTitle>
-            </CardHeader>
+            <CardContent>
+              <span className="text-sm font-medium text-zinc-700 group-hover:underline">
+                Entrar →
+              </span>
+            </CardContent>
           </Card>
         </Link>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Atalhos</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Link
-            href="/solicitacoes/nova"
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-800"
-          >
-            Nova solicitação semanal
-          </Link>
-          <Link
-            href="/itens"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
-          >
-            Cadastro de itens
-          </Link>
-        </CardContent>
-      </Card>
     </div>
   );
 }
