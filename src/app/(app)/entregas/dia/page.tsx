@@ -175,13 +175,15 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
                   </div>
 
                   <div>
-                    <div className="font-semibold">{e.cliente_nome}</div>
+                    <div className="font-semibold">
+                      {e.cliente_nome ?? <span className="text-zinc-400">— sem cliente —</span>}
+                    </div>
                     {e.contato_nome && (
                       <div className="text-xs text-zinc-500">Contato: {e.contato_nome}</div>
                     )}
                   </div>
 
-                  <div className="text-sm text-zinc-700">{endFull}</div>
+                  {endFull && <div className="text-sm text-zinc-700">{endFull}</div>}
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                     {e.hora_entrega && (

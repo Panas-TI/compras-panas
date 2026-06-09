@@ -16,9 +16,10 @@ export default async function EntregasNovoPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">Nova entrega</h1>
+        <h1 className="text-2xl font-semibold">Lançar pedidos do dia</h1>
         <p className="text-sm text-zinc-600">
-          Preenche os dados do pedido impresso do Queóps. Foto é opcional.
+          Escaneia o código de barras de cada pedido impresso pra cadastrar como entrega de hoje.
+          O motorista usa a folha física pra orientação; aqui é só o controle do que saiu e do que entregou.
         </p>
       </div>
       <NovoForm />

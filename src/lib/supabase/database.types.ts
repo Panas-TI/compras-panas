@@ -242,7 +242,7 @@ export type Database = {
           bairro: string | null
           checkin_at: string | null
           cidade: string | null
-          cliente_nome: string
+          cliente_nome: string | null
           cliente_telefone: string | null
           codigo_queops: string
           contato_nome: string | null
@@ -252,7 +252,7 @@ export type Database = {
           data_entrega: string
           endereco_complemento: string | null
           endereco_numero: string | null
-          endereco_rua: string
+          endereco_rua: string | null
           entrega_lat: number | null
           entrega_lng: number | null
           entrega_precisao_metros: number | null
@@ -278,17 +278,17 @@ export type Database = {
           bairro?: string | null
           checkin_at?: string | null
           cidade?: string | null
-          cliente_nome: string
+          cliente_nome?: string | null
           cliente_telefone?: string | null
           codigo_queops: string
           contato_nome?: string | null
           created_at?: string
           created_by?: string | null
           custo_ocr_usd?: number | null
-          data_entrega: string
+          data_entrega?: string
           endereco_complemento?: string | null
           endereco_numero?: string | null
-          endereco_rua: string
+          endereco_rua?: string | null
           entrega_lat?: number | null
           entrega_lng?: number | null
           entrega_precisao_metros?: number | null
@@ -314,7 +314,7 @@ export type Database = {
           bairro?: string | null
           checkin_at?: string | null
           cidade?: string | null
-          cliente_nome?: string
+          cliente_nome?: string | null
           cliente_telefone?: string | null
           codigo_queops?: string
           contato_nome?: string | null
@@ -324,7 +324,7 @@ export type Database = {
           data_entrega?: string
           endereco_complemento?: string | null
           endereco_numero?: string | null
-          endereco_rua?: string
+          endereco_rua?: string | null
           entrega_lat?: number | null
           entrega_lng?: number | null
           entrega_precisao_metros?: number | null
