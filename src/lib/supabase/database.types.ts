@@ -190,6 +190,177 @@ export type Database = {
           },
         ]
       }
+      entrega_log: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_antes: Json | null
+          dados_depois: Json | null
+          entrega_id: string
+          id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          entrega_id: string
+          id?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          entrega_id?: string
+          id?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_log_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_log_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entregas: {
+        Row: {
+          area_entrega: number | null
+          assinatura_cliente_url: string | null
+          bairro: string | null
+          checkin_at: string | null
+          cidade: string | null
+          cliente_nome: string
+          cliente_telefone: string | null
+          codigo_queops: string
+          contato_nome: string | null
+          created_at: string
+          created_by: string | null
+          custo_ocr_usd: number | null
+          data_entrega: string
+          endereco_complemento: string | null
+          endereco_numero: string | null
+          endereco_rua: string
+          entrega_lat: number | null
+          entrega_lng: number | null
+          entrega_precisao_metros: number | null
+          entregue_at: string | null
+          foto_comprovante_url: string | null
+          foto_pedido_original_url: string | null
+          gps_negado: boolean
+          hora_entrega: string | null
+          id: string
+          itens_json: Json | null
+          motivo_nao_entrega: string | null
+          motorista_id: string | null
+          observacoes: string | null
+          status: string
+          total_fisico: number | null
+          uf: string | null
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          area_entrega?: number | null
+          assinatura_cliente_url?: string | null
+          bairro?: string | null
+          checkin_at?: string | null
+          cidade?: string | null
+          cliente_nome: string
+          cliente_telefone?: string | null
+          codigo_queops: string
+          contato_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_ocr_usd?: number | null
+          data_entrega: string
+          endereco_complemento?: string | null
+          endereco_numero?: string | null
+          endereco_rua: string
+          entrega_lat?: number | null
+          entrega_lng?: number | null
+          entrega_precisao_metros?: number | null
+          entregue_at?: string | null
+          foto_comprovante_url?: string | null
+          foto_pedido_original_url?: string | null
+          gps_negado?: boolean
+          hora_entrega?: string | null
+          id?: string
+          itens_json?: Json | null
+          motivo_nao_entrega?: string | null
+          motorista_id?: string | null
+          observacoes?: string | null
+          status?: string
+          total_fisico?: number | null
+          uf?: string | null
+          updated_at?: string
+          valor_total?: number
+        }
+        Update: {
+          area_entrega?: number | null
+          assinatura_cliente_url?: string | null
+          bairro?: string | null
+          checkin_at?: string | null
+          cidade?: string | null
+          cliente_nome?: string
+          cliente_telefone?: string | null
+          codigo_queops?: string
+          contato_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_ocr_usd?: number | null
+          data_entrega?: string
+          endereco_complemento?: string | null
+          endereco_numero?: string | null
+          endereco_rua?: string
+          entrega_lat?: number | null
+          entrega_lng?: number | null
+          entrega_precisao_metros?: number | null
+          entregue_at?: string | null
+          foto_comprovante_url?: string | null
+          foto_pedido_original_url?: string | null
+          gps_negado?: boolean
+          hora_entrega?: string | null
+          id?: string
+          itens_json?: Json | null
+          motivo_nao_entrega?: string | null
+          motorista_id?: string | null
+          observacoes?: string | null
+          status?: string
+          total_fisico?: number | null
+          uf?: string | null
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_motorista_id_fkey"
+            columns: ["motorista_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formas_pagamento: {
         Row: {
           ativo: boolean
