@@ -44,6 +44,13 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
 
   const iniciar = async () => {
     setErro(null);
+    // 1) Marca como ativo ANTES de chamar start — o elemento DOM precisa estar
+    //    renderizado e com dimensões pra o html5-qrcode anexar o <video>.
+    setAtivo(true);
+    // Pequeno delay pra garantir o React commitar o re-render
+    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+
     try {
       const mod = await import("html5-qrcode");
       const { Html5Qrcode } = mod;
@@ -64,6 +71,7 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
         {
           fps: 10,
           qrbox: { width: 280, height: 120 },
+          aspectRatio: 1.333,
         },
         (decodedText) => {
           // Debounce: ignora repetições do mesmo código por 1.5s
@@ -87,7 +95,6 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
           // erro de leitura por frame — ignora silenciosamente
         }
       );
-      setAtivo(true);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("notallowed")) {
@@ -112,10 +119,18 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
 
   return (
     <div className="flex flex-col gap-2">
+      {/* O elemento precisa estar SEMPRE no DOM com largura útil pra o html5-qrcode
+          conseguir anexar o <video>. Quando inativo, escondo via height=0 + opacity,
+          NÃO via display:none ou hidden. */}
       <div
         id={ELEMENT_ID}
-        className={ativo ? "w-full overflow-hidden rounded-md border border-zinc-300 bg-black" : "hidden"}
-        style={{ minHeight: ativo ? 200 : 0 }}
+        className="w-full overflow-hidden rounded-md bg-black"
+        style={{
+          minHeight: ativo ? 240 : 0,
+          height: ativo ? "auto" : 0,
+          border: ativo ? "1px solid rgb(212 212 216)" : "none",
+          opacity: ativo ? 1 : 0,
+        }}
       />
       <div className="flex items-center gap-2">
         {!ativo ? (
