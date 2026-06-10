@@ -90,7 +90,7 @@ export type ConcluirState = {
 } | null;
 
 /**
- * Passo 2: motorista tirou foto do canhoto. Faz upload + marca entregue.
+ * Passo 2: motorista tirou foto do pedido. Faz upload + marca entregue.
  * Foto é OBRIGATÓRIA aqui. GPS é opcional.
  */
 export async function concluirEntregaAction(
@@ -114,7 +114,7 @@ async function concluirEntregaInner(
   fotoMediaType: "image/jpeg" | "image/png" | "image/webp",
   gps: GpsCapturado
 ): Promise<ConcluirState> {
-  if (!fotoBase64) return { ok: false, error: "Foto do canhoto é obrigatória." };
+  if (!fotoBase64) return { ok: false, error: "Foto do pedido é obrigatória." };
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

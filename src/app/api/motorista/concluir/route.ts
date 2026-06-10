@@ -1,7 +1,7 @@
 /**
  * POST /api/motorista/concluir
  *
- * Conclui a entrega: upload da foto do canhoto + marca como entregue + GPS.
+ * Conclui a entrega: upload da foto do pedido + marca como entregue + GPS.
  * Body: { entregaId, fotoBase64, mediaType, gps?: {lat,lng,precisao_metros} }
  */
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ConcluirResp>
         : null;
 
     if (!entregaId) return NextResponse.json({ ok: false, error: "entregaId obrigatório." });
-    if (!fotoBase64) return NextResponse.json({ ok: false, error: "Foto do canhoto é obrigatória." });
+    if (!fotoBase64) return NextResponse.json({ ok: false, error: "Foto do pedido é obrigatória." });
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

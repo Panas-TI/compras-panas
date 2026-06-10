@@ -84,7 +84,7 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
       : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
   ]);
 
-  // Gera URLs assinadas pras fotos de canhoto (bucket privado)
+  // Gera URLs assinadas pras fotos de pedido (bucket privado)
   const fotosUrls = new Map<string, string>();
   const comComprovante = (entregas ?? [])
     .map((e) => e.foto_comprovante_url)
@@ -229,7 +229,7 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
                       rel="noopener noreferrer"
                       className="text-xs text-zinc-700 underline-offset-4 hover:underline"
                     >
-                      📎 Ver foto do canhoto →
+                      📎 Ver foto do pedido →
                     </a>
                   )}
 

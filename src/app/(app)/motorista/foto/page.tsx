@@ -36,7 +36,7 @@ export default async function MotoristaFotoPage({ searchParams }: { searchParams
   return (
     <div className="flex flex-col gap-4 pb-12">
       <div>
-        <h1 className="text-2xl font-semibold">Foto do canhoto</h1>
+        <h1 className="text-2xl font-semibold">Foto do pedido</h1>
         <p className="text-sm text-zinc-600">
           Pedido <span className="font-mono">{codigo}</span>
         </p>

@@ -120,7 +120,7 @@ export function FotoForm({
 
         {!foto ? (
           <Button type="button" onClick={() => fileRef.current?.click()} className="h-16 text-base">
-            📷 Tirar foto do canhoto
+            📷 Tirar foto do pedido
           </Button>
         ) : (
           <div className="flex flex-col gap-3">
