@@ -4,10 +4,12 @@ import { useRef, useState, useTransition } from "react";
 import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { adicionarPendente } from "@/lib/offline/db";
 
 type Gps = { lat: number; lng: number; precisao_metros: number } | null;
 
 type Foto = {
+  blob: Blob;
   base64: string;
   mediaType: "image/jpeg";
   previewUrl: string;
@@ -47,6 +49,7 @@ export function FotoForm({
       const bytes = new Uint8Array(buf);
       for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
       setFoto({
+        blob: compressed,
         base64: btoa(bin),
         mediaType: "image/jpeg",
         previewUrl: URL.createObjectURL(compressed),
@@ -57,10 +60,33 @@ export function FotoForm({
     }
   };
 
+  const salvarOffline = async (): Promise<void> => {
+    if (!foto) return;
+    await adicionarPendente({
+      entregaId,
+      codigo,
+      fotoBlob: foto.blob,
+      mediaType: foto.mediaType,
+      gps,
+    });
+  };
+
   const concluir = () => {
     if (!foto) return;
     setErro(null);
     startSalvar(async () => {
+      // Se já está offline, salva direto na fila sem nem tentar a rede
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        try {
+          await salvarOffline();
+          window.location.assign("/motorista?offline=" + encodeURIComponent(codigo));
+        } catch (e) {
+          setErro(`Falha ao salvar offline: ${e instanceof Error ? e.message : String(e)}`);
+        }
+        return;
+      }
+
+      // Online: tenta enviar. Se falhar por rede, salva offline.
       try {
         const r = await fetch("/api/motorista/concluir", {
           method: "POST",
@@ -77,7 +103,9 @@ export function FotoForm({
         try {
           res = JSON.parse(raw) as ConcluirResp;
         } catch {
-          setErro(`Resposta inválida (HTTP ${r.status}): ${raw.slice(0, 200)}`);
+          // Resposta não-JSON (HTML de erro): salva offline pra retry
+          await salvarOffline();
+          window.location.assign("/motorista?offline=" + encodeURIComponent(codigo));
           return;
         }
         if (!res.ok) {
@@ -86,8 +114,16 @@ export function FotoForm({
         }
         // Sucesso → volta pro painel via reload completo (estado limpo)
         window.location.assign("/motorista?entregue=" + encodeURIComponent(codigo));
-      } catch (e) {
-        setErro(e instanceof Error ? e.message : String(e));
+      } catch {
+        // Network error (sem rede no momento, timeout, etc) → fila offline
+        try {
+          await salvarOffline();
+          window.location.assign("/motorista?offline=" + encodeURIComponent(codigo));
+        } catch (e2) {
+          setErro(
+            `Falha ao salvar offline: ${e2 instanceof Error ? e2.message : String(e2)}`
+          );
+        }
       }
     });
   };

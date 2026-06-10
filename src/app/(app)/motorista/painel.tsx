@@ -4,6 +4,8 @@ import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScannerCodigo } from "@/components/scanner/scanner-codigo";
+import { OfflineStatus } from "@/lib/offline/offline-status";
+import { RegisterSW } from "@/lib/offline/register-sw";
 
 // Usamos route handlers HTTP em vez de Server Actions (mais robusto no iOS Safari).
 
@@ -93,6 +95,7 @@ export function Painel({
     if (typeof window === "undefined") return;
     const p = new URLSearchParams(window.location.search);
     const entregue = p.get("entregue");
+    const offline = p.get("offline");
     if (entregue) {
       setFeedback({
         tipo: "ok",
@@ -100,7 +103,14 @@ export function Painel({
         detalhe: entregue,
         ts: Date.now(),
       });
-      // limpa query string sem reload
+      window.history.replaceState({}, "", "/motorista");
+    } else if (offline) {
+      setFeedback({
+        tipo: "warn",
+        titulo: "💾 Salvo offline",
+        detalhe: `${offline} — vai sincronizar quando voltar a conexão`,
+        ts: Date.now(),
+      });
       window.history.replaceState({}, "", "/motorista");
     }
   }, []);
@@ -186,17 +196,21 @@ export function Painel({
 
   return (
     <div className="flex flex-col gap-4 pb-12">
-      <div>
-        <h1 className="text-2xl font-semibold">Olá, {nome}!</h1>
-        <p className="text-sm text-zinc-600">
-          {dataBR} · {pendentes.length} {pendentes.length === 1 ? "entrega pendente" : "entregas pendentes"}
-          {entregues.length > 0 && ` · ${entregues.length} já entregue(s)`}
-        </p>
-        {role === "aprovador" && (
-          <p className="mt-1 text-xs text-amber-700">
-            Você está visualizando como motorista.
+      <RegisterSW />
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold">Olá, {nome}!</h1>
+          <p className="text-sm text-zinc-600">
+            {dataBR} · {pendentes.length} {pendentes.length === 1 ? "entrega pendente" : "entregas pendentes"}
+            {entregues.length > 0 && ` · ${entregues.length} já entregue(s)`}
           </p>
-        )}
+          {role === "aprovador" && (
+            <p className="mt-1 text-xs text-amber-700">
+              Você está visualizando como motorista.
+            </p>
+          )}
+        </div>
+        <OfflineStatus />
       </div>
 
       <Card>
