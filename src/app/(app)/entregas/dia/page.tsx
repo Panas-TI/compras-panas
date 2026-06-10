@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrencyBRL } from "@/lib/utils";
-import { AtribuirMotorista } from "./lista-client";
+import { AtribuirMotorista, ExcluirEntrega } from "./lista-client";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -220,7 +220,7 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
                         {e.motorista?.nome ? `Motorista: ${e.motorista.nome}` : "Sem motorista"}
                       </span>
                     )}
-                    {/* Detalhes virá numa próxima etapa */}
+                    {isAprovador && <ExcluirEntrega entregaId={e.id} codigo={e.codigo_queops} />}
                   </div>
                 </CardContent>
               </Card>
