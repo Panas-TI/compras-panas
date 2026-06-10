@@ -38,6 +38,41 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
   const scannerRef = useRef<unknown>(null);
   const ultimoCodigo = useRef<string | null>(null);
   const ultimoCodigoAt = useRef<number>(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const [ultimaLeitura, setUltimaLeitura] = useState<string | null>(null);
+
+  // Feedback: beep curto + vibração + banner persistente por 2s
+  const sinalLeitura = (codigo: string) => {
+    // Vibração (Android/Chrome mobile suportam; iOS Safari ignora silenciosamente)
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate?.([80, 40, 80]);
+    }
+
+    // Beep curto via Web Audio (~600Hz por 100ms)
+    try {
+      type WebkitWindow = typeof window & { webkitAudioContext?: typeof AudioContext };
+      const Ctx = window.AudioContext || (window as WebkitWindow).webkitAudioContext;
+      if (Ctx) {
+        if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
+        const ctx = audioCtxRef.current;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      }
+    } catch {
+      // ignora — som é só feedback
+    }
+
+    setUltimaLeitura(codigo);
+    setTimeout(() => setUltimaLeitura((u) => (u === codigo ? null : u)), 2200);
+  };
 
   useEffect(() => {
     return () => {
@@ -98,12 +133,20 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
         },
         (decodedText) => {
           const agora = Date.now();
-          if (ultimoCodigo.current === decodedText && agora - ultimoCodigoAt.current < 1500) {
+          // Debounce 3s: não relê o MESMO código nem leituras quaisquer muito próximas
+          if (ultimoCodigo.current === decodedText && agora - ultimoCodigoAt.current < 3000) {
+            return;
+          }
+          if (agora - ultimoCodigoAt.current < 800) {
+            // Bloqueia qualquer leitura nos primeiros 800ms após a anterior pra evitar
+            // ler 2 códigos diferentes na mesma "bipada" (defesa contra falsos positivos)
             return;
           }
           ultimoCodigo.current = decodedText;
           ultimoCodigoAt.current = agora;
-          onCodigo(decodedText.trim());
+          const codigoTrim = decodedText.trim();
+          sinalLeitura(codigoTrim);
+          onCodigo(codigoTrim);
           if (!continuo) {
             scanner
               .stop()
@@ -216,18 +259,31 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Container do vídeo: sempre no DOM com largura útil pra o html5-qrcode anexar o <video>.
-          Quando inativo, escondo via height=0 + opacity=0 (NÃO display:none). */}
-      <div
-        id={ELEMENT_ID}
-        className="relative w-full overflow-hidden rounded-md bg-black"
-        style={{
-          minHeight: ativo ? 280 : 0,
-          height: ativo ? "auto" : 0,
-          border: ativo ? "1px solid rgb(212 212 216)" : "none",
-          opacity: ativo ? 1 : 0,
-        }}
-      />
+      {/* Container do vídeo + overlay de feedback. O container precisa estar SEMPRE no DOM
+          com largura útil pra o html5-qrcode anexar o <video>. Quando inativo, escondo via
+          height=0 + opacity=0 (NÃO display:none). */}
+      <div className="relative">
+        <div
+          id={ELEMENT_ID}
+          className="relative w-full overflow-hidden rounded-md bg-black"
+          style={{
+            minHeight: ativo ? 280 : 0,
+            height: ativo ? "auto" : 0,
+            border: ativo ? "1px solid rgb(212 212 216)" : "none",
+            opacity: ativo ? 1 : 0,
+          }}
+        />
+        {/* Overlay verde flash quando lê um código */}
+        {ativo && ultimaLeitura && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-emerald-500/85 px-4 text-center text-white">
+            <div>
+              <div className="text-4xl">✓</div>
+              <div className="mt-2 text-lg font-bold tracking-wide uppercase">Código lido</div>
+              <div className="mt-1 font-mono text-sm">{ultimaLeitura}</div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Controles ativos durante o scan */}
       {ativo && (
