@@ -157,13 +157,23 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
           ultimoCodigo.current = codigoTrim;
           ultimoCodigoAt.current = agora;
           sinalLeitura(codigoTrim);
-          onCodigo(codigoTrim);
           if (!continuo) {
+            // Para o scanner ANTES de notificar — libera a câmera/recursos antes
+            // do código consumidor reagir. Importante no iOS Safari (memória
+            // estourada com câmera ativa + GPS + render simultâneos crashava a tab).
             scanner
               .stop()
-              .then(() => scanner.clear())
-              .catch(() => undefined);
-            setAtivo(false);
+              .then(() => {
+                scanner.clear();
+                setAtivo(false);
+                onCodigo(codigoTrim);
+              })
+              .catch(() => {
+                setAtivo(false);
+                onCodigo(codigoTrim);
+              });
+          } else {
+            onCodigo(codigoTrim);
           }
         },
         () => {

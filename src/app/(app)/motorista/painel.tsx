@@ -96,37 +96,57 @@ export function Painel({
   const dataBR = `${data.slice(8, 10)}/${data.slice(5, 7)}/${data.slice(0, 4)}`;
 
   const onCodigo = (codigo: string) => {
-    setFeedback({ tipo: "ok", titulo: "Capturando GPS…", detalhe: codigo, ts: Date.now() });
+    setFeedback({ tipo: "ok", titulo: "Validando…", detalhe: codigo, ts: Date.now() });
     startValidar(async () => {
-      // Captura GPS em paralelo com a validação (timeout 8s)
-      const [gps, validacao] = await Promise.all([
-        captureGps(8000),
-        validarBipadaAction(codigo),
-      ]);
-      if (!validacao) return;
-      if (validacao.ok) {
+      try {
+        // PASSO 1: validar no banco (scanner já parou sozinho ao ler).
+        // Sequencial pra evitar pressão de memória no iOS Safari (scanner + GPS + fetch ao mesmo tempo crashava a tab).
+        const validacao = await validarBipadaAction(codigo);
+        if (!validacao) {
+          setFeedback({ tipo: "erro", titulo: "Sem resposta do servidor. Tenta de novo.", ts: Date.now() });
+          return;
+        }
+        if (!validacao.ok) {
+          const t: Record<typeof validacao.reason, "warn" | "erro"> = {
+            nao_encontrado: "erro",
+            outro_motorista: "warn",
+            outro_dia: "warn",
+            ja_entregue: "warn",
+            erro: "erro",
+          };
+          setFeedback({
+            tipo: t[validacao.reason],
+            titulo: validacao.message,
+            detalhe: `Código lido: ${codigo}`,
+            ts: Date.now(),
+          });
+          return;
+        }
+
+        // PASSO 2: GPS DEPOIS da validação (scanner já parado, sem concorrência).
+        setFeedback({
+          tipo: "ok",
+          titulo: "Pedido validado, capturando GPS…",
+          detalhe: validacao.codigo,
+          ts: Date.now(),
+        });
+        const gps = await captureGps(8000);
+
         setEtapa({ tipo: "foto", entregaId: validacao.entregaId, codigo: validacao.codigo, gps });
         setFeedback({
           tipo: "ok",
-          titulo: "Pedido encontrado",
+          titulo: "Pronto pra foto",
           detalhe: `${validacao.codigo}${gps ? "" : " (sem GPS)"}`,
           ts: Date.now(),
         });
-        return;
+      } catch (e) {
+        setFeedback({
+          tipo: "erro",
+          titulo: "Erro inesperado",
+          detalhe: e instanceof Error ? e.message : String(e),
+          ts: Date.now(),
+        });
       }
-      const t: Record<typeof validacao.reason, "warn" | "erro"> = {
-        nao_encontrado: "erro",
-        outro_motorista: "warn",
-        outro_dia: "warn",
-        ja_entregue: "warn",
-        erro: "erro",
-      };
-      setFeedback({
-        tipo: t[validacao.reason],
-        titulo: validacao.message,
-        detalhe: `Código lido: ${codigo}`,
-        ts: Date.now(),
-      });
     });
   };
 
