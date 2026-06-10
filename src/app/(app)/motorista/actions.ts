@@ -28,49 +28,57 @@ export type ValidarState = {
  * NÃO marca entregue ainda — espera a foto.
  */
 export async function validarBipadaAction(codigo: string): Promise<ValidarState> {
-  const codigoLimpo = codigo.trim();
-  if (!codigoLimpo) return { ok: false, reason: "erro", message: "Código vazio." };
+  try {
+    const codigoLimpo = codigo.trim();
+    if (!codigoLimpo) return { ok: false, reason: "erro", message: "Código vazio." };
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, reason: "erro", message: "Não autenticado." };
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, reason: "erro", message: "Não autenticado." };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, ativo")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!profile?.ativo) return { ok: false, reason: "erro", message: "Usuário inativo." };
-  if (profile.role !== "motorista" && profile.role !== "aprovador") {
-    return { ok: false, reason: "erro", message: "Sem permissão pra entregar." };
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, ativo")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!profile?.ativo) return { ok: false, reason: "erro", message: "Usuário inativo." };
+    if (profile.role !== "motorista" && profile.role !== "aprovador") {
+      return { ok: false, reason: "erro", message: "Sem permissão pra entregar." };
+    }
+
+    const { data: entrega, error: selErr } = await supabase
+      .from("entregas")
+      .select("id, codigo_queops, status, motorista_id")
+      .eq("codigo_queops", codigoLimpo)
+      .maybeSingle();
+
+    if (selErr) return { ok: false, reason: "erro", message: selErr.message };
+    if (!entrega) {
+      return { ok: false, reason: "nao_encontrado", message: "Esse código não está cadastrado. Avisa o gestor." };
+    }
+
+    if (
+      profile.role === "motorista" &&
+      entrega.motorista_id !== null &&
+      entrega.motorista_id !== user.id
+    ) {
+      return { ok: false, reason: "outro_motorista", message: "Esse pedido está atribuído a outro motorista." };
+    }
+    if (entrega.status === "entregue") {
+      return { ok: false, reason: "ja_entregue", message: "Já marcado como entregue." };
+    }
+    if (entrega.status === "cancelada") {
+      return { ok: false, reason: "erro", message: "Pedido cancelado, não pode ser entregue." };
+    }
+
+    return { ok: true, entregaId: entrega.id, codigo: entrega.codigo_queops };
+  } catch (e) {
+    // Garante que SEMPRE retorna JSON pro client, nunca exception (que vira HTML
+    // de erro 500 no Vercel e crasha a tab no iOS).
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[validarBipadaAction] erro:", msg);
+    return { ok: false, reason: "erro", message: `Erro do servidor: ${msg}` };
   }
-
-  const { data: entrega, error: selErr } = await supabase
-    .from("entregas")
-    .select("id, codigo_queops, status, motorista_id")
-    .eq("codigo_queops", codigoLimpo)
-    .maybeSingle();
-
-  if (selErr) return { ok: false, reason: "erro", message: selErr.message };
-  if (!entrega) {
-    return { ok: false, reason: "nao_encontrado", message: "Esse código não está cadastrado. Avisa o gestor." };
-  }
-
-  if (
-    profile.role === "motorista" &&
-    entrega.motorista_id !== null &&
-    entrega.motorista_id !== user.id
-  ) {
-    return { ok: false, reason: "outro_motorista", message: "Esse pedido está atribuído a outro motorista." };
-  }
-  if (entrega.status === "entregue") {
-    return { ok: false, reason: "ja_entregue", message: "Já marcado como entregue." };
-  }
-  if (entrega.status === "cancelada") {
-    return { ok: false, reason: "erro", message: "Pedido cancelado, não pode ser entregue." };
-  }
-
-  return { ok: true, entregaId: entrega.id, codigo: entrega.codigo_queops };
 }
 
 export type ConcluirState = {
@@ -86,6 +94,21 @@ export type ConcluirState = {
  * Foto é OBRIGATÓRIA aqui. GPS é opcional.
  */
 export async function concluirEntregaAction(
+  entregaId: string,
+  fotoBase64: string,
+  fotoMediaType: "image/jpeg" | "image/png" | "image/webp",
+  gps: GpsCapturado
+): Promise<ConcluirState> {
+  try {
+    return await concluirEntregaInner(entregaId, fotoBase64, fotoMediaType, gps);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[concluirEntregaAction] erro:", msg);
+    return { ok: false, error: `Erro do servidor: ${msg}` };
+  }
+}
+
+async function concluirEntregaInner(
   entregaId: string,
   fotoBase64: string,
   fotoMediaType: "image/jpeg" | "image/png" | "image/webp",

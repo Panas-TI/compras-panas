@@ -125,8 +125,11 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
           aspectRatio: 1.333,
           videoConstraints: {
             facingMode: { exact: "environment" },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
+            // Reduzi resolução pra 1280x720 — em iPhones mais antigos a tab
+            // crashava de memória com 1920x1080 + GPS + rede simultâneos.
+            // 720p ainda dá nitidez sobrada pra ler Code 128.
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
           },
         },
         (decodedText) => {
