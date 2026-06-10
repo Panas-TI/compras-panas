@@ -52,7 +52,7 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
       cliente_nome, cliente_telefone, contato_nome,
       endereco_rua, endereco_numero, endereco_complemento, bairro, cidade, uf,
       observacoes, valor_total, status, motorista_id,
-      checkin_at, entregue_at,
+      checkin_at, entregue_at, foto_comprovante_url,
       motorista:profiles!entregas_motorista_id_fkey(nome)
     `
     )
@@ -83,6 +83,20 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
           .order("nome")
       : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
   ]);
+
+  // Gera URLs assinadas pras fotos de canhoto (bucket privado)
+  const fotosUrls = new Map<string, string>();
+  const comComprovante = (entregas ?? [])
+    .map((e) => e.foto_comprovante_url)
+    .filter((v): v is string => !!v);
+  if (comComprovante.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from("comprovantes")
+      .createSignedUrls(comComprovante, 3600);
+    for (const s of signed ?? []) {
+      if (s.path && s.signedUrl) fotosUrls.set(s.path, s.signedUrl);
+    }
+  }
 
   const totalValor = (entregas ?? []).reduce((acc, e) => acc + Number(e.valor_total ?? 0), 0);
 
@@ -206,6 +220,17 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
                     <div className="rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
                       📝 {e.observacoes}
                     </div>
+                  )}
+
+                  {e.foto_comprovante_url && fotosUrls.get(e.foto_comprovante_url) && (
+                    <a
+                      href={fotosUrls.get(e.foto_comprovante_url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-zinc-700 underline-offset-4 hover:underline"
+                    >
+                      📎 Ver foto do canhoto →
+                    </a>
                   )}
 
                   <div className="mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 pt-2">
