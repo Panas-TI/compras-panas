@@ -27,18 +27,29 @@ export default async function MotoristaPage() {
 
   const hoje = todayISO();
 
-  // RLS já filtra: motorista vê só as dele; aprovador vê todas.
-  // Mas no painel queremos só as do motorista logado quando role=aprovador (visualizando).
-  // Pra aprovador, mostra TODAS as do dia atribuídas a ELE como motorista (caso teste atribuindo a si mesmo).
-  const { data: entregasHoje } = await supabase
-    .from("entregas")
-    .select("id, codigo_queops, status, hora_entrega, cliente_nome, bairro, entregue_at")
-    .eq("data_entrega", hoje)
-    .eq("motorista_id", user.id)
-    .order("hora_entrega", { ascending: true, nullsFirst: false });
+  // Pendentes: TODOS do dia que podem ser pegos por este motorista
+  //   - sem motorista atribuído (qualquer um pode pegar bipando) OU
+  //   - atribuídos a este motorista
+  // Entregues: apenas as que ESTE motorista entregou (RLS + filtro).
+  const [{ data: pendentesRaw }, { data: entreguesRaw }] = await Promise.all([
+    supabase
+      .from("entregas")
+      .select("id, codigo_queops, status, hora_entrega, cliente_nome, bairro, entregue_at, motorista_id")
+      .eq("data_entrega", hoje)
+      .in("status", ["pendente", "em_rota"])
+      .or(`motorista_id.is.null,motorista_id.eq.${user.id}`)
+      .order("hora_entrega", { ascending: true, nullsFirst: false }),
+    supabase
+      .from("entregas")
+      .select("id, codigo_queops, status, hora_entrega, cliente_nome, bairro, entregue_at, motorista_id")
+      .eq("data_entrega", hoje)
+      .eq("status", "entregue")
+      .eq("motorista_id", user.id)
+      .order("entregue_at", { ascending: false }),
+  ]);
 
-  const pendentes = (entregasHoje ?? []).filter((e) => e.status === "pendente" || e.status === "em_rota");
-  const entregues = (entregasHoje ?? []).filter((e) => e.status === "entregue");
+  const pendentes = pendentesRaw ?? [];
+  const entregues = entreguesRaw ?? [];
 
   return (
     <Painel

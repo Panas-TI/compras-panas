@@ -64,8 +64,13 @@ export async function marcarEntregueAction(codigo: string, gps: GpsCapturado): P
     };
   }
 
-  // Motorista comum: só pode entregar a sua própria
-  if (profile.role === "motorista" && entrega.motorista_id !== user.id) {
+  // Motorista comum: pode entregar se está sem dono (livre) OU já é dele.
+  // Se for de outro motorista atribuído pelo aprovador, recusa.
+  if (
+    profile.role === "motorista" &&
+    entrega.motorista_id !== null &&
+    entrega.motorista_id !== user.id
+  ) {
     return {
       ok: false,
       reason: "outro_motorista",
@@ -99,6 +104,10 @@ export async function marcarEntregueAction(codigo: string, gps: GpsCapturado): P
     entrega_lng: gps?.lng ?? null,
     entrega_precisao_metros: gps ? Math.round(gps.precisao_metros) : null,
   };
+  // Se motorista bipou pedido sem dono, atribui automaticamente
+  if (profile.role === "motorista" && !entrega.motorista_id) {
+    patch.motorista_id = user.id;
+  }
 
   const { error: updErr } = await supabase
     .from("entregas")
