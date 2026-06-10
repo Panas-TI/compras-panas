@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScannerCodigo } from "@/components/scanner/scanner-codigo";
-import { marcarEntregueAction, type GpsCapturado } from "./actions";
+import { SwRegister } from "@/components/offline/sw-register";
+import { useOffline } from "@/lib/offline/use-offline";
+import { adicionarPendente, type GpsCapturado } from "@/lib/offline/db";
+import { marcarEntregueAction } from "./actions";
 
 type Entrega = {
   id: string;
@@ -18,7 +21,7 @@ type Entrega = {
 };
 
 type Feedback = {
-  tipo: "ok" | "warn" | "erro";
+  tipo: "ok" | "warn" | "erro" | "offline";
   titulo: string;
   detalhe?: string;
   ts: number;
@@ -73,6 +76,9 @@ export function Painel({
   role: string;
 }) {
   const router = useRouter();
+  const offline = useOffline({
+    onSyncSuccess: () => router.refresh(),
+  });
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [marcando, startMarcar] = useTransition();
   const [manual, setManual] = useState("");
@@ -80,29 +86,78 @@ export function Painel({
   const dataBR = `${data.slice(8, 10)}/${data.slice(5, 7)}/${data.slice(0, 4)}`;
 
   const onCodigo = (codigo: string) => {
-    setFeedback({ tipo: "ok", titulo: "Capturando GPS…", detalhe: codigo, ts: Date.now() });
+    const codigoLimpo = codigo.trim();
+    if (!codigoLimpo) return;
+
+    setFeedback({ tipo: "ok", titulo: "Capturando GPS…", detalhe: codigoLimpo, ts: Date.now() });
+
     startMarcar(async () => {
       const gps = await captureGps(8000);
-      const res = await marcarEntregueAction(codigo, gps);
-      if (!res) return;
-      if (res.ok) {
-        setFeedback({
-          tipo: "ok",
-          titulo: "✓ Entregue!",
-          detalhe: `${res.codigo}${gps ? "" : " (sem GPS)"}`,
-          ts: Date.now(),
-        });
-        router.refresh();
+
+      // Se está offline, salva na fila e sai
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        try {
+          await adicionarPendente(codigoLimpo, gps);
+          setFeedback({
+            tipo: "offline",
+            titulo: "📥 Salvo offline",
+            detalhe: `${codigoLimpo} — sincroniza quando voltar ao sinal`,
+            ts: Date.now(),
+          });
+          offline.recontar();
+        } catch (e) {
+          setFeedback({
+            tipo: "erro",
+            titulo: "Erro ao salvar offline",
+            detalhe: e instanceof Error ? e.message : String(e),
+            ts: Date.now(),
+          });
+        }
         return;
       }
-      const t: Record<typeof res.reason, "warn" | "erro"> = {
-        nao_encontrado: "erro",
-        outro_motorista: "warn",
-        outro_dia: "warn",
-        ja_entregue: "warn",
-        erro: "erro",
-      };
-      setFeedback({ tipo: t[res.reason], titulo: res.message, ts: Date.now() });
+
+      // Online → chama action direto
+      try {
+        const res = await marcarEntregueAction(codigoLimpo, gps);
+        if (!res) return;
+        if (res.ok) {
+          setFeedback({
+            tipo: "ok",
+            titulo: "✓ Entregue!",
+            detalhe: `${res.codigo}${gps ? "" : " (sem GPS)"}`,
+            ts: Date.now(),
+          });
+          router.refresh();
+          return;
+        }
+        const t: Record<typeof res.reason, "warn" | "erro"> = {
+          nao_encontrado: "erro",
+          outro_motorista: "warn",
+          outro_dia: "warn",
+          ja_entregue: "warn",
+          erro: "erro",
+        };
+        setFeedback({ tipo: t[res.reason], titulo: res.message, ts: Date.now() });
+      } catch (e) {
+        // Erro de rede mesmo com navigator.onLine = true (ex: timeout). Cai pra fila.
+        try {
+          await adicionarPendente(codigoLimpo, gps);
+          setFeedback({
+            tipo: "offline",
+            titulo: "📥 Sem conexão — salvo offline",
+            detalhe: `${codigoLimpo}: ${e instanceof Error ? e.message : String(e)}`,
+            ts: Date.now(),
+          });
+          offline.recontar();
+        } catch {
+          setFeedback({
+            tipo: "erro",
+            titulo: "Falhou e não consegui salvar offline",
+            detalhe: e instanceof Error ? e.message : String(e),
+            ts: Date.now(),
+          });
+        }
+      }
     });
   };
 
@@ -114,6 +169,34 @@ export function Painel({
 
   return (
     <div className="flex flex-col gap-4 pb-12">
+      <SwRegister />
+
+      {/* Indicador de status */}
+      <div
+        className={`flex items-center justify-between gap-2 rounded-md border px-3 py-1.5 text-xs font-medium ${
+          offline.online
+            ? offline.pendentes > 0
+              ? "border-amber-300 bg-amber-50 text-amber-900"
+              : "border-emerald-300 bg-emerald-50 text-emerald-900"
+            : "border-red-300 bg-red-50 text-red-900"
+        }`}
+      >
+        <span>
+          {offline.online ? "🟢 Online" : "🔴 Offline"}
+          {offline.pendentes > 0 && ` · ${offline.pendentes} bipada(s) na fila`}
+          {offline.sincronizando && " · Sincronizando…"}
+        </span>
+        {offline.online && offline.pendentes > 0 && !offline.sincronizando && (
+          <button
+            type="button"
+            onClick={() => offline.tentarSincronizar()}
+            className="rounded border border-current px-2 py-0.5 text-xs"
+          >
+            Sincronizar agora
+          </button>
+        )}
+      </div>
+
       <div>
         <h1 className="text-2xl font-semibold">Olá, {nome}!</h1>
         <p className="text-sm text-zinc-600">
@@ -133,6 +216,7 @@ export function Painel({
             <p className="text-sm font-medium">Marcar entrega como entregue</p>
             <p className="text-xs text-zinc-500">
               Aponta a câmera no código de barras do pedido entregue. O GPS é capturado automaticamente.
+              {!offline.online && " Sem sinal? Bipa mesmo assim, salva na fila e sincroniza depois."}
             </p>
           </div>
           <ScannerCodigo onCodigo={onCodigo} labelIniciar="📷 Bipar pra entregar" />
@@ -171,7 +255,9 @@ export function Painel({
               ? "border-emerald-300 bg-emerald-50 text-emerald-900"
               : feedback.tipo === "warn"
                 ? "border-amber-300 bg-amber-50 text-amber-900"
-                : "border-red-300 bg-red-50 text-red-900"
+                : feedback.tipo === "offline"
+                  ? "border-blue-300 bg-blue-50 text-blue-900"
+                  : "border-red-300 bg-red-50 text-red-900"
           }`}
         >
           <div className="font-semibold">{feedback.titulo}</div>
