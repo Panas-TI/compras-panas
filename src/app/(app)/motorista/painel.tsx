@@ -127,7 +127,21 @@ export function Painel({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ codigo }),
         });
-        const validacao = (await r.json()) as ValidarResp;
+        // Lê como texto primeiro — se servidor retorna HTML de erro,
+        // r.json() crasha com "string did not match expected pattern" no iOS.
+        const raw = await r.text();
+        let validacao: ValidarResp;
+        try {
+          validacao = JSON.parse(raw) as ValidarResp;
+        } catch {
+          setFeedback({
+            tipo: "erro",
+            titulo: `Resposta inválida do servidor (HTTP ${r.status})`,
+            detalhe: raw.slice(0, 300),
+            ts: Date.now(),
+          });
+          return;
+        }
         if (!validacao.ok) {
           const t: Record<typeof validacao.reason, "warn" | "erro"> = {
             nao_encontrado: "erro",
@@ -222,7 +236,19 @@ export function Painel({
             gps: etapa.gps,
           }),
         });
-        const res = (await r.json()) as ConcluirResp;
+        const raw = await r.text();
+        let res: ConcluirResp;
+        try {
+          res = JSON.parse(raw) as ConcluirResp;
+        } catch {
+          setFeedback({
+            tipo: "erro",
+            titulo: `Resposta inválida do servidor (HTTP ${r.status})`,
+            detalhe: raw.slice(0, 300),
+            ts: Date.now(),
+          });
+          return;
+        }
         if (!res.ok) {
           setFeedback({ tipo: "erro", titulo: res.error, ts: Date.now() });
           return;

@@ -72,14 +72,15 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
       }
     }
-    // Motorista: só pode acessar /, /motorista e /entregas (próprias rotas dele)
+    // Motorista: só pode acessar /, /motorista, /entregas e /api/motorista/*
     if (profile?.role === "motorista" && profile.ativo) {
       const motoristaAllowed =
         path === "/" ||
         path === "/motorista" ||
         path.startsWith("/motorista/") ||
         path === "/entregas" ||
-        path.startsWith("/entregas/");
+        path.startsWith("/entregas/") ||
+        path.startsWith("/api/motorista/"); // rotas HTTP do painel dele
       if (!motoristaAllowed) {
         const url = request.nextUrl.clone();
         url.pathname = "/motorista";
