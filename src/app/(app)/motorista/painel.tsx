@@ -93,6 +93,20 @@ function captureGps(timeoutMs = 8000): Promise<GpsCapturado> {
   });
 }
 
+// DEBUG: log persistente entre reloads (localStorage) pra rastrear crash
+function debugLog(msg: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const prev = localStorage.getItem("__entrega_debug__") ?? "";
+    const stamp = new Date().toLocaleTimeString("pt-BR", { hour12: false }) +
+      "." + String(Date.now() % 1000).padStart(3, "0");
+    const novo = `${stamp} ${msg}\n${prev}`.slice(0, 4000);
+    localStorage.setItem("__entrega_debug__", novo);
+  } catch {
+    // ignora
+  }
+}
+
 export function Painel({
   nome,
   data,
@@ -114,19 +128,24 @@ export function Painel({
   const [validando, startValidar] = useTransition();
   const [concluindo, startConcluir] = useTransition();
   const [manual, setManual] = useState("");
+  const [debugAberto, setDebugAberto] = useState(false);
 
   const dataBR = `${data.slice(8, 10)}/${data.slice(5, 7)}/${data.slice(0, 4)}`;
+  const debugTxt = typeof window !== "undefined" ? localStorage.getItem("__entrega_debug__") ?? "" : "";
 
   const onCodigo = (codigo: string) => {
+    debugLog(`onCodigo bipou: ${codigo}`);
     setFeedback({ tipo: "ok", titulo: "Validando…", detalhe: codigo, ts: Date.now() });
     startValidar(async () => {
       try {
+        debugLog("fetch /api/motorista/validar START");
         // PASSO 1: valida via route handler HTTP (não Server Action)
         const r = await fetch("/api/motorista/validar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ codigo }),
         });
+        debugLog(`fetch validar resposta ${r.status} ok=${r.ok}`);
         // Lê como texto primeiro — se servidor retorna HTML de erro,
         // r.json() crasha com "string did not match expected pattern" no iOS.
         const raw = await r.text();
@@ -159,27 +178,23 @@ export function Painel({
           return;
         }
 
-        // PASSO 2: GPS depois (scanner já parado)
-        setFeedback({
-          tipo: "ok",
-          titulo: "Pedido validado, capturando GPS…",
-          detalhe: validacao.codigo,
-          ts: Date.now(),
-        });
-        const gps = await captureGps(8000);
-
-        setEtapa({ tipo: "foto", entregaId: validacao.entregaId, codigo: validacao.codigo, gps });
+        debugLog(`validacao OK entregaId=${validacao.entregaId}`);
+        // DEBUG: pulando GPS temporariamente pra isolar se ele é a causa do crash
+        setEtapa({ tipo: "foto", entregaId: validacao.entregaId, codigo: validacao.codigo, gps: null });
         setFeedback({
           tipo: "ok",
           titulo: "Pronto pra foto",
-          detalhe: `${validacao.codigo}${gps ? "" : " (sem GPS)"}`,
+          detalhe: `${validacao.codigo} (GPS desativado temporariamente pra debug)`,
           ts: Date.now(),
         });
+        debugLog("setEtapa foto OK");
       } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        debugLog(`onCodigo catch: ${msg}`);
         setFeedback({
           tipo: "erro",
           titulo: "Erro inesperado",
-          detalhe: e instanceof Error ? e.message : String(e),
+          detalhe: msg,
           ts: Date.now(),
         });
       }
@@ -286,6 +301,33 @@ export function Painel({
           <p className="mt-1 text-xs text-amber-700">
             Você está visualizando como motorista.
           </p>
+        )}
+        {debugTxt && (
+          <button
+            type="button"
+            onClick={() => setDebugAberto((v) => !v)}
+            className="mt-1 text-xs text-zinc-500 underline"
+          >
+            {debugAberto ? "Esconder" : "Ver"} log de debug ({debugTxt.split("\n").length} eventos)
+          </button>
+        )}
+        {debugAberto && (
+          <div className="mt-2 rounded-md border border-zinc-300 bg-white p-2">
+            <pre className="max-h-64 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-zinc-700">
+              {debugTxt}
+            </pre>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem("__entrega_debug__");
+                setDebugAberto(false);
+                router.refresh();
+              }}
+              className="mt-2 text-xs text-red-600 underline"
+            >
+              Limpar log
+            </button>
+          </div>
         )}
       </div>
 
