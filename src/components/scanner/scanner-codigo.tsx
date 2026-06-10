@@ -38,8 +38,11 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
   const scannerRef = useRef<unknown>(null);
   const ultimoCodigo = useRef<string | null>(null);
   const ultimoCodigoAt = useRef<number>(0);
+  // Verificação dupla: precisa ler o mesmo código 2x em 2.5s pra aceitar (anti-falso-positivo)
+  const candidato = useRef<{ codigo: string; ts: number; vezes: number } | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const [ultimaLeitura, setUltimaLeitura] = useState<string | null>(null);
+  const [verificando, setVerificando] = useState<string | null>(null);
 
   // Feedback: beep curto + vibração + banner persistente por 2s
   const sinalLeitura = (codigo: string) => {
@@ -95,19 +98,13 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
     try {
       const mod = await import("html5-qrcode");
       const { Html5Qrcode } = mod;
+      // SÓ Code 128 (formato do Queóps) e QR. Outros formatos (EAN/UPC/ITF)
+      // estavam gerando falsos positivos em códigos parciais ou vizinhos.
       const scanner = new Html5Qrcode(ELEMENT_ID, {
         verbose: false,
         formatsToSupport: [
           mod.Html5QrcodeSupportedFormats.CODE_128,
-          mod.Html5QrcodeSupportedFormats.CODE_39,
-          mod.Html5QrcodeSupportedFormats.CODE_93,
-          mod.Html5QrcodeSupportedFormats.EAN_13,
-          mod.Html5QrcodeSupportedFormats.EAN_8,
-          mod.Html5QrcodeSupportedFormats.UPC_A,
-          mod.Html5QrcodeSupportedFormats.UPC_E,
-          mod.Html5QrcodeSupportedFormats.ITF,
           mod.Html5QrcodeSupportedFormats.QR_CODE,
-          mod.Html5QrcodeSupportedFormats.DATA_MATRIX,
         ],
       });
       scannerRef.current = scanner;
@@ -133,18 +130,48 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
         },
         (decodedText) => {
           const agora = Date.now();
-          // Debounce 3s: não relê o MESMO código nem leituras quaisquer muito próximas
-          if (ultimoCodigo.current === decodedText && agora - ultimoCodigoAt.current < 3000) {
-            return;
-          }
-          if (agora - ultimoCodigoAt.current < 800) {
-            // Bloqueia qualquer leitura nos primeiros 800ms após a anterior pra evitar
-            // ler 2 códigos diferentes na mesma "bipada" (defesa contra falsos positivos)
-            return;
-          }
-          ultimoCodigo.current = decodedText;
-          ultimoCodigoAt.current = agora;
           const codigoTrim = decodedText.trim();
+
+          // Debounce do código JÁ ACEITO: não reaceitar o mesmo nos próximos 3s
+          if (ultimoCodigo.current === codigoTrim && agora - ultimoCodigoAt.current < 3000) {
+            return;
+          }
+
+          // VERIFICAÇÃO DUPLA: precisa ler o MESMO código 2x em <=2.5s pra aceitar.
+          // Defesa principal contra falsos positivos do scanner.
+          const cand = candidato.current;
+          if (!cand || cand.codigo !== codigoTrim || agora - cand.ts > 2500) {
+            candidato.current = { codigo: codigoTrim, ts: agora, vezes: 1 };
+            setVerificando(codigoTrim);
+            // Beep curto suave pra avisar que detectou
+            try {
+              type WebkitWindow = typeof window & { webkitAudioContext?: typeof AudioContext };
+              const Ctx = window.AudioContext || (window as WebkitWindow).webkitAudioContext;
+              if (Ctx) {
+                if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
+                const ctx = audioCtxRef.current;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.value = 440;
+                gain.gain.setValueAtTime(0.001, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+                osc.connect(gain).connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.1);
+              }
+            } catch {
+              // ignora
+            }
+            return;
+          }
+
+          // Segunda leitura do mesmo código: confirma!
+          candidato.current = null;
+          setVerificando(null);
+          ultimoCodigo.current = codigoTrim;
+          ultimoCodigoAt.current = agora;
           sinalLeitura(codigoTrim);
           onCodigo(codigoTrim);
           if (!continuo) {
@@ -228,6 +255,8 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
     setZoomCap(null);
     setZoom(1);
     setTorchSuportado(false);
+    setVerificando(null);
+    candidato.current = null;
   };
 
   const aplicarZoom = async (v: number) => {
@@ -273,7 +302,7 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
             opacity: ativo ? 1 : 0,
           }}
         />
-        {/* Overlay verde flash quando lê um código */}
+        {/* Overlay verde flash quando confirma um código (2ª leitura) */}
         {ativo && ultimaLeitura && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-emerald-500/85 px-4 text-center text-white">
             <div>
@@ -281,6 +310,13 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
               <div className="mt-2 text-lg font-bold tracking-wide uppercase">Código lido</div>
               <div className="mt-1 font-mono text-sm">{ultimaLeitura}</div>
             </div>
+          </div>
+        )}
+        {/* Overlay amarelo: detectou mas precisa confirmar (1ª leitura) */}
+        {ativo && verificando && !ultimaLeitura && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 rounded-b-md bg-amber-500/90 px-4 py-3 text-center text-white">
+            <div className="text-sm font-bold uppercase tracking-wide">Detectou — bipa de novo pra confirmar</div>
+            <div className="mt-1 font-mono text-xs">{verificando}</div>
           </div>
         )}
       </div>

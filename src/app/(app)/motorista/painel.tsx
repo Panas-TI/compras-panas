@@ -137,7 +137,12 @@ export function Painel({
           ja_entregue: "warn",
           erro: "erro",
         };
-        setFeedback({ tipo: t[res.reason], titulo: res.message, ts: Date.now() });
+        setFeedback({
+          tipo: t[res.reason],
+          titulo: res.message,
+          detalhe: `Código lido: ${codigoLimpo}`,
+          ts: Date.now(),
+        });
       } catch (e) {
         // Erro de rede mesmo com navigator.onLine = true (ex: timeout). Cai pra fila.
         try {
