@@ -38,11 +38,12 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
   const scannerRef = useRef<unknown>(null);
   const ultimoCodigo = useRef<string | null>(null);
   const ultimoCodigoAt = useRef<number>(0);
-  // Verificação dupla: precisa ler o mesmo código 2x em 2.5s pra aceitar (anti-falso-positivo)
-  const candidato = useRef<{ codigo: string; ts: number; vezes: number } | null>(null);
+  // Buffer das últimas leituras (anti-falso-positivo INVISÍVEL):
+  // pra aceitar, precisa ver o mesmo código em pelo menos 2 frames dentro de 400ms.
+  // A 24 fps isso é ~10 frames, então leitura genuína passa instantâneo (~80ms).
+  const leiturasRecentes = useRef<Array<{ codigo: string; ts: number }>>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const [ultimaLeitura, setUltimaLeitura] = useState<string | null>(null);
-  const [verificando, setVerificando] = useState<string | null>(null);
 
   // Feedback: beep curto + vibração + banner persistente por 2s
   const sinalLeitura = (codigo: string) => {
@@ -137,39 +138,22 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
             return;
           }
 
-          // VERIFICAÇÃO DUPLA: precisa ler o MESMO código 2x em <=2.5s pra aceitar.
-          // Defesa principal contra falsos positivos do scanner.
-          const cand = candidato.current;
-          if (!cand || cand.codigo !== codigoTrim || agora - cand.ts > 2500) {
-            candidato.current = { codigo: codigoTrim, ts: agora, vezes: 1 };
-            setVerificando(codigoTrim);
-            // Beep curto suave pra avisar que detectou
-            try {
-              type WebkitWindow = typeof window & { webkitAudioContext?: typeof AudioContext };
-              const Ctx = window.AudioContext || (window as WebkitWindow).webkitAudioContext;
-              if (Ctx) {
-                if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
-                const ctx = audioCtxRef.current;
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = "sine";
-                osc.frequency.value = 440;
-                gain.gain.setValueAtTime(0.001, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-                osc.connect(gain).connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.1);
-              }
-            } catch {
-              // ignora
-            }
-            return;
+          // Anti-falso-positivo invisível: agrega ao buffer e exige >=2 leituras
+          // do mesmo código nos últimos 400ms pra confirmar. Pra leitura genuína,
+          // que vem em frames consecutivos (~42ms a 24fps), isso passa em ~80ms.
+          const JANELA_MS = 400;
+          const MIN_VEZES = 2;
+          const buf = leiturasRecentes.current.filter((r) => agora - r.ts <= JANELA_MS);
+          buf.push({ codigo: codigoTrim, ts: agora });
+          const vezesIguais = buf.filter((r) => r.codigo === codigoTrim).length;
+          leiturasRecentes.current = buf;
+
+          if (vezesIguais < MIN_VEZES) {
+            return; // ainda não confirmado — aguarda próximo frame
           }
 
-          // Segunda leitura do mesmo código: confirma!
-          candidato.current = null;
-          setVerificando(null);
+          // Confirmado!
+          leiturasRecentes.current = [];
           ultimoCodigo.current = codigoTrim;
           ultimoCodigoAt.current = agora;
           sinalLeitura(codigoTrim);
@@ -255,8 +239,7 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
     setZoomCap(null);
     setZoom(1);
     setTorchSuportado(false);
-    setVerificando(null);
-    candidato.current = null;
+    leiturasRecentes.current = [];
   };
 
   const aplicarZoom = async (v: number) => {
@@ -302,7 +285,7 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
             opacity: ativo ? 1 : 0,
           }}
         />
-        {/* Overlay verde flash quando confirma um código (2ª leitura) */}
+        {/* Overlay verde quando confirma um código */}
         {ativo && ultimaLeitura && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-emerald-500/85 px-4 text-center text-white">
             <div>
@@ -310,13 +293,6 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
               <div className="mt-2 text-lg font-bold tracking-wide uppercase">Código lido</div>
               <div className="mt-1 font-mono text-sm">{ultimaLeitura}</div>
             </div>
-          </div>
-        )}
-        {/* Overlay amarelo: detectou mas precisa confirmar (1ª leitura) */}
-        {ativo && verificando && !ultimaLeitura && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 rounded-b-md bg-amber-500/90 px-4 py-3 text-center text-white">
-            <div className="text-sm font-bold uppercase tracking-wide">Detectou — bipa de novo pra confirmar</div>
-            <div className="mt-1 font-mono text-xs">{verificando}</div>
           </div>
         )}
       </div>
