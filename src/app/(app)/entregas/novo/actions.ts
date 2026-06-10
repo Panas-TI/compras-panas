@@ -36,8 +36,14 @@ export type CadastrarState = {
 /**
  * Cadastra entrega pelo código de barras escaneado.
  * Se o código já existe, retorna info pro usuário (não duplica).
+ *
+ * dataEntrega: opcional (YYYY-MM-DD). Se omitido, usa hoje.
+ * Permite adiantar pedidos de dias futuros.
  */
-export async function cadastrarPorCodigoAction(codigo: string): Promise<CadastrarState> {
+export async function cadastrarPorCodigoAction(
+  codigo: string,
+  dataEntrega?: string
+): Promise<CadastrarState> {
   const guard = await assertAprovador();
   if (!guard.ok) return { ok: false, error: guard.error };
 
@@ -45,6 +51,19 @@ export async function cadastrarPorCodigoAction(codigo: string): Promise<Cadastra
   if (!codigoLimpo) return { ok: false, error: "Código vazio." };
   if (codigoLimpo.length < 4) return { ok: false, error: "Código muito curto." };
   if (codigoLimpo.length > 64) return { ok: false, error: "Código muito longo." };
+
+  // Valida data: precisa ser YYYY-MM-DD; não pode ser passado
+  const today = new Date().toISOString().slice(0, 10);
+  let dataFinal = today;
+  if (dataEntrega) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataEntrega)) {
+      return { ok: false, error: "Data inválida. Use AAAA-MM-DD." };
+    }
+    if (dataEntrega < today) {
+      return { ok: false, error: "Não dá pra cadastrar pra um dia passado." };
+    }
+    dataFinal = dataEntrega;
+  }
 
   const supabase = await createClient();
 
@@ -66,12 +85,11 @@ export async function cadastrarPorCodigoAction(codigo: string): Promise<Cadastra
   }
 
   // Insert mínimo (cliente, endereço, etc ficam null — motorista usa a folha física)
-  const today = new Date().toISOString().slice(0, 10);
   const { data: inserted, error } = await supabase
     .from("entregas")
     .insert({
       codigo_queops: codigoLimpo,
-      data_entrega: today,
+      data_entrega: dataFinal,
       status: "pendente",
       created_by: guard.userId,
     })
