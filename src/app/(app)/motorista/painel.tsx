@@ -6,7 +6,29 @@ import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScannerCodigo } from "@/components/scanner/scanner-codigo";
-import { validarBipadaAction, concluirEntregaAction, type GpsCapturado } from "./actions";
+
+// IMPORTANTE: usamos rotas HTTP (route handlers) em vez de Server Actions
+// porque Server Actions estavam crashando o iOS Safari ('This page couldn't load')
+// logo após a bipada — provavelmente conflito do protocolo RSC com transition
+// de estado durante render. Fetch normal é mais robusto.
+
+export type GpsCapturado = {
+  lat: number;
+  lng: number;
+  precisao_metros: number;
+} | null;
+
+type ValidarResp =
+  | { ok: true; entregaId: string; codigo: string }
+  | {
+      ok: false;
+      reason: "nao_encontrado" | "outro_motorista" | "outro_dia" | "ja_entregue" | "erro";
+      message: string;
+    };
+
+type ConcluirResp =
+  | { ok: true; entregaId: string }
+  | { ok: false; error: string };
 
 type Entrega = {
   id: string;
@@ -99,13 +121,13 @@ export function Painel({
     setFeedback({ tipo: "ok", titulo: "Validando…", detalhe: codigo, ts: Date.now() });
     startValidar(async () => {
       try {
-        // PASSO 1: validar no banco (scanner já parou sozinho ao ler).
-        // Sequencial pra evitar pressão de memória no iOS Safari (scanner + GPS + fetch ao mesmo tempo crashava a tab).
-        const validacao = await validarBipadaAction(codigo);
-        if (!validacao) {
-          setFeedback({ tipo: "erro", titulo: "Sem resposta do servidor. Tenta de novo.", ts: Date.now() });
-          return;
-        }
+        // PASSO 1: valida via route handler HTTP (não Server Action)
+        const r = await fetch("/api/motorista/validar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo }),
+        });
+        const validacao = (await r.json()) as ValidarResp;
         if (!validacao.ok) {
           const t: Record<typeof validacao.reason, "warn" | "erro"> = {
             nao_encontrado: "erro",
@@ -123,7 +145,7 @@ export function Painel({
           return;
         }
 
-        // PASSO 2: GPS DEPOIS da validação (scanner já parado, sem concorrência).
+        // PASSO 2: GPS depois (scanner já parado)
         setFeedback({
           tipo: "ok",
           titulo: "Pedido validado, capturando GPS…",
@@ -189,27 +211,40 @@ export function Painel({
   const concluir = () => {
     if (etapa.tipo !== "foto" || !foto) return;
     startConcluir(async () => {
-      const res = await concluirEntregaAction(
-        etapa.entregaId,
-        foto.base64,
-        foto.mediaType,
-        etapa.gps
-      );
-      if (!res) return;
-      if (!res.ok) {
-        setFeedback({ tipo: "erro", titulo: res.error, ts: Date.now() });
-        return;
+      try {
+        const r = await fetch("/api/motorista/concluir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entregaId: etapa.entregaId,
+            fotoBase64: foto.base64,
+            mediaType: foto.mediaType,
+            gps: etapa.gps,
+          }),
+        });
+        const res = (await r.json()) as ConcluirResp;
+        if (!res.ok) {
+          setFeedback({ tipo: "erro", titulo: res.error, ts: Date.now() });
+          return;
+        }
+        setFeedback({
+          tipo: "ok",
+          titulo: "✓ Entregue!",
+          detalhe: etapa.codigo,
+          ts: Date.now(),
+        });
+        setFoto(null);
+        setEtapa({ tipo: "scan" });
+        if (fileRef.current) fileRef.current.value = "";
+        router.refresh();
+      } catch (e) {
+        setFeedback({
+          tipo: "erro",
+          titulo: "Erro ao concluir",
+          detalhe: e instanceof Error ? e.message : String(e),
+          ts: Date.now(),
+        });
       }
-      setFeedback({
-        tipo: "ok",
-        titulo: "✓ Entregue!",
-        detalhe: etapa.codigo,
-        ts: Date.now(),
-      });
-      setFoto(null);
-      setEtapa({ tipo: "scan" });
-      if (fileRef.current) fileRef.current.value = "";
-      router.refresh();
     });
   };
 
