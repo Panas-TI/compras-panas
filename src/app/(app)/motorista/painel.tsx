@@ -1,22 +1,11 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import imageCompression from "browser-image-compression";
+import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScannerCodigo } from "@/components/scanner/scanner-codigo";
 
-// IMPORTANTE: usamos rotas HTTP (route handlers) em vez de Server Actions
-// porque Server Actions estavam crashando o iOS Safari ('This page couldn't load')
-// logo após a bipada — provavelmente conflito do protocolo RSC com transition
-// de estado durante render. Fetch normal é mais robusto.
-
-export type GpsCapturado = {
-  lat: number;
-  lng: number;
-  precisao_metros: number;
-} | null;
+// Usamos route handlers HTTP em vez de Server Actions (mais robusto no iOS Safari).
 
 type ValidarResp =
   | { ok: true; entregaId: string; codigo: string }
@@ -25,10 +14,6 @@ type ValidarResp =
       reason: "nao_encontrado" | "outro_motorista" | "outro_dia" | "ja_entregue" | "erro";
       message: string;
     };
-
-type ConcluirResp =
-  | { ok: true; entregaId: string }
-  | { ok: false; error: string };
 
 type Entrega = {
   id: string;
@@ -47,34 +32,25 @@ type Feedback = {
   ts: number;
 };
 
-type FotoCapturada = {
-  base64: string;
-  mediaType: "image/jpeg";
-  previewUrl: string;
-  sizeKB: number;
-};
+type Gps = { lat: number; lng: number; precisao_metros: number };
 
-type Etapa =
-  | { tipo: "scan" }
-  | { tipo: "foto"; entregaId: string; codigo: string; gps: GpsCapturado };
-
-function captureGps(timeoutMs = 8000): Promise<GpsCapturado> {
+function captureGps(timeoutMs = 6000): Promise<Gps | null> {
   return new Promise((resolve) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       resolve(null);
       return;
     }
-    let resolved = false;
+    let done = false;
     const t = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
+      if (!done) {
+        done = true;
         resolve(null);
       }
     }, timeoutMs);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        if (resolved) return;
-        resolved = true;
+        if (done) return;
+        done = true;
         clearTimeout(t);
         resolve({
           lat: pos.coords.latitude,
@@ -83,8 +59,8 @@ function captureGps(timeoutMs = 8000): Promise<GpsCapturado> {
         });
       },
       () => {
-        if (resolved) return;
-        resolved = true;
+        if (done) return;
+        done = true;
         clearTimeout(t);
         resolve(null);
       },
@@ -106,29 +82,38 @@ export function Painel({
   entregues: Entrega[];
   role: string;
 }) {
-  const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [etapa, setEtapa] = useState<Etapa>({ tipo: "scan" });
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [foto, setFoto] = useState<FotoCapturada | null>(null);
   const [validando, startValidar] = useTransition();
-  const [concluindo, startConcluir] = useTransition();
   const [manual, setManual] = useState("");
 
   const dataBR = `${data.slice(8, 10)}/${data.slice(5, 7)}/${data.slice(0, 4)}`;
 
+  // Toast de sucesso quando volta da rota de foto
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    const entregue = p.get("entregue");
+    if (entregue) {
+      setFeedback({
+        tipo: "ok",
+        titulo: "✓ Entregue!",
+        detalhe: entregue,
+        ts: Date.now(),
+      });
+      // limpa query string sem reload
+      window.history.replaceState({}, "", "/motorista");
+    }
+  }, []);
+
   const onCodigo = (codigo: string) => {
-setFeedback({ tipo: "ok", titulo: "Validando…", detalhe: codigo, ts: Date.now() });
+    setFeedback({ tipo: "ok", titulo: "Validando…", detalhe: codigo, ts: Date.now() });
     startValidar(async () => {
       try {
-        // PASSO 1: valida via route handler HTTP (não Server Action)
         const r = await fetch("/api/motorista/validar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ codigo }),
         });
-        // Lê como texto primeiro — se servidor retorna HTML de erro,
-        // r.json() crasha com "string did not match expected pattern" no iOS.
         const raw = await r.text();
         let validacao: ValidarResp;
         try {
@@ -159,24 +144,29 @@ setFeedback({ tipo: "ok", titulo: "Validando…", detalhe: codigo, ts: Date.now(
           return;
         }
 
-        // Aguarda 600ms antes de mudar de etapa: dá tempo do iOS Safari liberar
-        // totalmente o recurso de câmera do scanner antes de re-renderizar a tela
-        // que tem <input type="file"> (sem esse delay o iOS crashava a tab).
+        // Captura GPS
         setFeedback({
           tipo: "ok",
           titulo: "Pedido validado, capturando GPS…",
           detalhe: validacao.codigo,
           ts: Date.now(),
         });
-        const gps = await captureGps(8000);
-        await new Promise<void>((r) => setTimeout(r, 200));
-        setEtapa({ tipo: "foto", entregaId: validacao.entregaId, codigo: validacao.codigo, gps });
-        setFeedback({
-          tipo: "ok",
-          titulo: "Pronto pra foto",
-          detalhe: `${validacao.codigo}${gps ? "" : " (sem GPS)"}`,
-          ts: Date.now(),
+        const gps = await captureGps(6000);
+
+        // HARD NAVIGATION pra rota nova. Isso força reload completo do iOS:
+        // descarta TODO o estado do scanner, libera todos os recursos de câmera
+        // antes de mostrar o input de foto. Sem isso, iOS Safari crashava a tab
+        // quando renderizava a etapa de foto na mesma página.
+        const params = new URLSearchParams({
+          id: validacao.entregaId,
+          codigo: validacao.codigo,
         });
+        if (gps) {
+          params.set("lat", String(gps.lat));
+          params.set("lng", String(gps.lng));
+          params.set("acc", String(gps.precisao_metros));
+        }
+        window.location.assign(`/motorista/foto?${params.toString()}`);
       } catch (e) {
         setFeedback({
           tipo: "erro",
@@ -194,88 +184,6 @@ setFeedback({ tipo: "ok", titulo: "Validando…", detalhe: codigo, ts: Date.now(
     setManual("");
   };
 
-  const handleFotoFile = async (file: File) => {
-    try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 2,
-        maxWidthOrHeight: 1600,
-        useWebWorker: true,
-        fileType: "image/jpeg",
-        initialQuality: 0.8,
-      });
-      const buf = await compressed.arrayBuffer();
-      let bin = "";
-      const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-      setFoto({
-        base64: btoa(bin),
-        mediaType: "image/jpeg",
-        previewUrl: URL.createObjectURL(compressed),
-        sizeKB: Math.round(compressed.size / 1024),
-      });
-    } catch (e) {
-      setFeedback({ tipo: "erro", titulo: "Erro ao processar foto", detalhe: String(e), ts: Date.now() });
-    }
-  };
-
-  const cancelarFoto = () => {
-    setFoto(null);
-    setEtapa({ tipo: "scan" });
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
-  const concluir = () => {
-    if (etapa.tipo !== "foto" || !foto) return;
-    startConcluir(async () => {
-      try {
-        const r = await fetch("/api/motorista/concluir", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            entregaId: etapa.entregaId,
-            fotoBase64: foto.base64,
-            mediaType: foto.mediaType,
-            gps: etapa.gps,
-          }),
-        });
-        const raw = await r.text();
-        let res: ConcluirResp;
-        try {
-          res = JSON.parse(raw) as ConcluirResp;
-        } catch {
-          setFeedback({
-            tipo: "erro",
-            titulo: `Resposta inválida do servidor (HTTP ${r.status})`,
-            detalhe: raw.slice(0, 300),
-            ts: Date.now(),
-          });
-          return;
-        }
-        if (!res.ok) {
-          setFeedback({ tipo: "erro", titulo: res.error, ts: Date.now() });
-          return;
-        }
-        setFeedback({
-          tipo: "ok",
-          titulo: "✓ Entregue!",
-          detalhe: etapa.codigo,
-          ts: Date.now(),
-        });
-        setFoto(null);
-        setEtapa({ tipo: "scan" });
-        if (fileRef.current) fileRef.current.value = "";
-        router.refresh();
-      } catch (e) {
-        setFeedback({
-          tipo: "erro",
-          titulo: "Erro ao concluir",
-          detalhe: e instanceof Error ? e.message : String(e),
-          ts: Date.now(),
-        });
-      }
-    });
-  };
-
   return (
     <div className="flex flex-col gap-4 pb-12">
       <div>
@@ -291,127 +199,45 @@ setFeedback({ tipo: "ok", titulo: "Validando…", detalhe: codigo, ts: Date.now(
         )}
       </div>
 
-      {/* === ETAPA SCAN === */}
-      {etapa.tipo === "scan" && (
-        <Card>
-          <CardContent className="flex flex-col gap-3 p-4">
-            <div>
-              <p className="text-sm font-medium">1. Bipa o código do pedido entregue</p>
-              <p className="text-xs text-zinc-500">
-                Aponta a câmera no código de barras. O GPS é capturado em paralelo.
-              </p>
+      <Card>
+        <CardContent className="flex flex-col gap-3 p-4">
+          <div>
+            <p className="text-sm font-medium">1. Bipa o código do pedido entregue</p>
+            <p className="text-xs text-zinc-500">
+              Aponta a câmera no código de barras. O GPS é capturado em paralelo.
+            </p>
+          </div>
+          <ScannerCodigo onCodigo={onCodigo} labelIniciar="📷 Bipar código" />
+          <div className="flex items-end gap-2 border-t border-zinc-100 pt-3">
+            <div className="flex flex-1 flex-col gap-1">
+              <label htmlFor="manual" className="text-xs font-medium text-zinc-600">
+                Ou digita o código
+              </label>
+              <input
+                id="manual"
+                value={manual}
+                onChange={(e) => setManual(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") lancarManual();
+                }}
+                placeholder="C010022310554"
+                className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base"
+              />
             </div>
-            <ScannerCodigo onCodigo={onCodigo} labelIniciar="📷 Bipar código" />
-            <div className="flex items-end gap-2 border-t border-zinc-100 pt-3">
-              <div className="flex flex-1 flex-col gap-1">
-                <label htmlFor="manual" className="text-xs font-medium text-zinc-600">
-                  Ou digita o código
-                </label>
-                <input
-                  id="manual"
-                  value={manual}
-                  onChange={(e) => setManual(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") lancarManual();
-                  }}
-                  placeholder="C010022310554"
-                  className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={lancarManual}
-                disabled={validando || !manual.trim()}
-              >
-                Validar
-              </Button>
-            </div>
-            {validando && (
-              <div className="text-xs text-zinc-500">Validando pedido + capturando GPS…</div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* === ETAPA FOTO === */}
-      {etapa.tipo === "foto" && (
-        <Card>
-          <CardContent className="flex flex-col gap-3 p-4">
-            <div className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-              ✓ Pedido <span className="font-mono">{etapa.codigo}</span> validado.
-              {etapa.gps && (
-                <span className="text-xs text-emerald-700"> GPS capturado (~{Math.round(etapa.gps.precisao_metros)}m).</span>
-              )}
-            </div>
-
-            <div>
-              <p className="text-sm font-medium">2. Tira foto do canhoto / nota assinada</p>
-              <p className="text-xs text-zinc-500">
-                Obrigatório pro financeiro. A foto fica anexada ao pedido.
-              </p>
-            </div>
-
-            {/* NOTA: removi capture="environment" — em iOS Safari, esse atributo
-                logo após o scanner do html5-qrcode liberar a câmera crashava a tab.
-                Sem o capture, o iOS abre seletor com opção 'Tirar foto'/'Biblioteca'. */}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFotoFile(f);
-              }}
-            />
-
-            {!foto ? (
-              <Button type="button" onClick={() => fileRef.current?.click()} className="h-14 text-base">
-                📷 Tirar foto do canhoto
-              </Button>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={foto.previewUrl}
-                  alt="Canhoto"
-                  className="max-h-72 w-full rounded-md border border-zinc-200 object-contain"
-                />
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-600">
-                  <span>{foto.sizeKB} KB · comprimida</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFoto(null);
-                      if (fileRef.current) fileRef.current.value = "";
-                    }}
-                    disabled={concluindo}
-                  >
-                    Trocar foto
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2 border-t border-zinc-100 pt-3">
-              <Button type="button" variant="outline" onClick={cancelarFoto} disabled={concluindo}>
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                onClick={concluir}
-                disabled={concluindo || !foto}
-                className="flex-1"
-              >
-                {concluindo ? "Enviando…" : "✓ Confirmar entrega"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={lancarManual}
+              disabled={validando || !manual.trim()}
+            >
+              Validar
+            </Button>
+          </div>
+          {validando && (
+            <div className="text-xs text-zinc-500">Validando pedido + capturando GPS…</div>
+          )}
+        </CardContent>
+      </Card>
 
       {feedback && (
         <div
@@ -428,72 +254,68 @@ setFeedback({ tipo: "ok", titulo: "Validando…", detalhe: codigo, ts: Date.now(
         </div>
       )}
 
-      {etapa.tipo === "scan" && (
-        <>
-          <div>
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-600">
-              Pendentes ({pendentes.length})
-            </h2>
-            {pendentes.length === 0 ? (
-              <Card>
-                <CardContent className="py-6 text-center text-sm text-zinc-500">
-                  Nada pendente. Bom trabalho!
+      <div>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-600">
+          Pendentes ({pendentes.length})
+        </h2>
+        {pendentes.length === 0 ? (
+          <Card>
+            <CardContent className="py-6 text-center text-sm text-zinc-500">
+              Nada pendente. Bom trabalho!
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {pendentes.map((e) => (
+              <Card key={e.id}>
+                <CardContent className="flex flex-col gap-1 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-900">
+                      {e.status === "em_rota" ? "EM ROTA" : "PENDENTE"}
+                    </span>
+                    <span className="font-mono text-sm">{e.codigo_queops}</span>
+                  </div>
+                  {(e.cliente_nome || e.bairro || e.hora_entrega) && (
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-700">
+                      {e.hora_entrega && <span>⏰ {e.hora_entrega.slice(0, 5)}</span>}
+                      {e.cliente_nome && <span>{e.cliente_nome}</span>}
+                      {e.bairro && <span className="text-zinc-500">{e.bairro}</span>}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {pendentes.map((e) => (
-                  <Card key={e.id}>
-                    <CardContent className="flex flex-col gap-1 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-900">
-                          {e.status === "em_rota" ? "EM ROTA" : "PENDENTE"}
-                        </span>
-                        <span className="font-mono text-sm">{e.codigo_queops}</span>
-                      </div>
-                      {(e.cliente_nome || e.bairro || e.hora_entrega) && (
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-700">
-                          {e.hora_entrega && <span>⏰ {e.hora_entrega.slice(0, 5)}</span>}
-                          {e.cliente_nome && <span>{e.cliente_nome}</span>}
-                          {e.bairro && <span className="text-zinc-500">{e.bairro}</span>}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
+        )}
+      </div>
 
-          {entregues.length > 0 && (
-            <details className="rounded-md border border-zinc-200 bg-white">
-              <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-zinc-700">
-                Entregues hoje ({entregues.length})
-              </summary>
-              <ul className="divide-y divide-zinc-100">
-                {entregues.map((e) => (
-                  <li key={e.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">
-                        ✓
-                      </span>
-                      <span className="font-mono">{e.codigo_queops}</span>
-                      {e.cliente_nome && <span className="text-zinc-600">{e.cliente_nome}</span>}
-                    </div>
-                    {e.entregue_at && (
-                      <span className="text-xs text-zinc-500">
-                        {new Date(e.entregue_at).toLocaleTimeString("pt-BR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </>
+      {entregues.length > 0 && (
+        <details className="rounded-md border border-zinc-200 bg-white">
+          <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-zinc-700">
+            Entregues hoje ({entregues.length})
+          </summary>
+          <ul className="divide-y divide-zinc-100">
+            {entregues.map((e) => (
+              <li key={e.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">
+                    ✓
+                  </span>
+                  <span className="font-mono">{e.codigo_queops}</span>
+                  {e.cliente_nome && <span className="text-zinc-600">{e.cliente_nome}</span>}
+                </div>
+                {e.entregue_at && (
+                  <span className="text-xs text-zinc-500">
+                    {new Date(e.entregue_at).toLocaleTimeString("pt-BR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );
