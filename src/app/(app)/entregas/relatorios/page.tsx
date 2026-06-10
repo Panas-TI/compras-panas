@@ -64,10 +64,10 @@ export default async function RelatoriosEntregasPage() {
       .select("*", { count: "exact", head: true })
       .gte("data_entrega", trintaDiasAtras)
       .eq("status", "nao_entregue"),
-    // Tempo médio entrega: entregue_at - created_at
+    // Tempo médio entrega: entregue_at - criado_em
     supabase
       .from("entregas")
-      .select("created_at, entregue_at")
+      .select("criado_em, entregue_at")
       .gte("data_entrega", trintaDiasAtras)
       .eq("status", "entregue")
       .not("entregue_at", "is", null)
@@ -101,8 +101,8 @@ export default async function RelatoriosEntregasPage() {
   // Tempo médio (em horas)
   const tempos = (entreguesParaTempo ?? [])
     .map((e) => {
-      if (!e.created_at || !e.entregue_at) return null;
-      const ms = new Date(e.entregue_at).getTime() - new Date(e.created_at).getTime();
+      if (!e.criado_em || !e.entregue_at) return null;
+      const ms = new Date(e.entregue_at).getTime() - new Date(e.criado_em).getTime();
       return ms > 0 ? ms : null;
     })
     .filter((v): v is number => v !== null);

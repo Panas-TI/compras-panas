@@ -193,7 +193,7 @@ export type Database = {
       entrega_log: {
         Row: {
           acao: string
-          created_at: string
+          criado_em: string
           dados_antes: Json | null
           dados_depois: Json | null
           entrega_id: string
@@ -202,7 +202,7 @@ export type Database = {
         }
         Insert: {
           acao: string
-          created_at?: string
+          criado_em?: string
           dados_antes?: Json | null
           dados_depois?: Json | null
           entrega_id: string
@@ -211,7 +211,7 @@ export type Database = {
         }
         Update: {
           acao?: string
-          created_at?: string
+          criado_em?: string
           dados_antes?: Json | null
           dados_depois?: Json | null
           entrega_id?: string
@@ -239,6 +239,7 @@ export type Database = {
         Row: {
           area_entrega: number | null
           assinatura_cliente_url: string | null
+          atualizado_em: string
           bairro: string | null
           checkin_at: string | null
           cidade: string | null
@@ -246,8 +247,8 @@ export type Database = {
           cliente_telefone: string | null
           codigo_queops: string
           contato_nome: string | null
-          created_at: string
           created_by: string | null
+          criado_em: string
           custo_ocr_usd: number | null
           data_entrega: string
           endereco_complemento: string | null
@@ -269,12 +270,12 @@ export type Database = {
           status: string
           total_fisico: number | null
           uf: string | null
-          updated_at: string
           valor_total: number
         }
         Insert: {
           area_entrega?: number | null
           assinatura_cliente_url?: string | null
+          atualizado_em?: string
           bairro?: string | null
           checkin_at?: string | null
           cidade?: string | null
@@ -282,8 +283,8 @@ export type Database = {
           cliente_telefone?: string | null
           codigo_queops: string
           contato_nome?: string | null
-          created_at?: string
           created_by?: string | null
+          criado_em?: string
           custo_ocr_usd?: number | null
           data_entrega?: string
           endereco_complemento?: string | null
@@ -305,12 +306,12 @@ export type Database = {
           status?: string
           total_fisico?: number | null
           uf?: string | null
-          updated_at?: string
           valor_total?: number
         }
         Update: {
           area_entrega?: number | null
           assinatura_cliente_url?: string | null
+          atualizado_em?: string
           bairro?: string | null
           checkin_at?: string | null
           cidade?: string | null
@@ -318,8 +319,8 @@ export type Database = {
           cliente_telefone?: string | null
           codigo_queops?: string
           contato_nome?: string | null
-          created_at?: string
           created_by?: string | null
+          criado_em?: string
           custo_ocr_usd?: number | null
           data_entrega?: string
           endereco_complemento?: string | null
@@ -341,7 +342,6 @@ export type Database = {
           status?: string
           total_fisico?: number | null
           uf?: string | null
-          updated_at?: string
           valor_total?: number
         }
         Relationships: [
