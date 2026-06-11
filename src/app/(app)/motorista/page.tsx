@@ -21,7 +21,7 @@ export default async function MotoristaPage() {
   if (!profile?.ativo) redirect("/login");
 
   // Aprovador também pode acessar (visualização). Outros caem no hub.
-  if (profile.role !== "motorista" && profile.role !== "aprovador") {
+  if (!["motorista", "aprovador", "comprador"].includes(profile.role)) {
     redirect("/");
   }
 

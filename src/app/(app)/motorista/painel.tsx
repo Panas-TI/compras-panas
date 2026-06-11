@@ -204,7 +204,7 @@ export function Painel({
             {dataBR} · {pendentes.length} {pendentes.length === 1 ? "entrega pendente" : "entregas pendentes"}
             {entregues.length > 0 && ` · ${entregues.length} já entregue(s)`}
           </p>
-          {role === "aprovador" && (
+          {(role === "aprovador" || role === "comprador") && (
             <p className="mt-1 text-xs text-amber-700">
               Você está visualizando como motorista.
             </p>

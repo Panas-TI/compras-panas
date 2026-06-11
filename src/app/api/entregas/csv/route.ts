@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (profile?.role !== "aprovador") {
+  if (!profile?.role || !["aprovador", "comprador"].includes(profile.role)) {
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 

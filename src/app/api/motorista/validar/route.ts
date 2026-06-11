@@ -41,7 +41,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ValidarResp>>
     if (!profile?.ativo) {
       return NextResponse.json({ ok: false, reason: "erro", message: "Usuário inativo." });
     }
-    if (profile.role !== "motorista" && profile.role !== "aprovador") {
+    if (!["motorista", "aprovador", "comprador"].includes(profile.role)) {
       return NextResponse.json({ ok: false, reason: "erro", message: "Sem permissão pra entregar." });
     }
 

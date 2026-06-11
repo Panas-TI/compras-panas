@@ -45,7 +45,7 @@ export function UsersTable({ currentUserId, users }: { currentUserId: string; us
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="role">Perfil</Label>
             <Select id="role" name="role" defaultValue="comprador">
-              <option value="comprador">Comprador (cria solicitações)</option>
+              <option value="comprador">Comprador (solicitações + entregas)</option>
               <option value="aprovador">Aprovador (acesso total)</option>
               <option value="estoquista">Estoquista (recebimento + contagem)</option>
               <option value="motorista">Motorista (só entregas)</option>

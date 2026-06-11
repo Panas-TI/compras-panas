@@ -42,7 +42,7 @@ export async function validarBipadaAction(codigo: string): Promise<ValidarState>
       .eq("id", user.id)
       .maybeSingle();
     if (!profile?.ativo) return { ok: false, reason: "erro", message: "Usuário inativo." };
-    if (profile.role !== "motorista" && profile.role !== "aprovador") {
+    if (!["motorista", "aprovador", "comprador"].includes(profile.role)) {
       return { ok: false, reason: "erro", message: "Sem permissão pra entregar." };
     }
 
@@ -126,7 +126,7 @@ async function concluirEntregaInner(
     .eq("id", user.id)
     .maybeSingle();
   if (!profile?.ativo) return { ok: false, error: "Usuário inativo." };
-  if (profile.role !== "motorista" && profile.role !== "aprovador") {
+  if (!["motorista", "aprovador", "comprador"].includes(profile.role)) {
     return { ok: false, error: "Sem permissão." };
   }
 

@@ -27,7 +27,7 @@ export default async function MapaEntregasPage({ searchParams }: { searchParams:
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (profile?.role !== "aprovador") redirect("/");
+  if (!profile?.role || !["aprovador", "comprador"].includes(profile.role)) redirect("/");
 
   let query = supabase
     .from("entregas")

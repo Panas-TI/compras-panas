@@ -40,7 +40,7 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  const isAprovador = meProfile?.role === "aprovador";
+  const isAprovador = meProfile?.role === "aprovador" || meProfile?.role === "comprador";
   const isMotorista = meProfile?.role === "motorista";
   if (!isAprovador && !isMotorista) redirect("/");
 

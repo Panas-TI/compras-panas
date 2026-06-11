@@ -11,7 +11,7 @@ export default async function EntregasNovoPage() {
     .select("role, ativo")
     .eq("id", user.id)
     .maybeSingle();
-  if (!profile?.ativo || profile.role !== "aprovador") redirect("/");
+  if (!profile?.ativo || !["aprovador", "comprador"].includes(profile.role)) redirect("/");
 
   return (
     <div className="flex flex-col gap-4">

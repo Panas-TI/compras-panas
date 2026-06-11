@@ -27,7 +27,7 @@ export default async function RelatoriosEntregasPage() {
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (profile?.role !== "aprovador") redirect("/");
+  if (!profile?.role || !["aprovador", "comprador"].includes(profile.role)) redirect("/");
 
   const hoje = isoToday();
   const seteDiasAtras = isoDaysAgo(6); // inclui hoje

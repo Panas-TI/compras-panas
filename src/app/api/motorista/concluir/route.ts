@@ -51,7 +51,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ConcluirResp>
       .eq("id", user.id)
       .maybeSingle();
     if (!profile?.ativo) return NextResponse.json({ ok: false, error: "Usuário inativo." });
-    if (profile.role !== "motorista" && profile.role !== "aprovador") {
+    if (!["motorista", "aprovador", "comprador"].includes(profile.role)) {
       return NextResponse.json({ ok: false, error: "Sem permissão." });
     }
 

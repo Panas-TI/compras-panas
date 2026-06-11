@@ -13,8 +13,8 @@ async function assertAprovador() {
     .select("role, ativo")
     .eq("id", user.id)
     .maybeSingle();
-  if (!profile?.ativo || profile.role !== "aprovador") {
-    return { ok: false as const, error: "Apenas aprovador pode fazer essa ação." };
+  if (!profile?.ativo || !["aprovador", "comprador"].includes(profile.role)) {
+    return { ok: false as const, error: "Apenas aprovador ou comprador podem fazer essa ação." };
   }
   return { ok: true as const, userId: user.id, email: user.email ?? "" };
 }
