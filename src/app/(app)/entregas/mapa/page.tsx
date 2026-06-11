@@ -34,7 +34,7 @@ export default async function MapaEntregasPage({ searchParams }: { searchParams:
     .select(
       `
       id, codigo_queops, cliente_nome, bairro, valor_total,
-      entregue_at, entrega_lat, entrega_lng, entrega_precisao_metros,
+      data_entrega, entregue_at, entrega_lat, entrega_lng, entrega_precisao_metros,
       motorista_id,
       motorista:profiles!entregas_motorista_id_fkey(nome)
     `
@@ -62,6 +62,7 @@ export default async function MapaEntregasPage({ searchParams }: { searchParams:
     cliente: e.cliente_nome,
     bairro: e.bairro,
     valor: e.valor_total,
+    dataEntrega: e.data_entrega,
     entregueAt: e.entregue_at,
     lat: Number(e.entrega_lat),
     lng: Number(e.entrega_lng),

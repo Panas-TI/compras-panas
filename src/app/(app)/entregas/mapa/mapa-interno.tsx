@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { formatCurrencyBRL } from "@/lib/utils";
+import { formatCurrencyBRL, calcularAtrasoDias } from "@/lib/utils";
 import type { EntregaPin } from "./mapa-cliente";
 
 // Paleta pra cores por motorista — 10 cores distinguíveis
@@ -119,10 +119,24 @@ export function MapaInterno({ pins }: { pins: EntregaPin[] }) {
                     <div className="font-mono text-xs text-zinc-500">{p.codigo}</div>
                     {p.cliente && <div className="font-semibold">{p.cliente}</div>}
                     {p.bairro && <div className="text-zinc-600">{p.bairro}</div>}
+                    {(() => {
+                      const atraso = calcularAtrasoDias(p.dataEntrega, p.entregueAt);
+                      if (atraso !== null && atraso > 0) {
+                        return (
+                          <div className="rounded border border-orange-400 bg-orange-100 px-1.5 py-0.5 text-xs font-bold text-orange-900">
+                            ⏰ Entregue com atraso ({atraso} {atraso === 1 ? "dia" : "dias"})
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                     {p.entregueAt && (
                       <div className="text-xs text-zinc-500">
-                        Entregue às{" "}
-                        {new Date(p.entregueAt).toLocaleTimeString("pt-BR", {
+                        Entregue em{" "}
+                        {new Date(p.entregueAt).toLocaleString("pt-BR", {
+                          timeZone: "America/Sao_Paulo",
+                          day: "2-digit",
+                          month: "2-digit",
                           hour: "2-digit",
                           minute: "2-digit",
                         })}

@@ -192,7 +192,7 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
                           className="rounded-md border border-orange-400 bg-orange-100 px-2 py-0.5 text-xs font-bold tracking-wide text-orange-900"
                           title={`Planejado pra ${e.data_entrega.slice(8, 10)}/${e.data_entrega.slice(5, 7)}, entregue ${atraso} dia(s) depois`}
                         >
-                          ⏰ D+{atraso}
+                          ⏰ ENTREGUE COM ATRASO ({atraso}d)
                         </span>
                       )}
                     </div>

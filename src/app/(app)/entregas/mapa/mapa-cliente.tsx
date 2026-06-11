@@ -18,6 +18,7 @@ export type EntregaPin = {
   cliente: string | null;
   bairro: string | null;
   valor: number | null;
+  dataEntrega: string; // YYYY-MM-DD planejada
   entregueAt: string | null;
   lat: number;
   lng: number;
