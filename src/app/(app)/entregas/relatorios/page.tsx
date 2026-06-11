@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { calcularAtrasoDias } from "@/lib/utils";
 
 function isoToday(): string {
   const d = new Date();
@@ -67,7 +68,7 @@ export default async function RelatoriosEntregasPage() {
     // Tempo médio entrega: entregue_at - criado_em
     supabase
       .from("entregas")
-      .select("criado_em, entregue_at")
+      .select("criado_em, entregue_at, data_entrega")
       .gte("data_entrega", trintaDiasAtras)
       .eq("status", "entregue")
       .not("entregue_at", "is", null)
@@ -107,6 +108,15 @@ export default async function RelatoriosEntregasPage() {
     })
     .filter((v): v is number => v !== null);
   const tempoMedioH = tempos.length ? tempos.reduce((a, b) => a + b, 0) / tempos.length / 1000 / 3600 : null;
+
+  // % no prazo (entregue na data planejada) e nº de atrasadas
+  const entregasComDataReal = (entreguesParaTempo ?? []).filter((e) => e.data_entrega && e.entregue_at);
+  const noPrazo = entregasComDataReal.filter((e) => {
+    const a = calcularAtrasoDias(e.data_entrega, e.entregue_at);
+    return a !== null && a <= 0;
+  }).length;
+  const atrasadas = entregasComDataReal.length - noPrazo;
+  const taxaPrazo = entregasComDataReal.length > 0 ? (noPrazo / entregasComDataReal.length) * 100 : null;
 
   // Agrupa por motorista
   const motoristasMap = new Map<string, { nome: string; total: number; entregues: number }>();
@@ -160,7 +170,7 @@ export default async function RelatoriosEntregasPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <KpiCard label="Hoje" value={String(countHoje ?? 0)} />
         <KpiCard label="7 dias" value={String(countSemana ?? 0)} />
         <KpiCard label="30 dias" value={String(countMes ?? 0)} />
@@ -168,6 +178,15 @@ export default async function RelatoriosEntregasPage() {
           label="Taxa de sucesso (30d)"
           value={taxaSucesso == null ? "—" : `${taxaSucesso.toFixed(1)}%`}
           tone={taxaSucesso == null ? undefined : taxaSucesso >= 90 ? "good" : taxaSucesso >= 75 ? "warn" : "bad"}
+        />
+        <KpiCard
+          label="No prazo (30d)"
+          value={
+            taxaPrazo == null
+              ? "—"
+              : `${taxaPrazo.toFixed(0)}%${atrasadas > 0 ? ` (${atrasadas} atras.)` : ""}`
+          }
+          tone={taxaPrazo == null ? undefined : taxaPrazo >= 90 ? "good" : taxaPrazo >= 75 ? "warn" : "bad"}
         />
         <KpiCard
           label="Tempo médio até entrega"

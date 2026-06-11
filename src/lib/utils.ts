@@ -30,6 +30,37 @@ export function formatDateBR(value: string | Date | null | undefined): string {
   }).format(d);
 }
 
+/**
+ * Calcula atraso em dias entre a data planejada (YYYY-MM-DD) e a data real
+ * de entrega (timestamp ISO). Considera timezone America/Sao_Paulo.
+ *
+ * - Retorna 0 se entregou no dia certo.
+ * - Retorna N positivo se entregou N dias depois.
+ * - Retorna N negativo se entregou N dias antes (raro mas possível).
+ * - Retorna null se entregueAt for null/inválido.
+ */
+export function calcularAtrasoDias(
+  dataEntrega: string | null,
+  entregueAt: string | null
+): number | null {
+  if (!dataEntrega || !entregueAt) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dataEntrega)) return null;
+
+  const realDt = new Date(entregueAt);
+  if (Number.isNaN(realDt.getTime())) return null;
+
+  // Data real em São Paulo (YYYY-MM-DD)
+  // sv-SE produz formato ISO compatível
+  const realLocal = realDt.toLocaleDateString("sv-SE", {
+    timeZone: "America/Sao_Paulo",
+  });
+
+  // Diff em dias (ambos como datas locais sem hora)
+  const realMidnight = new Date(realLocal + "T00:00:00").getTime();
+  const planejadaMidnight = new Date(dataEntrega + "T00:00:00").getTime();
+  return Math.round((realMidnight - planejadaMidnight) / 86_400_000);
+}
+
 export function parseNumberBR(value: string): number | null {
   // "1.234,56" → 1234.56
   if (!value || !value.trim()) return null;

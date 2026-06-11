@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { calcularAtrasoDias } from "@/lib/utils";
 
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";
@@ -66,6 +67,7 @@ export async function GET(req: NextRequest) {
     "Data entrega",
     "Hora",
     "Status",
+    "Atraso (dias)",
     "Cliente",
     "Telefone",
     "Bairro",
@@ -84,28 +86,32 @@ export async function GET(req: NextRequest) {
     "Criado por",
   ];
 
-  const rows = (data ?? []).map((e) => [
-    e.codigo_queops,
-    formatDateBR(e.data_entrega),
-    e.hora_entrega?.slice(0, 5) ?? "",
-    e.status,
-    e.cliente_nome ?? "",
-    e.cliente_telefone ?? "",
-    e.bairro ?? "",
-    e.cidade ?? "",
-    e.uf ?? "",
-    e.valor_total ?? "",
-    e.observacoes ?? "",
-    formatDateBR(e.criado_em),
-    formatDateBR(e.entregue_at),
-    e.entrega_lat ?? "",
-    e.entrega_lng ?? "",
-    e.entrega_precisao_metros ?? "",
-    e.gps_negado ? "sim" : "não",
-    e.motivo_nao_entrega ?? "",
-    e.motorista?.nome ?? "",
-    e.criador?.nome ?? "",
-  ]);
+  const rows = (data ?? []).map((e) => {
+    const atraso = e.status === "entregue" ? calcularAtrasoDias(e.data_entrega, e.entregue_at) : null;
+    return [
+      e.codigo_queops,
+      formatDateBR(e.data_entrega),
+      e.hora_entrega?.slice(0, 5) ?? "",
+      e.status,
+      atraso === null ? "" : String(atraso),
+      e.cliente_nome ?? "",
+      e.cliente_telefone ?? "",
+      e.bairro ?? "",
+      e.cidade ?? "",
+      e.uf ?? "",
+      e.valor_total ?? "",
+      e.observacoes ?? "",
+      formatDateBR(e.criado_em),
+      formatDateBR(e.entregue_at),
+      e.entrega_lat ?? "",
+      e.entrega_lng ?? "",
+      e.entrega_precisao_metros ?? "",
+      e.gps_negado ? "sim" : "não",
+      e.motivo_nao_entrega ?? "",
+      e.motorista?.nome ?? "",
+      e.criador?.nome ?? "",
+    ];
+  });
 
   const csv =
     "﻿" + // BOM pra Excel reconhecer UTF-8

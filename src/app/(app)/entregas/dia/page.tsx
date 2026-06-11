@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrencyBRL } from "@/lib/utils";
+import { formatCurrencyBRL, calcularAtrasoDias } from "@/lib/utils";
 import { AtribuirMotorista, ExcluirEntrega } from "./lista-client";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -167,6 +167,7 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {entregas.map((e) => {
             const st = STATUS_LABEL[e.status] ?? { label: e.status, cls: "bg-zinc-100 text-zinc-700 border-zinc-300" };
+            const atraso = e.status === "entregue" ? calcularAtrasoDias(e.data_entrega, e.entregue_at) : null;
             const endFull = [
               e.endereco_rua,
               e.endereco_numero,
@@ -180,11 +181,21 @@ export default async function EntregasDiaPage({ searchParams }: { searchParams: 
               <Card key={e.id} className="overflow-hidden">
                 <CardContent className="flex flex-col gap-2 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`rounded-md border px-2 py-0.5 text-xs font-bold tracking-wide ${st.cls}`}
-                    >
-                      {st.label}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`rounded-md border px-2 py-0.5 text-xs font-bold tracking-wide ${st.cls}`}
+                      >
+                        {st.label}
+                      </span>
+                      {atraso !== null && atraso > 0 && (
+                        <span
+                          className="rounded-md border border-orange-400 bg-orange-100 px-2 py-0.5 text-xs font-bold tracking-wide text-orange-900"
+                          title={`Planejado pra ${e.data_entrega.slice(8, 10)}/${e.data_entrega.slice(5, 7)}, entregue ${atraso} dia(s) depois`}
+                        >
+                          ⏰ D+{atraso}
+                        </span>
+                      )}
+                    </div>
                     <span className="font-mono text-xs text-zinc-500">{e.codigo_queops}</span>
                   </div>
 
