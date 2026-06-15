@@ -59,3 +59,7 @@ supabase/.temp
 
 # Local supabase CLI binary
 .bin/
+
+# Fichas técnicas (export Queóps - dados sensíveis)
+fichas_tecnicas.xls
+fichas_tecnicas*.xls
