@@ -12,6 +12,7 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Sea
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const categoria = typeof sp.categoria === "string" ? sp.categoria : "";
+  const tipoFiltro = typeof sp.tipo === "string" ? sp.tipo : "final";
   const incluirInativos = sp.inativos === "1";
 
   const supabase = await createClient();
@@ -29,7 +30,7 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Sea
     .from("produto")
     .select(
       `
-      id, codigo_queops, nome, categoria, unidade_producao, ativo,
+      id, codigo_queops, nome, categoria, tipo, unidade_producao, ativo,
       ficha:ficha_tecnica!ficha_tecnica_produto_id_fkey(
         id, versao, vigente, criado_em,
         itens:ficha_item(id)
@@ -39,6 +40,7 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Sea
     .order("nome");
 
   if (!incluirInativos) query = query.eq("ativo", true);
+  if (tipoFiltro && tipoFiltro !== "todos") query = query.eq("tipo", tipoFiltro);
   if (q) {
     const safe = q.replace(/[(),]/g, " ").trim();
     if (safe) query = query.or(`nome.ilike.%${safe}%,codigo_queops.ilike.%${safe}%`);
@@ -74,6 +76,16 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Sea
             Buscar
           </label>
           <Input id="q" name="q" defaultValue={q} placeholder="nome ou código Queóps" />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium" htmlFor="tipo">
+            Tipo
+          </label>
+          <Select id="tipo" name="tipo" defaultValue={tipoFiltro}>
+            <option value="final">Produtos finais</option>
+            <option value="intermediario">Intermediários (recheios/massas)</option>
+            <option value="todos">Todos</option>
+          </Select>
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium" htmlFor="categoria">
@@ -124,7 +136,14 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Sea
                       <td className="px-3 py-2 font-mono text-xs">
                         {p.codigo_queops ?? <span className="text-amber-600">— sem código —</span>}
                       </td>
-                      <td className="px-3 py-2 font-medium">{p.nome}</td>
+                      <td className="px-3 py-2 font-medium">
+                        {p.nome}
+                        {p.tipo === "intermediario" && (
+                          <span className="ml-2 rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-800">
+                            INTERMEDIÁRIO
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-xs text-zinc-600">{p.categoria}</td>
                       <td className="px-3 py-2 text-zinc-600">{p.unidade_producao}</td>
                       <td className="px-3 py-2 text-right tabular-nums">

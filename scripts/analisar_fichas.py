@@ -128,6 +128,23 @@ def main():
             cells = [sheet.cell_value(row_idx, c) for c in range(sheet.ncols)]
             col_a = str(cells[0]).strip() if cells else ""
 
+            # Header de coluna pode reaparecer no meio do produto (quebra de
+            # página) com col_nome diferente. Re-detecta sempre que vir.
+            linha_low = " ".join(str(c).strip().lower() for c in cells if c)
+            if produto_atual is not None and (
+                "item (descrição/código)" in linha_low
+                or "item (descricao/codigo)" in linha_low
+            ):
+                for c in range(sheet.ncols):
+                    v = str(cells[c]).strip().lower()
+                    if "item" in v and (
+                        "descrição" in v or "descricao" in v
+                        or "código" in v or "codigo" in v
+                    ):
+                        produto_atual["col_nome"] = c
+                        break
+                continue
+
             # Ignora cabeçalho repetido / linhas vazias
             if deve_ignorar_linha(cells):
                 continue

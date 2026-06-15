@@ -5,27 +5,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { salvarFichaAction, type LinhaFichaInput } from "../actions";
 
-export type MpOpcao = {
-  id: string;
-  codigo: string | null;
-  nome: string;
-  unidade: string;
-  tipo: "folha" | "intermediario" | "ignorado";
-  temItemCompra: boolean;
-};
+export type MpOpcao =
+  | {
+      tipo: "mp";
+      id: string;
+      codigo: string | null;
+      nome: string;
+      unidade: string;
+      temItemCompra: boolean;
+    }
+  | {
+      tipo: "produto";
+      id: string;
+      codigo: string | null;
+      nome: string;
+      unidade: string;
+      temItemCompra: boolean;
+    };
 
 export type LinhaInicial = {
-  materia_prima_id: string;
+  tipo: "mp" | "produto";
+  ref_id: string;
   quantidade: number;
   merma_percent: number;
   observacoes: string | null;
-  mpNome: string;
-  mpCodigo: string | null;
-  mpUnidade: string;
+  refNome: string;
+  refCodigo: string | null;
+  refUnidade: string;
 };
 
 type LinhaState = LinhaInicial & {
-  _key: string; // chave estável pra re-render (não usa id porque pode ser nova)
+  _key: string;
 };
 
 function gerarKey() {
@@ -39,6 +49,7 @@ function fmtDataBR(iso: string | null) {
 
 export function FichaEditor({
   produtoId,
+  tipoProduto,
   unidadeProducao,
   versaoAtual,
   dataVigenciaInicio,
@@ -47,6 +58,7 @@ export function FichaEditor({
   observacoesIniciais,
 }: {
   produtoId: string;
+  tipoProduto: "final" | "intermediario";
   unidadeProducao: string;
   versaoAtual: number | null;
   dataVigenciaInicio: string | null;
@@ -62,18 +74,18 @@ export function FichaEditor({
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  // Detecta mudanças vs estado inicial
   const tocou = useMemo(() => {
     if (linhas.length !== linhasIniciais.length) return true;
     if (observacoes !== observacoesIniciais) return true;
     for (let i = 0; i < linhas.length; i++) {
       const l = linhas[i];
-      const orig = linhasIniciais[i];
-      if (!orig) return true;
-      if (l.materia_prima_id !== orig.materia_prima_id) return true;
-      if (Number(l.quantidade) !== Number(orig.quantidade)) return true;
-      if (Number(l.merma_percent) !== Number(orig.merma_percent)) return true;
-      if ((l.observacoes ?? "") !== (orig.observacoes ?? "")) return true;
+      const o = linhasIniciais[i];
+      if (!o) return true;
+      if (l.tipo !== o.tipo) return true;
+      if (l.ref_id !== o.ref_id) return true;
+      if (Number(l.quantidade) !== Number(o.quantidade)) return true;
+      if (Number(l.merma_percent) !== Number(o.merma_percent)) return true;
+      if ((l.observacoes ?? "") !== (o.observacoes ?? "")) return true;
     }
     return false;
   }, [linhas, observacoes, linhasIniciais, observacoesIniciais]);
@@ -91,25 +103,27 @@ export function FichaEditor({
       ...ls,
       {
         _key: gerarKey(),
-        materia_prima_id: "",
+        tipo: "mp",
+        ref_id: "",
         quantidade: 0,
         merma_percent: 0,
         observacoes: null,
-        mpNome: "",
-        mpCodigo: null,
-        mpUnidade: "",
+        refNome: "",
+        refCodigo: null,
+        refUnidade: "",
       },
     ]);
   };
 
-  const trocarMp = (key: string, novoMpId: string) => {
-    const mp = mpOpcoes.find((m) => m.id === novoMpId);
-    if (!mp) return;
+  const trocarRef = (key: string, novoId: string) => {
+    const opt = mpOpcoes.find((m) => m.id === novoId);
+    if (!opt) return;
     updateLinha(key, {
-      materia_prima_id: novoMpId,
-      mpNome: mp.nome,
-      mpCodigo: mp.codigo,
-      mpUnidade: mp.unidade,
+      tipo: opt.tipo,
+      ref_id: novoId,
+      refNome: opt.nome,
+      refCodigo: opt.codigo,
+      refUnidade: opt.unidade,
     });
   };
 
@@ -117,7 +131,8 @@ export function FichaEditor({
     setErro(null);
     setOk(null);
     const payload: LinhaFichaInput[] = linhas.map((l) => ({
-      materia_prima_id: l.materia_prima_id,
+      tipo: l.tipo,
+      ref_id: l.ref_id,
       quantidade: Number(l.quantidade),
       merma_percent: Number(l.merma_percent),
       observacoes: l.observacoes,
@@ -128,25 +143,37 @@ export function FichaEditor({
         setErro(res.error);
         return;
       }
-      const novaVersao = (versaoAtual ?? 0) + 1;
-      setOk(`Nova versão (v${novaVersao}) criada com sucesso.`);
+      const nova = (versaoAtual ?? 0) + 1;
+      setOk(`Nova versão (v${nova}) criada.`);
     });
   };
+
+  // Separa opções em 2 grupos pro select
+  const opcoesMp = mpOpcoes.filter((m) => m.tipo === "mp");
+  const opcoesProd = mpOpcoes.filter((m) => m.tipo === "produto");
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">
-          Ficha técnica{" "}
+          Ficha técnica
           {versaoAtual && (
             <span className="ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-700">
               v{versaoAtual}
             </span>
           )}
+          {tipoProduto === "intermediario" && (
+            <span className="ml-2 rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+              PRODUTO INTERMEDIÁRIO
+            </span>
+          )}
         </CardTitle>
         <p className="text-xs text-zinc-500">
           Vigente desde {fmtDataBR(dataVigenciaInicio)}. Quantidades pra produzir{" "}
-          <strong>1 {unidadeProducao}</strong>. Salvar cria nova versão (preserva histórico).
+          <strong>1 {unidadeProducao}</strong>.{" "}
+          {tipoProduto === "final"
+            ? "Pode ter matérias-primas (folhas) E produtos intermediários (recheios/massas)."
+            : "Componentes só matérias-primas (folhas). Esse intermediário é referenciado por outros produtos."}
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -155,7 +182,7 @@ export function FichaEditor({
             <thead className="bg-zinc-50 text-left">
               <tr>
                 <th className="px-2 py-1 font-medium">#</th>
-                <th className="px-2 py-1 font-medium">Matéria-prima</th>
+                <th className="px-2 py-1 font-medium">Item</th>
                 <th className="px-2 py-1 font-medium">Qtd</th>
                 <th className="px-2 py-1 font-medium">Un.</th>
                 <th className="px-2 py-1 font-medium">Merma %</th>
@@ -165,26 +192,40 @@ export function FichaEditor({
             </thead>
             <tbody>
               {linhas.map((l, i) => {
-                const mpAtual = mpOpcoes.find((m) => m.id === l.materia_prima_id);
+                const refAtual = mpOpcoes.find((m) => m.id === l.ref_id);
                 return (
                   <tr key={l._key} className="border-t border-zinc-100">
                     <td className="px-2 py-1 text-xs text-zinc-500">{i + 1}</td>
                     <td className="px-2 py-1">
                       <select
-                        value={l.materia_prima_id}
-                        onChange={(e) => trocarMp(l._key, e.target.value)}
+                        value={l.ref_id}
+                        onChange={(e) => trocarRef(l._key, e.target.value)}
                         className="w-full rounded border border-zinc-300 bg-white px-1 py-1 text-xs"
                       >
                         <option value="">— Selecione —</option>
-                        {mpOpcoes.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.codigo ?? "—"} · {m.nome} ({m.unidade}){" "}
-                            {m.tipo === "intermediario" ? " [intermediário]" : ""}
-                            {m.tipo === "ignorado" ? " [ignorado]" : ""}
-                          </option>
-                        ))}
+                        {opcoesProd.length > 0 && (
+                          <optgroup label="🥟 Produtos intermediários">
+                            {opcoesProd.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.codigo ?? "—"} · {m.nome} ({m.unidade})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="🧂 Matérias-primas">
+                          {opcoesMp.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.codigo ?? "—"} · {m.nome} ({m.unidade})
+                            </option>
+                          ))}
+                        </optgroup>
                       </select>
-                      {mpAtual && !mpAtual.temItemCompra && mpAtual.tipo === "folha" && (
+                      {refAtual?.tipo === "produto" && (
+                        <p className="mt-0.5 text-[10px] text-purple-700">
+                          ↳ vai expandir recursivamente
+                        </p>
+                      )}
+                      {refAtual?.tipo === "mp" && !refAtual.temItemCompra && (
                         <p className="mt-0.5 text-[10px] text-amber-700">
                           ⚠ sem item de compra vinculado
                         </p>
@@ -201,7 +242,7 @@ export function FichaEditor({
                         className="w-24 rounded border border-zinc-300 bg-white px-1 py-1 text-xs tabular-nums"
                       />
                     </td>
-                    <td className="px-2 py-1 text-xs text-zinc-600">{l.mpUnidade || "—"}</td>
+                    <td className="px-2 py-1 text-xs text-zinc-600">{l.refUnidade || "—"}</td>
                     <td className="px-2 py-1">
                       <input
                         type="number"
@@ -218,7 +259,9 @@ export function FichaEditor({
                     <td className="px-2 py-1">
                       <input
                         value={l.observacoes ?? ""}
-                        onChange={(e) => updateLinha(l._key, { observacoes: e.target.value || null })}
+                        onChange={(e) =>
+                          updateLinha(l._key, { observacoes: e.target.value || null })
+                        }
                         className="w-full rounded border border-zinc-300 bg-white px-1 py-1 text-xs"
                       />
                     </td>
@@ -227,7 +270,6 @@ export function FichaEditor({
                         type="button"
                         onClick={() => removerLinha(l._key)}
                         className="text-xs text-red-700 hover:underline"
-                        title="Remover linha"
                       >
                         ×
                       </button>
@@ -266,7 +308,7 @@ export function FichaEditor({
             onChange={(e) => setObservacoes(e.target.value)}
             rows={2}
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-            placeholder="Ex: Ajuste de receita após teste de produção. Reduzi 5% de margarina."
+            placeholder="Ex: Ajuste de receita após teste de produção."
           />
         </div>
 

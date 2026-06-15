@@ -23,7 +23,8 @@ async function assertAccess() {
 }
 
 export type LinhaFichaInput = {
-  materia_prima_id: string;
+  tipo: "mp" | "produto";
+  ref_id: string;
   quantidade: number;
   merma_percent: number;
   observacoes?: string | null;
@@ -50,10 +51,13 @@ export async function salvarFichaAction(
   // Validação básica
   if (linhas.length === 0) return { error: "A ficha precisa de pelo menos 1 ingrediente." };
   for (const l of linhas) {
-    if (!l.materia_prima_id) return { error: "Linha sem matéria-prima selecionada." };
+    if (!l.ref_id) return { error: "Linha sem item selecionado." };
     if (l.quantidade <= 0) return { error: "Quantidade precisa ser maior que zero." };
     if (l.merma_percent < 0 || l.merma_percent > 100) {
       return { error: "Merma precisa estar entre 0 e 100%." };
+    }
+    if (l.tipo === "produto" && l.ref_id === produtoId) {
+      return { error: "Produto não pode se referenciar (loop infinito)." };
     }
   }
 
@@ -111,10 +115,11 @@ export async function salvarFichaAction(
     return { error: insErr?.message ?? "Falha ao criar nova versão." };
   }
 
-  // 5) Insere as linhas
+  // 5) Insere as linhas (mp OU produto_referenciado, mutuamente exclusivos)
   const payload = linhas.map((l, idx) => ({
     ficha_id: novaFicha.id,
-    materia_prima_id: l.materia_prima_id,
+    materia_prima_id: l.tipo === "mp" ? l.ref_id : null,
+    produto_referenciado_id: l.tipo === "produto" ? l.ref_id : null,
     quantidade: l.quantidade,
     merma_percent: l.merma_percent,
     observacoes: l.observacoes?.trim() || null,

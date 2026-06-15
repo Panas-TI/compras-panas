@@ -15,14 +15,22 @@ export default async function MRPHomePage() {
   if (!["aprovador", "comprador"].includes(profile?.role ?? "")) redirect("/");
 
   const [
-    { count: produtosCount },
-    { count: mpCount },
+    { count: produtosFinaisCount },
+    { count: produtosIntermediariosCount },
     { count: folhasCount },
     { count: folhasSemVinculo },
     { count: fichasCount },
   ] = await Promise.all([
-    supabase.from("produto").select("*", { count: "exact", head: true }).eq("ativo", true),
-    supabase.from("materia_prima").select("*", { count: "exact", head: true }).eq("ativa", true),
+    supabase
+      .from("produto")
+      .select("*", { count: "exact", head: true })
+      .eq("ativo", true)
+      .eq("tipo", "final"),
+    supabase
+      .from("produto")
+      .select("*", { count: "exact", head: true })
+      .eq("ativo", true)
+      .eq("tipo", "intermediario"),
     supabase
       .from("materia_prima")
       .select("*", { count: "exact", head: true })
@@ -49,12 +57,20 @@ export default async function MRPHomePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Link href="/mrp/produtos">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <Link href="/mrp/produtos?tipo=final">
           <Card className="transition-shadow hover:shadow-md">
             <CardHeader>
-              <CardDescription>Produtos</CardDescription>
-              <CardTitle className="text-3xl">{produtosCount ?? 0}</CardTitle>
+              <CardDescription>Produtos finais</CardDescription>
+              <CardTitle className="text-3xl">{produtosFinaisCount ?? 0}</CardTitle>
+            </CardHeader>
+          </Card>
+        </Link>
+        <Link href="/mrp/produtos?tipo=intermediario">
+          <Card className="transition-shadow hover:shadow-md">
+            <CardHeader>
+              <CardDescription>Intermediários</CardDescription>
+              <CardTitle className="text-3xl text-purple-700">{produtosIntermediariosCount ?? 0}</CardTitle>
             </CardHeader>
           </Card>
         </Link>
@@ -69,7 +85,7 @@ export default async function MRPHomePage() {
         <Link href="/mrp/materias-primas">
           <Card className="transition-shadow hover:shadow-md">
             <CardHeader>
-              <CardDescription>Matérias-primas (compras)</CardDescription>
+              <CardDescription>Matérias-primas (folhas)</CardDescription>
               <CardTitle className="text-3xl">{folhasCount ?? 0}</CardTitle>
             </CardHeader>
           </Card>
@@ -197,17 +213,16 @@ export default async function MRPHomePage() {
         some por área.
       </div>
 
-      {mpCount !== null && (mpCount - (folhasCount ?? 0)) > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-600">Componentes internos</CardTitle>
-            <CardDescription>
-              {mpCount - (folhasCount ?? 0)} matérias-primas são intermediárias (recheios, massas) ou
-              ignoradas (mão de obra). Não viram compras — só agrupam ingredientes nas fichas.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base text-zinc-600">Estrutura BOM multi-nível</CardTitle>
+          <CardDescription>
+            Produtos finais (empanadas) referenciam produtos intermediários (RECHEIO X, MASSA EMPANADA)
+            e matérias-primas (embalagens). Os intermediários, por sua vez, têm suas próprias fichas
+            com matérias-primas. Mudar a fórmula da MASSA EMPANADA afeta todas as empanadas que a usam.
+          </CardDescription>
+        </CardHeader>
+      </Card>
     </div>
   );
 }

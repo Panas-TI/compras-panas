@@ -365,28 +365,31 @@ export type Database = {
         Row: {
           ficha_id: string
           id: string
-          materia_prima_id: string
+          materia_prima_id: string | null
           merma_percent: number
           observacoes: string | null
           ordem: number
+          produto_referenciado_id: string | null
           quantidade: number
         }
         Insert: {
           ficha_id: string
           id?: string
-          materia_prima_id: string
+          materia_prima_id?: string | null
           merma_percent?: number
           observacoes?: string | null
           ordem?: number
+          produto_referenciado_id?: string | null
           quantidade: number
         }
         Update: {
           ficha_id?: string
           id?: string
-          materia_prima_id?: string
+          materia_prima_id?: string | null
           merma_percent?: number
           observacoes?: string | null
           ordem?: number
+          produto_referenciado_id?: string | null
           quantidade?: number
         }
         Relationships: [
@@ -402,6 +405,13 @@ export type Database = {
             columns: ["materia_prima_id"]
             isOneToOne: false
             referencedRelation: "materia_prima"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ficha_item_produto_referenciado_id_fkey"
+            columns: ["produto_referenciado_id"]
+            isOneToOne: false
+            referencedRelation: "produto"
             referencedColumns: ["id"]
           },
         ]
@@ -650,6 +660,7 @@ export type Database = {
           id: string
           nome: string
           rendimento_padrao: number
+          tipo: string
           unidade_producao: string
         }
         Insert: {
@@ -662,6 +673,7 @@ export type Database = {
           id?: string
           nome: string
           rendimento_padrao?: number
+          tipo?: string
           unidade_producao?: string
         }
         Update: {
@@ -674,6 +686,7 @@ export type Database = {
           id?: string
           nome?: string
           rendimento_padrao?: number
+          tipo?: string
           unidade_producao?: string
         }
         Relationships: [
