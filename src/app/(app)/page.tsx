@@ -27,14 +27,14 @@ export default async function HubPage() {
         <p className="mt-2 text-sm text-zinc-600">Escolha o módulo que deseja acessar.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Link href="/estoque" className="group">
           <Card className="h-full transition-shadow group-hover:shadow-lg">
             <CardHeader>
               <div className="mb-2 text-4xl">📦</div>
               <CardTitle className="text-xl">Estoque</CardTitle>
               <CardDescription>
-                Cadastro de itens, solicitações semanais, contagem, recebimento e relatórios.
+                Cadastro de itens, solicitações semanais, contagem, recebimento, MRP e relatórios.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -52,23 +52,6 @@ export default async function HubPage() {
               <CardTitle className="text-xl">Entregas</CardTitle>
               <CardDescription>
                 Pedidos do Queóps, rota do motorista, comprovantes com assinatura e mapa.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <span className="text-sm font-medium text-zinc-700 group-hover:underline">
-                Entrar →
-              </span>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/mrp" className="group">
-          <Card className="h-full transition-shadow group-hover:shadow-lg">
-            <CardHeader>
-              <div className="mb-2 text-4xl">🧮</div>
-              <CardTitle className="text-xl">MRP</CardTitle>
-              <CardDescription>
-                Planejamento de compras baseado em demanda. Fichas técnicas, estoque e projeções.
               </CardDescription>
             </CardHeader>
             <CardContent>

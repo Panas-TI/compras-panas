@@ -2,19 +2,32 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/app/login/actions";
 
-type NavItem = { href: string; label: string };
+type NavItem = { href: string; label: string; subItems?: NavItem[] };
 type Role = "comprador" | "aprovador" | "estoquista" | "motorista";
 
-// Itens do módulo Estoque
+// Sub-rotas do MRP (dropdown ao passar o mouse no item "MRP")
+const MRP_SUB: NavItem[] = [
+  { href: "/mrp", label: "Início" },
+  { href: "/mrp/nova-projecao", label: "Nova projeção" },
+  { href: "/mrp/projecoes", label: "Histórico" },
+  { href: "/mrp/produtos", label: "Produtos" },
+  { href: "/mrp/materias-primas", label: "Matérias-primas" },
+  { href: "/mrp/estoque/contar", label: "Contagem MP" },
+  { href: "/mrp/relatorios", label: "Relatórios MRP" },
+];
+
+// Itens do módulo Estoque (MRP é um sub-grupo)
 const ESTOQUE_ITEMS: NavItem[] = [
   { href: "/estoque", label: "Início" },
   { href: "/solicitacoes", label: "Solicitações" },
   { href: "/recebimento", label: "Recebimento" },
   { href: "/contagem", label: "Contagem" },
   { href: "/itens", label: "Itens" },
+  { href: "/mrp", label: "MRP", subItems: MRP_SUB },
   { href: "/cadastros", label: "Cadastros" },
   { href: "/relatorios", label: "Relatórios" },
   { href: "/usuarios", label: "Usuários" },
@@ -29,26 +42,81 @@ const ENTREGAS_ITEMS: NavItem[] = [
   { href: "/entregas/relatorios", label: "Relatórios" },
 ];
 
-// Itens do módulo MRP
-const MRP_ITEMS: NavItem[] = [
-  { href: "/mrp", label: "Início" },
-  { href: "/mrp/nova-projecao", label: "Nova projeção" },
-  { href: "/mrp/projecoes", label: "Histórico" },
-  { href: "/mrp/produtos", label: "Produtos" },
-  { href: "/mrp/materias-primas", label: "Matérias-primas" },
-  { href: "/mrp/estoque/contar", label: "Estoque" },
-  { href: "/mrp/relatorios", label: "Relatórios" },
-];
-
 const APROVADOR_ONLY = new Set(["/usuarios"]);
 const ESTOQUISTA_ALLOWED = new Set(["/estoque", "/recebimento", "/contagem"]);
+const MRP_BLOQUEADOS_PRO = new Set<Role>(["estoquista"]);
 
-function detectModulo(path: string): "hub" | "estoque" | "entregas" | "motorista" | "mrp" {
+function detectModulo(path: string): "hub" | "estoque" | "entregas" | "motorista" {
   if (path === "/") return "hub";
   if (path === "/motorista" || path.startsWith("/motorista/")) return "motorista";
   if (path === "/entregas" || path.startsWith("/entregas/")) return "entregas";
-  if (path === "/mrp" || path.startsWith("/mrp/")) return "mrp";
+  // /mrp/* agora faz parte do módulo Estoque
   return "estoque";
+}
+
+function ItemComDropdown({
+  item,
+  path,
+  role,
+}: {
+  item: NavItem;
+  path: string;
+  role: Role;
+}) {
+  const [aberto, setAberto] = useState(false);
+  // Item ativo se a rota atual está dentro dele
+  const ativo = path === item.href || path.startsWith(item.href + "/");
+
+  const subItensVisiveis = (item.subItems ?? []).filter(() => {
+    // Estoquista não vê MRP — mas vai filtrar no nível do item pai também
+    if (MRP_BLOQUEADOS_PRO.has(role)) return false;
+    return true;
+  });
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setAberto(true)}
+      onMouseLeave={() => setAberto(false)}
+    >
+      <Link
+        href={item.href}
+        onClick={() => setAberto(false)}
+        onFocus={() => setAberto(true)}
+        className={cn(
+          "rounded-md px-3 py-1.5 text-sm font-medium transition-colors inline-flex items-center gap-1",
+          ativo ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:bg-zinc-50"
+        )}
+      >
+        {item.label}
+        <span className="text-[10px] text-zinc-500">▾</span>
+      </Link>
+      {aberto && subItensVisiveis.length > 0 && (
+        <div className="absolute left-0 top-full z-50 w-56 pt-1">
+          <div className="rounded-md border border-zinc-200 bg-white py-1 shadow-lg">
+            {subItensVisiveis.map((sub) => {
+              const subAtivo = path === sub.href || path.startsWith(sub.href + "/");
+              return (
+                <Link
+                  key={sub.href}
+                  href={sub.href}
+                  onClick={() => setAberto(false)}
+                  className={cn(
+                    "block px-3 py-2 text-sm transition-colors",
+                    subAtivo
+                      ? "bg-zinc-100 font-medium text-zinc-900"
+                      : "text-zinc-700 hover:bg-zinc-50"
+                  )}
+                >
+                  {sub.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function Nav({ role, nome }: { role: Role; nome: string }) {
@@ -79,7 +147,7 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
     );
   }
 
-  // Painel do motorista — nav própria mínima (apenas título + sair)
+  // Painel do motorista — nav própria mínima
   if (modulo === "motorista") {
     return (
       <header className="border-b border-zinc-200 bg-white">
@@ -101,19 +169,22 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
     );
   }
 
-  // Estoque, Entregas ou MRP
-  const allItems =
-    modulo === "entregas" ? ENTREGAS_ITEMS : modulo === "mrp" ? MRP_ITEMS : ESTOQUE_ITEMS;
+  // Estoque ou Entregas (admin/aprovador navegando)
+  const allItems = modulo === "entregas" ? ENTREGAS_ITEMS : ESTOQUE_ITEMS;
 
-  const visible =
+  let visible: NavItem[] =
     role === "estoquista"
       ? allItems.filter((i) => ESTOQUISTA_ALLOWED.has(i.href))
       : role === "aprovador"
         ? allItems
         : allItems.filter((i) => !APROVADOR_ONLY.has(i.href));
 
-  const moduloLabel =
-    modulo === "entregas" ? "🚚 Entregas" : modulo === "mrp" ? "🧮 MRP" : "📦 Estoque";
+  // Estoquista nunca vê MRP
+  if (role === "estoquista") {
+    visible = visible.filter((i) => i.href !== "/mrp");
+  }
+
+  const moduloLabel = modulo === "entregas" ? "🚚 Entregas" : "📦 Estoque";
 
   return (
     <header className="border-b border-zinc-200 bg-white">
@@ -123,14 +194,17 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
         </Link>
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
           {visible.map((item) => {
+            if (item.subItems && item.subItems.length > 0) {
+              return (
+                <ItemComDropdown key={item.href} item={item} path={path} role={role} />
+              );
+            }
             const active =
               item.href === "/estoque"
                 ? path === "/estoque"
                 : item.href === "/entregas"
                   ? path === "/entregas"
-                  : item.href === "/mrp"
-                    ? path === "/mrp"
-                    : path.startsWith(item.href);
+                  : path.startsWith(item.href);
             return (
               <Link
                 key={item.href}
