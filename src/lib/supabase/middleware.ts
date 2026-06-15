@@ -72,6 +72,13 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
       }
     }
+    // MRP só pra aprovador/comprador
+    if ((path === "/mrp" || path.startsWith("/mrp/")) &&
+        profile?.role !== "aprovador" && profile?.role !== "comprador") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
     // Motorista: só pode acessar /, /motorista, /entregas e /api/motorista/*
     if (profile?.role === "motorista" && profile.ativo) {
       const motoristaAllowed =

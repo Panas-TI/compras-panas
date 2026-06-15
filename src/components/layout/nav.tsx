@@ -29,13 +29,25 @@ const ENTREGAS_ITEMS: NavItem[] = [
   { href: "/entregas/relatorios", label: "Relatórios" },
 ];
 
+// Itens do módulo MRP
+const MRP_ITEMS: NavItem[] = [
+  { href: "/mrp", label: "Início" },
+  { href: "/mrp/nova-projecao", label: "Nova projeção" },
+  { href: "/mrp/projecoes", label: "Histórico" },
+  { href: "/mrp/produtos", label: "Produtos" },
+  { href: "/mrp/materias-primas", label: "Matérias-primas" },
+  { href: "/mrp/estoque/contar", label: "Estoque" },
+  { href: "/mrp/relatorios", label: "Relatórios" },
+];
+
 const APROVADOR_ONLY = new Set(["/usuarios"]);
 const ESTOQUISTA_ALLOWED = new Set(["/estoque", "/recebimento", "/contagem"]);
 
-function detectModulo(path: string): "hub" | "estoque" | "entregas" | "motorista" {
+function detectModulo(path: string): "hub" | "estoque" | "entregas" | "motorista" | "mrp" {
   if (path === "/") return "hub";
   if (path === "/motorista" || path.startsWith("/motorista/")) return "motorista";
   if (path === "/entregas" || path.startsWith("/entregas/")) return "entregas";
+  if (path === "/mrp" || path.startsWith("/mrp/")) return "mrp";
   return "estoque";
 }
 
@@ -89,8 +101,9 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
     );
   }
 
-  // Estoque ou Entregas (admin/aprovador navegando)
-  const allItems = modulo === "entregas" ? ENTREGAS_ITEMS : ESTOQUE_ITEMS;
+  // Estoque, Entregas ou MRP
+  const allItems =
+    modulo === "entregas" ? ENTREGAS_ITEMS : modulo === "mrp" ? MRP_ITEMS : ESTOQUE_ITEMS;
 
   const visible =
     role === "estoquista"
@@ -99,7 +112,8 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
         ? allItems
         : allItems.filter((i) => !APROVADOR_ONLY.has(i.href));
 
-  const moduloLabel = modulo === "entregas" ? "🚚 Entregas" : "📦 Estoque";
+  const moduloLabel =
+    modulo === "entregas" ? "🚚 Entregas" : modulo === "mrp" ? "🧮 MRP" : "📦 Estoque";
 
   return (
     <header className="border-b border-zinc-200 bg-white">
@@ -114,7 +128,9 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
                 ? path === "/estoque"
                 : item.href === "/entregas"
                   ? path === "/entregas"
-                  : path.startsWith(item.href);
+                  : item.href === "/mrp"
+                    ? path === "/mrp"
+                    : path.startsWith(item.href);
             return (
               <Link
                 key={item.href}

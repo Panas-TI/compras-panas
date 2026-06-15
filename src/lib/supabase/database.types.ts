@@ -361,6 +361,102 @@ export type Database = {
           },
         ]
       }
+      ficha_item: {
+        Row: {
+          ficha_id: string
+          id: string
+          materia_prima_id: string
+          merma_percent: number
+          observacoes: string | null
+          ordem: number
+          quantidade: number
+        }
+        Insert: {
+          ficha_id: string
+          id?: string
+          materia_prima_id: string
+          merma_percent?: number
+          observacoes?: string | null
+          ordem?: number
+          quantidade: number
+        }
+        Update: {
+          ficha_id?: string
+          id?: string
+          materia_prima_id?: string
+          merma_percent?: number
+          observacoes?: string | null
+          ordem?: number
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ficha_item_ficha_id_fkey"
+            columns: ["ficha_id"]
+            isOneToOne: false
+            referencedRelation: "ficha_tecnica"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ficha_item_materia_prima_id_fkey"
+            columns: ["materia_prima_id"]
+            isOneToOne: false
+            referencedRelation: "materia_prima"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ficha_tecnica: {
+        Row: {
+          criado_em: string
+          criado_por: string | null
+          data_vigencia_fim: string | null
+          data_vigencia_inicio: string
+          id: string
+          observacoes: string | null
+          produto_id: string
+          versao: number
+          vigente: boolean
+        }
+        Insert: {
+          criado_em?: string
+          criado_por?: string | null
+          data_vigencia_fim?: string | null
+          data_vigencia_inicio?: string
+          id?: string
+          observacoes?: string | null
+          produto_id: string
+          versao: number
+          vigente?: boolean
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string | null
+          data_vigencia_fim?: string | null
+          data_vigencia_inicio?: string
+          id?: string
+          observacoes?: string | null
+          produto_id?: string
+          versao?: number
+          vigente?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ficha_tecnica_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ficha_tecnica_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produto"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formas_pagamento: {
         Row: {
           ativo: boolean
@@ -483,6 +579,109 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades_medida"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materia_prima: {
+        Row: {
+          ativa: boolean
+          atualizado_em: string
+          bug_revisao: boolean
+          codigo_queops: string | null
+          criado_em: string
+          fator_conversao: number
+          id: string
+          item_compra_id: string | null
+          nao_compravel: boolean
+          nome: string
+          observacoes: string | null
+          tipo: string
+          unidade_base: string
+        }
+        Insert: {
+          ativa?: boolean
+          atualizado_em?: string
+          bug_revisao?: boolean
+          codigo_queops?: string | null
+          criado_em?: string
+          fator_conversao?: number
+          id?: string
+          item_compra_id?: string | null
+          nao_compravel?: boolean
+          nome: string
+          observacoes?: string | null
+          tipo?: string
+          unidade_base?: string
+        }
+        Update: {
+          ativa?: boolean
+          atualizado_em?: string
+          bug_revisao?: boolean
+          codigo_queops?: string | null
+          criado_em?: string
+          fator_conversao?: number
+          id?: string
+          item_compra_id?: string | null
+          nao_compravel?: boolean
+          nome?: string
+          observacoes?: string | null
+          tipo?: string
+          unidade_base?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materia_prima_item_compra_id_fkey"
+            columns: ["item_compra_id"]
+            isOneToOne: false
+            referencedRelation: "itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          categoria: string
+          codigo_queops: string | null
+          criado_em: string
+          criado_por: string | null
+          id: string
+          nome: string
+          rendimento_padrao: number
+          unidade_producao: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          categoria?: string
+          codigo_queops?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome: string
+          rendimento_padrao?: number
+          unidade_producao?: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          categoria?: string
+          codigo_queops?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome?: string
+          rendimento_padrao?: number
+          unidade_producao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -704,6 +903,8 @@ export type Database = {
           finalizada_em: string | null
           id: string
           observacoes: string | null
+          origem: string | null
+          projecao_id: string | null
         }
         Insert: {
           atualizado_em?: string
@@ -716,6 +917,8 @@ export type Database = {
           finalizada_em?: string | null
           id?: string
           observacoes?: string | null
+          origem?: string | null
+          projecao_id?: string | null
         }
         Update: {
           atualizado_em?: string
@@ -728,6 +931,8 @@ export type Database = {
           finalizada_em?: string | null
           id?: string
           observacoes?: string | null
+          origem?: string | null
+          projecao_id?: string | null
         }
         Relationships: [
           {
