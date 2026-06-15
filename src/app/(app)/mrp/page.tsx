@@ -88,6 +88,83 @@ export default async function MRPHomePage() {
         </Link>
       </div>
 
+      <div>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-600">
+          Áreas do MRP
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Link href="/mrp/nova-projecao" className="group">
+            <Card className="h-full transition-shadow group-hover:shadow-md">
+              <CardHeader>
+                <CardTitle className="text-base">🧮 Nova projeção</CardTitle>
+                <CardDescription>
+                  Lança a demanda da semana → calcula matérias-primas a comprar → gera
+                  SolicitacaoSemanal no Estoque.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          <Link href="/mrp/estoque/contar" className="group">
+            <Card className="h-full transition-shadow group-hover:shadow-md">
+              <CardHeader>
+                <CardTitle className="text-base">📋 Contagem de MP</CardTitle>
+                <CardDescription>
+                  Conta estoque atual de cada matéria-prima. Mobile-first, dá pra fazer com o
+                  celular na mão andando pela cozinha.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          <Link href="/mrp/produtos" className="group">
+            <Card className="h-full transition-shadow group-hover:shadow-md">
+              <CardHeader>
+                <CardTitle className="text-base">🥟 Produtos & fichas técnicas</CardTitle>
+                <CardDescription>
+                  35 produtos com fichas vigentes. Edita receitas, gerencia versões e merma.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          <Link href="/mrp/materias-primas" className="group">
+            <Card className="h-full transition-shadow group-hover:shadow-md">
+              <CardHeader>
+                <CardTitle className="text-base">🧂 Matérias-primas</CardTitle>
+                <CardDescription>
+                  72 mp folhas + 33 intermediárias. Vincula com itens de compra e configura fator
+                  de conversão (g↔kg etc).
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          <Link href="/mrp/projecoes" className="group">
+            <Card className="h-full transition-shadow group-hover:shadow-md">
+              <CardHeader>
+                <CardTitle className="text-base">📚 Histórico de projeções</CardTitle>
+                <CardDescription>
+                  Lista de todas as projeções calculadas + comparativo planejado × comprado.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          <Link href="/mrp/relatorios" className="group">
+            <Card className="h-full transition-shadow group-hover:shadow-md">
+              <CardHeader>
+                <CardTitle className="text-base">📊 Relatórios MRP</CardTitle>
+                <CardDescription>
+                  Acurácia da previsão, consumo histórico de mp, top produtos por consumo de mp
+                  cara, estoque crítico.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Fluxo recomendado (toda quinta de manhã)</CardTitle>
@@ -112,6 +189,13 @@ export default async function MRPHomePage() {
           </ol>
         </CardContent>
       </Card>
+
+      <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        ⏳ As 6 áreas acima ainda estão sendo construídas (etapas 3 a 9). Por enquanto cada link
+        leva pra uma tela de &ldquo;em construção&rdquo;. O banco já tem todos os dados importados (35
+        produtos, 107 mp, 432 linhas de ficha). Conforme as telas ficarem prontas, este aviso
+        some por área.
+      </div>
 
       {mpCount !== null && (mpCount - (folhasCount ?? 0)) > 0 && (
         <Card>
