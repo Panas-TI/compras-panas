@@ -16,7 +16,7 @@ const MRP_SUB: NavItem[] = [
   { href: "/mrp/projecoes", label: "Histórico" },
   { href: "/mrp/produtos", label: "Produtos" },
   { href: "/mrp/materias-primas", label: "Matérias-primas" },
-  { href: "/mrp/estoque/contar", label: "Contagem MP" },
+  { href: "/mrp/estoque/contar", label: "Estoque atual" },
   { href: "/mrp/relatorios", label: "Relatórios MRP" },
 ];
 

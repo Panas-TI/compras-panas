@@ -124,9 +124,10 @@ export default async function MRPHomePage() {
           <Link href="/mrp/estoque/contar" className="group">
             <Card className="h-full transition-shadow group-hover:shadow-md">
               <CardHeader>
-                <CardTitle className="text-base">📋 Contagem de matérias-primas</CardTitle>
+                <CardTitle className="text-base">📋 Estoque atual</CardTitle>
                 <CardDescription>
-                  Conta estoque atual de cada item usado em ficha. Mobile-first.
+                  Foto do estoque baseado na <strong>última contagem do estoquista</strong> (módulo
+                  Contagem). Mostra quanto tem de cada matéria-prima usada nas fichas.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -187,10 +188,15 @@ export default async function MRPHomePage() {
         <CardContent>
           <ol className="ml-5 list-decimal space-y-2 text-sm text-zinc-700">
             <li>
+              Estoquista finaliza a{" "}
+              <Link href="/contagem" className="text-zinc-900 underline-offset-4 hover:underline">
+                contagem semanal
+              </Link>
+              . O MRP reusa essa contagem como estoque atual —{" "}
               <Link href="/mrp/estoque/contar" className="text-zinc-900 underline-offset-4 hover:underline">
-                Contar o estoque atual
-              </Link>{" "}
-              dos itens usados em fichas.
+                ver foto do estoque
+              </Link>
+              .
             </li>
             <li>
               <Link href="/mrp/nova-projecao" className="text-zinc-900 underline-offset-4 hover:underline">
