@@ -14,94 +14,18 @@ export default async function MRPHomePage() {
     .maybeSingle();
   if (!["aprovador", "comprador"].includes(profile?.role ?? "")) redirect("/");
 
-  // Itens distintos usados em qualquer ficha técnica
-  const { data: itensUsados } = await supabase
-    .from("ficha_item")
-    .select("item_id")
-    .not("item_id", "is", null);
-  const itensIdsUsados = Array.from(
-    new Set((itensUsados ?? []).map((r) => r.item_id).filter(Boolean) as string[])
-  );
-
-  const [
-    { count: produtosFinaisCount },
-    { count: produtosIntermediariosCount },
-    { count: fichasCount },
-  ] = await Promise.all([
-    supabase
-      .from("produto")
-      .select("*", { count: "exact", head: true })
-      .eq("ativo", true)
-      .eq("tipo", "final"),
-    supabase
-      .from("produto")
-      .select("*", { count: "exact", head: true })
-      .eq("ativo", true)
-      .eq("tipo", "intermediario"),
-    supabase
-      .from("ficha_tecnica")
-      .select("*", { count: "exact", head: true })
-      .eq("vigente", true),
-  ]);
-
-  let itensSemCodigo = 0;
-  if (itensIdsUsados.length > 0) {
-    const { count } = await supabase
-      .from("itens")
-      .select("*", { count: "exact", head: true })
-      .in("id", itensIdsUsados)
-      .is("codigo_queops", null);
-    itensSemCodigo = count ?? 0;
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold">MRP — Planejamento de compras</h1>
         <p className="text-sm text-zinc-600">
-          Calcule o que comprar baseado na demanda da semana × ficha técnica × estoque.
+          Calcule o que comprar baseado na demanda da semana × ficha técnica × estoque. Pra ver
+          contagens de produtos finais, semi-acabados e matérias-primas, vai em{" "}
+          <Link href="/itens" className="text-zinc-900 underline-offset-4 hover:underline">
+            /itens
+          </Link>
+          .
         </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Link href="/mrp/produtos?tipo=final">
-          <Card className="transition-shadow hover:shadow-md">
-            <CardHeader>
-              <CardDescription>Produtos finais</CardDescription>
-              <CardTitle className="text-3xl">{produtosFinaisCount ?? 0}</CardTitle>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/mrp/produtos?tipo=intermediario">
-          <Card className="transition-shadow hover:shadow-md">
-            <CardHeader>
-              <CardDescription>Intermediários</CardDescription>
-              <CardTitle className="text-3xl text-purple-700">
-                {produtosIntermediariosCount ?? 0}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/mrp/materias-primas">
-          <Card className="transition-shadow hover:shadow-md">
-            <CardHeader>
-              <CardDescription>Itens usados em fichas</CardDescription>
-              <CardTitle className="text-3xl">{itensIdsUsados.length}</CardTitle>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/mrp/materias-primas?sem_codigo=1">
-          <Card className="transition-shadow hover:shadow-md">
-            <CardHeader>
-              <CardDescription>Itens sem código Queóps</CardDescription>
-              <CardTitle
-                className={`text-3xl ${itensSemCodigo > 0 ? "text-amber-600" : ""}`}
-              >
-                {itensSemCodigo}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </Link>
       </div>
 
       <div>
@@ -138,8 +62,7 @@ export default async function MRPHomePage() {
               <CardHeader>
                 <CardTitle className="text-base">🥟 Produtos & fichas técnicas</CardTitle>
                 <CardDescription>
-                  {(produtosFinaisCount ?? 0) + (produtosIntermediariosCount ?? 0)} produtos com
-                  fichas vigentes. Edita receitas, gerencia versões e merma.
+                  Edita receitas dos produtos finais e semi-acabados. Gerencia versões e merma.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -150,8 +73,8 @@ export default async function MRPHomePage() {
               <CardHeader>
                 <CardTitle className="text-base">🧂 Matérias-primas (itens)</CardTitle>
                 <CardDescription>
-                  {itensIdsUsados.length} itens do cadastro de compras usados em fichas.
-                  Revisar códigos Queóps, configurar fator de conversão.
+                  Itens do cadastro de compras usados em fichas. Revisar códigos Queóps e
+                  configurar fator de conversão.
                 </CardDescription>
               </CardHeader>
             </Card>
