@@ -365,7 +365,7 @@ export type Database = {
         Row: {
           ficha_id: string
           id: string
-          materia_prima_id: string | null
+          item_id: string | null
           merma_percent: number
           observacoes: string | null
           ordem: number
@@ -375,7 +375,7 @@ export type Database = {
         Insert: {
           ficha_id: string
           id?: string
-          materia_prima_id?: string | null
+          item_id?: string | null
           merma_percent?: number
           observacoes?: string | null
           ordem?: number
@@ -385,7 +385,7 @@ export type Database = {
         Update: {
           ficha_id?: string
           id?: string
-          materia_prima_id?: string | null
+          item_id?: string | null
           merma_percent?: number
           observacoes?: string | null
           ordem?: number
@@ -401,10 +401,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ficha_item_materia_prima_id_fkey"
-            columns: ["materia_prima_id"]
+            foreignKeyName: "ficha_item_item_id_fkey"
+            columns: ["item_id"]
             isOneToOne: false
-            referencedRelation: "materia_prima"
+            referencedRelation: "itens"
             referencedColumns: ["id"]
           },
           {
@@ -516,6 +516,7 @@ export type Database = {
           classificacao_id: string | null
           codigo_queops: string | null
           criado_em: string
+          fator_conversao_ficha: number | null
           forma_pagto_padrao_id: string | null
           fornecedor_padrao_id: string | null
           id: string
@@ -523,6 +524,7 @@ export type Database = {
           nome: string
           prazo_padrao: string | null
           preco_referencia: number | null
+          unidade_ficha: string | null
           unidade_id: string | null
         }
         Insert: {
@@ -531,6 +533,7 @@ export type Database = {
           classificacao_id?: string | null
           codigo_queops?: string | null
           criado_em?: string
+          fator_conversao_ficha?: number | null
           forma_pagto_padrao_id?: string | null
           fornecedor_padrao_id?: string | null
           id?: string
@@ -538,6 +541,7 @@ export type Database = {
           nome: string
           prazo_padrao?: string | null
           preco_referencia?: number | null
+          unidade_ficha?: string | null
           unidade_id?: string | null
         }
         Update: {
@@ -546,6 +550,7 @@ export type Database = {
           classificacao_id?: string | null
           codigo_queops?: string | null
           criado_em?: string
+          fator_conversao_ficha?: number | null
           forma_pagto_padrao_id?: string | null
           fornecedor_padrao_id?: string | null
           id?: string
@@ -553,6 +558,7 @@ export type Database = {
           nome?: string
           prazo_padrao?: string | null
           preco_referencia?: number | null
+          unidade_ficha?: string | null
           unidade_id?: string | null
         }
         Relationships: [
@@ -589,62 +595,6 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades_medida"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      materia_prima: {
-        Row: {
-          ativa: boolean
-          atualizado_em: string
-          bug_revisao: boolean
-          codigo_queops: string | null
-          criado_em: string
-          fator_conversao: number
-          id: string
-          item_compra_id: string | null
-          nao_compravel: boolean
-          nome: string
-          observacoes: string | null
-          tipo: string
-          unidade_base: string
-        }
-        Insert: {
-          ativa?: boolean
-          atualizado_em?: string
-          bug_revisao?: boolean
-          codigo_queops?: string | null
-          criado_em?: string
-          fator_conversao?: number
-          id?: string
-          item_compra_id?: string | null
-          nao_compravel?: boolean
-          nome: string
-          observacoes?: string | null
-          tipo?: string
-          unidade_base?: string
-        }
-        Update: {
-          ativa?: boolean
-          atualizado_em?: string
-          bug_revisao?: boolean
-          codigo_queops?: string | null
-          criado_em?: string
-          fator_conversao?: number
-          id?: string
-          item_compra_id?: string | null
-          nao_compravel?: boolean
-          nome?: string
-          observacoes?: string | null
-          tipo?: string
-          unidade_base?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "materia_prima_item_compra_id_fkey"
-            columns: ["item_compra_id"]
-            isOneToOne: false
-            referencedRelation: "itens"
             referencedColumns: ["id"]
           },
         ]

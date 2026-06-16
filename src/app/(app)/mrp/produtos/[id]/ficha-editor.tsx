@@ -7,12 +7,12 @@ import { salvarFichaAction, type LinhaFichaInput } from "../actions";
 
 export type MpOpcao =
   | {
-      tipo: "mp";
+      tipo: "item";
       id: string;
       codigo: string | null;
       nome: string;
       unidade: string;
-      temItemCompra: boolean;
+      semCodigo: boolean;
     }
   | {
       tipo: "produto";
@@ -20,11 +20,11 @@ export type MpOpcao =
       codigo: string | null;
       nome: string;
       unidade: string;
-      temItemCompra: boolean;
+      semCodigo: boolean;
     };
 
 export type LinhaInicial = {
-  tipo: "mp" | "produto";
+  tipo: "item" | "produto";
   ref_id: string;
   quantidade: number;
   merma_percent: number;
@@ -103,7 +103,7 @@ export function FichaEditor({
       ...ls,
       {
         _key: gerarKey(),
-        tipo: "mp",
+        tipo: "item",
         ref_id: "",
         quantidade: 0,
         merma_percent: 0,
@@ -149,7 +149,7 @@ export function FichaEditor({
   };
 
   // Separa opções em 2 grupos pro select
-  const opcoesMp = mpOpcoes.filter((m) => m.tipo === "mp");
+  const opcoesItem = mpOpcoes.filter((m) => m.tipo === "item");
   const opcoesProd = mpOpcoes.filter((m) => m.tipo === "produto");
 
   return (
@@ -172,8 +172,8 @@ export function FichaEditor({
           Vigente desde {fmtDataBR(dataVigenciaInicio)}. Quantidades pra produzir{" "}
           <strong>1 {unidadeProducao}</strong>.{" "}
           {tipoProduto === "final"
-            ? "Pode ter matérias-primas (folhas) E produtos intermediários (recheios/massas)."
-            : "Componentes só matérias-primas (folhas). Esse intermediário é referenciado por outros produtos."}
+            ? "Pode ter itens (matérias-primas do cadastro) E produtos intermediários (recheios/massas)."
+            : "Componentes são itens do cadastro de compras. Esse intermediário é referenciado por outros produtos."}
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -212,10 +212,10 @@ export function FichaEditor({
                             ))}
                           </optgroup>
                         )}
-                        <optgroup label="🧂 Matérias-primas">
-                          {opcoesMp.map((m) => (
+                        <optgroup label="🧂 Itens (matérias-primas)">
+                          {opcoesItem.map((m) => (
                             <option key={m.id} value={m.id}>
-                              {m.codigo ?? "—"} · {m.nome} ({m.unidade})
+                              {m.codigo ?? "(sem cód)"} · {m.nome} ({m.unidade})
                             </option>
                           ))}
                         </optgroup>
@@ -225,9 +225,9 @@ export function FichaEditor({
                           ↳ vai expandir recursivamente
                         </p>
                       )}
-                      {refAtual?.tipo === "mp" && !refAtual.temItemCompra && (
+                      {refAtual?.tipo === "item" && refAtual.semCodigo && (
                         <p className="mt-0.5 text-[10px] text-amber-700">
-                          ⚠ sem item de compra vinculado
+                          ⚠ item sem código Queóps cadastrado
                         </p>
                       )}
                     </td>

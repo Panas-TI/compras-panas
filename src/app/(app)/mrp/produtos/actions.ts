@@ -23,7 +23,7 @@ async function assertAccess() {
 }
 
 export type LinhaFichaInput = {
-  tipo: "mp" | "produto";
+  tipo: "item" | "produto";
   ref_id: string;
   quantidade: number;
   merma_percent: number;
@@ -115,10 +115,10 @@ export async function salvarFichaAction(
     return { error: insErr?.message ?? "Falha ao criar nova versão." };
   }
 
-  // 5) Insere as linhas (mp OU produto_referenciado, mutuamente exclusivos)
+  // 5) Insere as linhas (item OU produto_referenciado, mutuamente exclusivos)
   const payload = linhas.map((l, idx) => ({
     ficha_id: novaFicha.id,
-    materia_prima_id: l.tipo === "mp" ? l.ref_id : null,
+    item_id: l.tipo === "item" ? l.ref_id : null,
     produto_referenciado_id: l.tipo === "produto" ? l.ref_id : null,
     quantidade: l.quantidade,
     merma_percent: l.merma_percent,

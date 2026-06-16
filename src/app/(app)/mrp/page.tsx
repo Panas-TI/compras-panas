@@ -14,11 +14,18 @@ export default async function MRPHomePage() {
     .maybeSingle();
   if (!["aprovador", "comprador"].includes(profile?.role ?? "")) redirect("/");
 
+  // Itens distintos usados em qualquer ficha técnica
+  const { data: itensUsados } = await supabase
+    .from("ficha_item")
+    .select("item_id")
+    .not("item_id", "is", null);
+  const itensIdsUsados = Array.from(
+    new Set((itensUsados ?? []).map((r) => r.item_id).filter(Boolean) as string[])
+  );
+
   const [
     { count: produtosFinaisCount },
     { count: produtosIntermediariosCount },
-    { count: folhasCount },
-    { count: folhasSemVinculo },
     { count: fichasCount },
   ] = await Promise.all([
     supabase
@@ -32,21 +39,20 @@ export default async function MRPHomePage() {
       .eq("ativo", true)
       .eq("tipo", "intermediario"),
     supabase
-      .from("materia_prima")
-      .select("*", { count: "exact", head: true })
-      .eq("ativa", true)
-      .eq("tipo", "folha"),
-    supabase
-      .from("materia_prima")
-      .select("*", { count: "exact", head: true })
-      .eq("ativa", true)
-      .eq("tipo", "folha")
-      .is("item_compra_id", null),
-    supabase
       .from("ficha_tecnica")
       .select("*", { count: "exact", head: true })
       .eq("vigente", true),
   ]);
+
+  let itensSemCodigo = 0;
+  if (itensIdsUsados.length > 0) {
+    const { count } = await supabase
+      .from("itens")
+      .select("*", { count: "exact", head: true })
+      .in("id", itensIdsUsados)
+      .is("codigo_queops", null);
+    itensSemCodigo = count ?? 0;
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,7 +63,7 @@ export default async function MRPHomePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Link href="/mrp/produtos?tipo=final">
           <Card className="transition-shadow hover:shadow-md">
             <CardHeader>
@@ -70,34 +76,28 @@ export default async function MRPHomePage() {
           <Card className="transition-shadow hover:shadow-md">
             <CardHeader>
               <CardDescription>Intermediários</CardDescription>
-              <CardTitle className="text-3xl text-purple-700">{produtosIntermediariosCount ?? 0}</CardTitle>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/mrp/produtos">
-          <Card className="transition-shadow hover:shadow-md">
-            <CardHeader>
-              <CardDescription>Fichas vigentes</CardDescription>
-              <CardTitle className="text-3xl">{fichasCount ?? 0}</CardTitle>
+              <CardTitle className="text-3xl text-purple-700">
+                {produtosIntermediariosCount ?? 0}
+              </CardTitle>
             </CardHeader>
           </Card>
         </Link>
         <Link href="/mrp/materias-primas">
           <Card className="transition-shadow hover:shadow-md">
             <CardHeader>
-              <CardDescription>Matérias-primas (folhas)</CardDescription>
-              <CardTitle className="text-3xl">{folhasCount ?? 0}</CardTitle>
+              <CardDescription>Itens usados em fichas</CardDescription>
+              <CardTitle className="text-3xl">{itensIdsUsados.length}</CardTitle>
             </CardHeader>
           </Card>
         </Link>
-        <Link href="/mrp/materias-primas">
+        <Link href="/mrp/materias-primas?sem_codigo=1">
           <Card className="transition-shadow hover:shadow-md">
             <CardHeader>
-              <CardDescription>MP sem item vinculado</CardDescription>
+              <CardDescription>Itens sem código Queóps</CardDescription>
               <CardTitle
-                className={`text-3xl ${(folhasSemVinculo ?? 0) > 0 ? "text-amber-600" : ""}`}
+                className={`text-3xl ${itensSemCodigo > 0 ? "text-amber-600" : ""}`}
               >
-                {folhasSemVinculo ?? 0}
+                {itensSemCodigo}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -124,10 +124,9 @@ export default async function MRPHomePage() {
           <Link href="/mrp/estoque/contar" className="group">
             <Card className="h-full transition-shadow group-hover:shadow-md">
               <CardHeader>
-                <CardTitle className="text-base">📋 Contagem de MP</CardTitle>
+                <CardTitle className="text-base">📋 Contagem de matérias-primas</CardTitle>
                 <CardDescription>
-                  Conta estoque atual de cada matéria-prima. Mobile-first, dá pra fazer com o
-                  celular na mão andando pela cozinha.
+                  Conta estoque atual de cada item usado em ficha. Mobile-first.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -138,7 +137,8 @@ export default async function MRPHomePage() {
               <CardHeader>
                 <CardTitle className="text-base">🥟 Produtos & fichas técnicas</CardTitle>
                 <CardDescription>
-                  35 produtos com fichas vigentes. Edita receitas, gerencia versões e merma.
+                  {(produtosFinaisCount ?? 0) + (produtosIntermediariosCount ?? 0)} produtos com
+                  fichas vigentes. Edita receitas, gerencia versões e merma.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -147,10 +147,10 @@ export default async function MRPHomePage() {
           <Link href="/mrp/materias-primas" className="group">
             <Card className="h-full transition-shadow group-hover:shadow-md">
               <CardHeader>
-                <CardTitle className="text-base">🧂 Matérias-primas</CardTitle>
+                <CardTitle className="text-base">🧂 Matérias-primas (itens)</CardTitle>
                 <CardDescription>
-                  72 mp folhas + 33 intermediárias. Vincula com itens de compra e configura fator
-                  de conversão (g↔kg etc).
+                  {itensIdsUsados.length} itens do cadastro de compras usados em fichas.
+                  Revisar códigos Queóps, configurar fator de conversão.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -172,8 +172,7 @@ export default async function MRPHomePage() {
               <CardHeader>
                 <CardTitle className="text-base">📊 Relatórios MRP</CardTitle>
                 <CardDescription>
-                  Acurácia da previsão, consumo histórico de mp, top produtos por consumo de mp
-                  cara, estoque crítico.
+                  Acurácia da previsão, consumo histórico, top produtos por consumo, estoque crítico.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -191,7 +190,7 @@ export default async function MRPHomePage() {
               <Link href="/mrp/estoque/contar" className="text-zinc-900 underline-offset-4 hover:underline">
                 Contar o estoque atual
               </Link>{" "}
-              das matérias-primas (mobile-friendly, dá pra contar com o celular na mão).
+              dos itens usados em fichas.
             </li>
             <li>
               <Link href="/mrp/nova-projecao" className="text-zinc-900 underline-offset-4 hover:underline">
@@ -199,27 +198,21 @@ export default async function MRPHomePage() {
               </Link>{" "}
               lançando os pedidos previstos da semana.
             </li>
-            <li>O sistema calcula a necessidade líquida de cada matéria-prima.</li>
+            <li>O sistema expande recursivamente a árvore de fichas (BOM) e calcula a necessidade líquida de cada item.</li>
             <li>Revisar e clicar em &ldquo;Gerar solicitação semanal&rdquo; — vira uma SolicitacaoSemanal no módulo Estoque.</li>
             <li>Fluxo segue normal: aprovação, compra, recebimento.</li>
           </ol>
         </CardContent>
       </Card>
 
-      <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-        ⏳ As 6 áreas acima ainda estão sendo construídas (etapas 3 a 9). Por enquanto cada link
-        leva pra uma tela de &ldquo;em construção&rdquo;. O banco já tem todos os dados importados (35
-        produtos, 107 mp, 432 linhas de ficha). Conforme as telas ficarem prontas, este aviso
-        some por área.
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="text-base text-zinc-600">Estrutura BOM multi-nível</CardTitle>
           <CardDescription>
-            Produtos finais (empanadas) referenciam produtos intermediários (RECHEIO X, MASSA EMPANADA)
-            e matérias-primas (embalagens). Os intermediários, por sua vez, têm suas próprias fichas
-            com matérias-primas. Mudar a fórmula da MASSA EMPANADA afeta todas as empanadas que a usam.
+            Produto final (Empanada) → Produto intermediário (RECHEIO X, MASSA EMPANADA) →
+            <strong> Itens</strong> do cadastro de compras. Mudou a fórmula da MASSA? Todas as
+            empanadas que a usam atualizam. <strong>Sem tabela de matéria-prima separada</strong> —
+            os itens são os mesmos do módulo de compras.
           </CardDescription>
         </CardHeader>
       </Card>

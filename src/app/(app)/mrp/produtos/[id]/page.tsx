@@ -24,15 +24,15 @@ export default async function ProdutoDetalhePage({ params }: { params: Promise<{
     .maybeSingle();
   if (!produto) notFound();
 
-  // Ficha vigente + suas linhas (pode ter mp OU produto referenciado)
+  // Ficha vigente + suas linhas (pode ter item OU produto referenciado)
   const { data: fichaVigente } = await supabase
     .from("ficha_tecnica")
     .select(
       `
       id, versao, data_vigencia_inicio, observacoes, criado_em,
       itens:ficha_item(
-        id, materia_prima_id, produto_referenciado_id, quantidade, merma_percent, observacoes, ordem,
-        mp:materia_prima(id, codigo_queops, nome, unidade_base, tipo),
+        id, item_id, produto_referenciado_id, quantidade, merma_percent, observacoes, ordem,
+        item:itens(id, codigo_queops, nome, unidade:unidades_medida(nome)),
         prod:produto!ficha_item_produto_referenciado_id_fkey(id, codigo_queops, nome, unidade_producao, tipo)
       )
     `
@@ -49,13 +49,12 @@ export default async function ProdutoDetalhePage({ params }: { params: Promise<{
     .eq("produto_id", id)
     .order("versao", { ascending: false });
 
-  // Lista de matérias-primas (folhas ativas) + produtos intermediários ativos
-  const [{ data: mps }, { data: prodsIntermediarios }] = await Promise.all([
+  // Lista de itens (compráveis) + produtos intermediários ativos
+  const [{ data: itens }, { data: prodsIntermediarios }] = await Promise.all([
     supabase
-      .from("materia_prima")
-      .select("id, codigo_queops, nome, unidade_base, tipo, item_compra_id")
-      .eq("ativa", true)
-      .eq("tipo", "folha")
+      .from("itens")
+      .select("id, codigo_queops, nome, unidade:unidades_medida(nome)")
+      .eq("ativo", true)
       .order("nome"),
     supabase
       .from("produto")
@@ -67,13 +66,13 @@ export default async function ProdutoDetalhePage({ params }: { params: Promise<{
 
   type LinhaRaw = {
     id: string;
-    materia_prima_id: string | null;
+    item_id: string | null;
     produto_referenciado_id: string | null;
     quantidade: number;
     merma_percent: number;
     observacoes: string | null;
     ordem: number;
-    mp: { codigo_queops: string | null; nome: string; unidade_base: string } | null;
+    item: { codigo_queops: string | null; nome: string; unidade: { nome: string } | null } | null;
     prod: { codigo_queops: string | null; nome: string; unidade_producao: string } | null;
   };
 
@@ -93,35 +92,35 @@ export default async function ProdutoDetalhePage({ params }: { params: Promise<{
         };
       }
       return {
-        tipo: "mp" as const,
-        ref_id: i.materia_prima_id!,
+        tipo: "item" as const,
+        ref_id: i.item_id!,
         quantidade: Number(i.quantidade),
         merma_percent: Number(i.merma_percent),
         observacoes: i.observacoes,
-        refNome: i.mp?.nome ?? "—",
-        refCodigo: i.mp?.codigo_queops ?? null,
-        refUnidade: i.mp?.unidade_base ?? "",
+        refNome: i.item?.nome ?? "—",
+        refCodigo: i.item?.codigo_queops ?? null,
+        refUnidade: i.item?.unidade?.nome ?? "",
       };
     });
 
   const mpOpcoes: MpOpcao[] = [
-    ...(mps ?? []).map((m) => ({
-      tipo: "mp" as const,
-      id: m.id,
-      codigo: m.codigo_queops,
-      nome: m.nome,
-      unidade: m.unidade_base,
-      temItemCompra: m.item_compra_id !== null,
+    ...(itens ?? []).map((it) => ({
+      tipo: "item" as const,
+      id: it.id,
+      codigo: it.codigo_queops,
+      nome: it.nome,
+      unidade: it.unidade?.nome ?? "",
+      semCodigo: it.codigo_queops == null,
     })),
     ...(prodsIntermediarios ?? [])
-      .filter((p) => p.id !== produto.id) // não permite auto-referência
+      .filter((p) => p.id !== produto.id)
       .map((p) => ({
         tipo: "produto" as const,
         id: p.id,
         codigo: p.codigo_queops,
         nome: p.nome,
         unidade: p.unidade_producao,
-        temItemCompra: true, // produto intermediário expande na hora do cálculo
+        semCodigo: false,
       })),
   ];
 
