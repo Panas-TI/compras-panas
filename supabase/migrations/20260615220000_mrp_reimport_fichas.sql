@@ -1,0 +1,17 @@
+-- Re-import das fichas técnicas pra corrigir vínculos errados que vieram de
+-- consolidação incorreta de códigos (eu mergeei MOLHO DE TOMATE com TOMATE,
+-- MOLHO DE ALHO LITRO com 0.900ML — todos são itens distintos no Queóps).
+--
+-- Migration registra as operações que foram aplicadas via script:
+-- 1. Re-criou itens 055023 (MOLHO DE TOMATE REFOGADO KG) e 055020 (MOLHO DE ALHO LITRO)
+-- 2. TRUNCATE ficha_item, ficha_tecnica e re-rodou importador (scripts/importar_fichas_v2.py + inline)
+-- 3. Repointou 6 linhas do template_itens + contagens históricas:
+--    - TOMATE CEREJA → 057032 TOMATE CEREJA BDJ
+--    - TOMATE SECO BALDE → 055007 TOMATE SECO 2kg
+--    - MANTEIGA SEM SAL BLOCO → 054002 MANTEIGA SEM SAL KG
+--    - TAMPA CAIXA EMPILHAVEL → 610027 TAMPA CAIXA
+--    - CREME CEBOLA pct → 058019 CREME DE CEBOLA
+--    - MOLHO DE TOMATE LATA + SACHE → 055023 (criado)
+--
+-- Após: 68 fichas, 284 linhas, 168 itens com código Queóps.
+SELECT 1;
