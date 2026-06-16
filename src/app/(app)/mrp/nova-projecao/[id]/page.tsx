@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalcularBotao, NecessidadeEditavel } from "./calcular-cliente";
+import { GerarSolicitacaoBotao } from "./gerar-solicitacao";
 
 function fmtBR(iso: string | null): string {
   if (!iso) return "—";
@@ -181,14 +182,20 @@ export default async function ProjecaoDetalhePage({ params }: { params: Promise<
                 <CardHeader>
                   <CardTitle className="text-base">Passo 3 — Gerar solicitação semanal</CardTitle>
                   <CardDescription>
-                    Vira uma SolicitacaoSemanal no módulo Compras com as quantidades a comprar.
-                    O fluxo segue normal (aprovação → compra → recebimento).
+                    Vira uma SolicitacaoSemanal no módulo Compras com as{" "}
+                    <strong>
+                      {(necessidades ?? []).filter((n) => Number(n.quantidade_a_comprar) > 0).length} linhas
+                    </strong>{" "}
+                    a comprar (valor estimado R${" "}
+                    {valorEstimado.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                    ). O fluxo segue normal (aprovação → compra → recebimento).
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button disabled>
-                    Gerar solicitação (Etapa 7 — em construção)
-                  </Button>
+                  <GerarSolicitacaoBotao projecaoId={projecao.id} />
                 </CardContent>
               </Card>
             )}

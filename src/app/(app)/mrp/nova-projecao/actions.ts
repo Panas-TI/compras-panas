@@ -286,3 +286,124 @@ export async function excluirProjecaoAction(projecaoId: string): Promise<{ error
   revalidatePath("/mrp/projecoes");
   redirect("/mrp/projecoes");
 }
+
+/**
+ * Materializa a projeção em uma SolicitacaoSemanal:
+ * - Cria solicitacao_semanal com origem='MRP', projecao_id ligado
+ * - Pra cada projecao_necessidade com quantidade_a_comprar > 0, cria
+ *   solicitacao_linha com volume_solicitado, item_id, preço de referência etc
+ * - Marca a projeção como convertida_em_solicitacao
+ * - Redireciona pra /solicitacoes/[id] (fluxo normal de aprovação)
+ */
+export async function gerarSolicitacaoAction(
+  projecaoId: string
+): Promise<{ error?: string; solicitacaoId?: string }> {
+  const guard = await assertAccess();
+  if (!guard.ok) return { error: guard.error };
+
+  const supabase = await createClient();
+
+  // 1) Confere projeção
+  const { data: projecao } = await supabase
+    .from("projecao_producao")
+    .select("id, semana_inicio, semana_fim, status, solicitacao_id")
+    .eq("id", projecaoId)
+    .maybeSingle();
+  if (!projecao) return { error: "Projeção não encontrada." };
+  if (projecao.status === "convertida_em_solicitacao" && projecao.solicitacao_id) {
+    return { error: "Já existe solicitação gerada pra esta projeção.", solicitacaoId: projecao.solicitacao_id };
+  }
+  if (projecao.status !== "calculada") {
+    return { error: "Projeção precisa estar com cálculo feito." };
+  }
+
+  // 2) Pega as necessidades com qtd_a_comprar > 0
+  const { data: necessidades } = await supabase
+    .from("projecao_necessidade")
+    .select(
+      `
+      item_id, quantidade_a_comprar, estoque_atual,
+      item:itens(
+        codigo_queops, nome, preco_referencia,
+        fornecedor_padrao_id, forma_pagto_padrao_id, prazo_padrao,
+        classificacao:classificacoes(nome),
+        unidade:unidades_medida(nome)
+      )
+    `
+    )
+    .eq("projecao_id", projecaoId)
+    .gt("quantidade_a_comprar", 0);
+
+  if (!necessidades || necessidades.length === 0) {
+    return { error: "Nenhuma necessidade com quantidade a comprar > 0. Recalcule a projeção." };
+  }
+
+  // 3) Cria a SolicitacaoSemanal
+  const { data: solicitacao, error: solErr } = await supabase
+    .from("solicitacoes_semanais")
+    .insert({
+      data_inicio: projecao.semana_inicio,
+      data_fim: projecao.semana_fim,
+      comprador_id: guard.userId,
+      observacoes: `Gerada pelo MRP a partir de projeção.`,
+      finalizada: false,
+      origem: "MRP",
+      projecao_id: projecaoId,
+    })
+    .select("id")
+    .single();
+  if (solErr || !solicitacao) {
+    return { error: solErr?.message ?? "Falha ao criar solicitação semanal." };
+  }
+
+  // 4) Cria as linhas
+  const payload = necessidades.map((n) => {
+    const preco = n.item?.preco_referencia ?? 0;
+    return {
+      solicitacao_id: solicitacao.id,
+      item_id: n.item_id,
+      // Snapshots (caso item mude depois, linha mantém a foto)
+      codigo_queops_congelado: n.item?.codigo_queops ?? null,
+      nome_item_congelado: n.item?.nome ?? null,
+      classificacao_congelada: n.item?.classificacao?.nome ?? null,
+      unidade_congelada: n.item?.unidade?.nome ?? null,
+      // Dados pra fluxo
+      volume_estoque: Number(n.estoque_atual),
+      volume_solicitado: Number(n.quantidade_a_comprar),
+      preco: Number(preco),
+      fornecedor_id: n.item?.fornecedor_padrao_id ?? null,
+      forma_pagto_id: n.item?.forma_pagto_padrao_id ?? null,
+      prazo: n.item?.prazo_padrao ?? null,
+      status: "Para Aprovar" as const,
+    };
+  });
+
+  const { error: linhasErr } = await supabase.from("solicitacao_linhas").insert(payload);
+  if (linhasErr) {
+    // Rollback: apaga a solicitação criada
+    await supabase.from("solicitacoes_semanais").delete().eq("id", solicitacao.id);
+    return { error: `Falha ao criar linhas: ${linhasErr.message}` };
+  }
+
+  // 5) Atualiza projeção
+  const { error: updErr } = await supabase
+    .from("projecao_producao")
+    .update({
+      status: "convertida_em_solicitacao",
+      solicitacao_id: solicitacao.id,
+    })
+    .eq("id", projecaoId);
+  if (updErr) {
+    return {
+      error: `Solicitação criada mas falhou ao atualizar status da projeção: ${updErr.message}`,
+      solicitacaoId: solicitacao.id,
+    };
+  }
+
+  revalidatePath(`/mrp/nova-projecao/${projecaoId}`);
+  revalidatePath("/mrp/projecoes");
+  revalidatePath(`/solicitacoes/${solicitacao.id}`);
+  revalidatePath("/solicitacoes");
+  return { solicitacaoId: solicitacao.id };
+}
+
