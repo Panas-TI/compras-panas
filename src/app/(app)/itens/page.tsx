@@ -152,56 +152,76 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
         </div>
       </div>
 
-      {/* === Atalhos pelas 4 camadas === */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Link href="/mrp/produtos?tipo=final" className="group">
-          <Card className="h-full transition-shadow group-hover:shadow-md">
-            <CardHeader>
-              <div className="mb-1 text-2xl">🥟</div>
-              <CardDescription className="text-xs">Produtos finais</CardDescription>
-              <CardTitle className="text-2xl">{produtosFinaisCount ?? 0}</CardTitle>
-              <p className="text-[10px] text-zinc-500">(empanadas — fabricadas)</p>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/mrp/produtos?tipo=intermediario" className="group">
-          <Card className="h-full transition-shadow group-hover:shadow-md">
-            <CardHeader>
-              <div className="mb-1 text-2xl">🧂</div>
-              <CardDescription className="text-xs">Semi-acabados</CardDescription>
-              <CardTitle className="text-2xl">{intermediariosCount ?? 0}</CardTitle>
-              <p className="text-[10px] text-zinc-500">(recheios/massas — fabricados)</p>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/itens?tipo_uso=materia_prima" className="group">
-          <Card
-            className={`h-full transition-shadow group-hover:shadow-md ${
-              tipoUso === "materia_prima" ? "border-blue-400 ring-2 ring-blue-200" : ""
-            }`}
-          >
-            <CardHeader>
-              <div className="mb-1 text-2xl">🌾</div>
-              <CardDescription className="text-xs">Matérias-primas</CardDescription>
-              <CardTitle className="text-2xl">{materiasPrimasCount}</CardTitle>
-              <p className="text-[10px] text-zinc-500">(compradas, usadas em ficha)</p>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/itens?tipo_uso=outros" className="group">
-          <Card
-            className={`h-full transition-shadow group-hover:shadow-md ${
-              tipoUso === "outros" ? "border-blue-400 ring-2 ring-blue-200" : ""
-            }`}
-          >
-            <CardHeader>
-              <div className="mb-1 text-2xl">📦</div>
-              <CardDescription className="text-xs">Outros itens</CardDescription>
-              <CardTitle className="text-2xl">{outrosCount}</CardTitle>
-              <p className="text-[10px] text-zinc-500">(comprados, sem ficha)</p>
-            </CardHeader>
-          </Card>
-        </Link>
+      {/* === Atalhos pelas 4 camadas ===
+          Os 2 primeiros levam pro MRP (módulo separado — fica óbvio pela label ↗).
+          Os 2 últimos filtram nesta mesma página. */}
+      <div>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          Visão geral
+        </h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {/* Cards que LEVAM pra outra área (MRP) — visual diferenciado */}
+          <Link href="/mrp/produtos?tipo=final" className="group">
+            <Card className="relative h-full border-purple-200 bg-purple-50/40 transition-shadow group-hover:shadow-md">
+              <span className="absolute right-2 top-2 rounded-full bg-purple-200 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-900">
+                ↗ MRP
+              </span>
+              <CardHeader>
+                <div className="mb-1 text-2xl">🥟</div>
+                <CardDescription className="text-xs">Produtos finais</CardDescription>
+                <CardTitle className="text-2xl">{produtosFinaisCount ?? 0}</CardTitle>
+                <p className="text-[10px] text-zinc-500">(fabricados — não comprados)</p>
+              </CardHeader>
+            </Card>
+          </Link>
+          <Link href="/mrp/produtos?tipo=intermediario" className="group">
+            <Card className="relative h-full border-purple-200 bg-purple-50/40 transition-shadow group-hover:shadow-md">
+              <span className="absolute right-2 top-2 rounded-full bg-purple-200 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-900">
+                ↗ MRP
+              </span>
+              <CardHeader>
+                <div className="mb-1 text-2xl">🧂</div>
+                <CardDescription className="text-xs">Semi-acabados</CardDescription>
+                <CardTitle className="text-2xl">{intermediariosCount ?? 0}</CardTitle>
+                <p className="text-[10px] text-zinc-500">(fabricados — não comprados)</p>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          {/* Cards que FICAM nesta página — visual padrão */}
+          <Link href="/itens?tipo_uso=materia_prima" className="group">
+            <Card
+              className={`h-full transition-shadow group-hover:shadow-md ${
+                tipoUso === "materia_prima" ? "border-blue-400 ring-2 ring-blue-200" : ""
+              }`}
+            >
+              <CardHeader>
+                <div className="mb-1 text-2xl">🌾</div>
+                <CardDescription className="text-xs">Matérias-primas</CardDescription>
+                <CardTitle className="text-2xl">{materiasPrimasCount}</CardTitle>
+                <p className="text-[10px] text-zinc-500">(compradas, usadas em ficha)</p>
+              </CardHeader>
+            </Card>
+          </Link>
+          <Link href="/itens?tipo_uso=outros" className="group">
+            <Card
+              className={`h-full transition-shadow group-hover:shadow-md ${
+                tipoUso === "outros" ? "border-blue-400 ring-2 ring-blue-200" : ""
+              }`}
+            >
+              <CardHeader>
+                <div className="mb-1 text-2xl">📦</div>
+                <CardDescription className="text-xs">Outros itens</CardDescription>
+                <CardTitle className="text-2xl">{outrosCount}</CardTitle>
+                <p className="text-[10px] text-zinc-500">(comprados, sem ficha)</p>
+              </CardHeader>
+            </Card>
+          </Link>
+        </div>
+        <p className="mt-2 text-[10px] text-zinc-500">
+          🟪 Cards com selo <strong>↗ MRP</strong> levam pra outro módulo (Produtos fabricados ficam
+          fora do catálogo de compras).
+        </p>
       </div>
 
       {/* === Filtro de tipo de uso (pode mudar sem refiltrar tudo) === */}
