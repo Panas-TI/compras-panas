@@ -676,6 +676,160 @@ export type Database = {
         }
         Relationships: []
       }
+      projecao_demanda: {
+        Row: {
+          id: string
+          observacoes: string | null
+          produto_id: string
+          projecao_id: string
+          quantidade: number
+        }
+        Insert: {
+          id?: string
+          observacoes?: string | null
+          produto_id: string
+          projecao_id: string
+          quantidade: number
+        }
+        Update: {
+          id?: string
+          observacoes?: string | null
+          produto_id?: string
+          projecao_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projecao_demanda_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produto"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projecao_demanda_projecao_id_fkey"
+            columns: ["projecao_id"]
+            isOneToOne: false
+            referencedRelation: "projecao_producao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projecao_necessidade: {
+        Row: {
+          alertas: Json | null
+          estoque_atual: number
+          id: string
+          item_id: string
+          necessidade_bruta: number
+          necessidade_liquida: number
+          projecao_id: string
+          quantidade_a_comprar: number
+          unidade: string | null
+        }
+        Insert: {
+          alertas?: Json | null
+          estoque_atual?: number
+          id?: string
+          item_id: string
+          necessidade_bruta?: number
+          necessidade_liquida?: number
+          projecao_id: string
+          quantidade_a_comprar?: number
+          unidade?: string | null
+        }
+        Update: {
+          alertas?: Json | null
+          estoque_atual?: number
+          id?: string
+          item_id?: string
+          necessidade_bruta?: number
+          necessidade_liquida?: number
+          projecao_id?: string
+          quantidade_a_comprar?: number
+          unidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projecao_necessidade_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projecao_necessidade_projecao_id_fkey"
+            columns: ["projecao_id"]
+            isOneToOne: false
+            referencedRelation: "projecao_producao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projecao_producao: {
+        Row: {
+          atualizado_em: string
+          contagem_id: string | null
+          criado_em: string
+          criado_por: string | null
+          data_calculo: string
+          id: string
+          observacoes: string | null
+          semana_fim: string
+          semana_inicio: string
+          solicitacao_id: string | null
+          status: string
+        }
+        Insert: {
+          atualizado_em?: string
+          contagem_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data_calculo?: string
+          id?: string
+          observacoes?: string | null
+          semana_fim: string
+          semana_inicio: string
+          solicitacao_id?: string | null
+          status?: string
+        }
+        Update: {
+          atualizado_em?: string
+          contagem_id?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data_calculo?: string
+          id?: string
+          observacoes?: string | null
+          semana_fim?: string
+          semana_inicio?: string
+          solicitacao_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projecao_producao_contagem_id_fkey"
+            columns: ["contagem_id"]
+            isOneToOne: false
+            referencedRelation: "contagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projecao_producao_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projecao_producao_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacoes_semanais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recebimento_entregas: {
         Row: {
           criado_em: string
@@ -906,6 +1060,13 @@ export type Database = {
             columns: ["comprador_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_semanais_projecao_id_fkey"
+            columns: ["projecao_id"]
+            isOneToOne: false
+            referencedRelation: "projecao_producao"
             referencedColumns: ["id"]
           },
         ]
