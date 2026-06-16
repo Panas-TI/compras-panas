@@ -8,30 +8,13 @@ import { formatCurrencyBRL } from "@/lib/utils";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const TIPOS = {
-  todos: { label: "Todos", emoji: "📋" },
-  final: { label: "Produtos finais (fabricados)", emoji: "🥟" },
-  semi: { label: "Semi-acabados (fabricados)", emoji: "🧂" },
-  materia_prima: { label: "Matérias-primas (compra usada em ficha)", emoji: "🌾" },
-  outros: { label: "Outros itens (compra sem ficha)", emoji: "📦" },
+const TIPOS_USO = {
+  todos: { label: "Todos os itens", emoji: "📋" },
+  materia_prima: { label: "Matérias-primas (usadas em ficha)", emoji: "🌾" },
+  outros: { label: "Outros (não usados em ficha)", emoji: "📦" },
 } as const;
 
-type TipoFiltro = keyof typeof TIPOS;
-
-type LinhaUnificada = {
-  kind: "produto" | "item";
-  id: string;
-  codigo: string | null;
-  nome: string;
-  ativo: boolean;
-  classifOuCategoria: string | null;
-  unidade: string | null;
-  fornecedor: string | null;
-  preco: number | null;
-  usosFicha: number; // pra itens
-  href: string;
-  tipoBadge: { label: string; cls: string; emoji: string };
-};
+type TipoUso = keyof typeof TIPOS_USO;
 
 export default async function ItensPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
@@ -40,85 +23,19 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
   const semCodigo = sp.sem_codigo === "1";
   const incluirInativos = sp.inativos === "1";
   const usadoContagem = sp.contagem === "1";
-  const tipo = (typeof sp.tipo === "string" && sp.tipo in TIPOS ? sp.tipo : "todos") as TipoFiltro;
+  const tipoUso = (typeof sp.tipo_uso === "string" && sp.tipo_uso in TIPOS_USO
+    ? sp.tipo_uso
+    : "todos") as TipoUso;
 
   const supabase = await createClient();
 
-  // Itens usados em fichas (pra filtro de matéria-prima e badge "uso")
-  const { data: fichaItensIdsRaw } = await supabase
-    .from("ficha_item")
-    .select("item_id")
-    .not("item_id", "is", null);
-  const usosPorItem = new Map<string, number>();
-  for (const r of fichaItensIdsRaw ?? []) {
-    if (r.item_id) usosPorItem.set(r.item_id, (usosPorItem.get(r.item_id) ?? 0) + 1);
-  }
-  const itensUsadosIds = new Set(usosPorItem.keys());
-
-  // === Decide se busca itens, produtos, ou ambos ===
-  const buscaItens = tipo === "todos" || tipo === "materia_prima" || tipo === "outros";
-  const buscaProdutosFinais = tipo === "todos" || tipo === "final";
-  const buscaProdutosSemi = tipo === "todos" || tipo === "semi";
-
-  // === Itens (catálogo de compras) ===
-  let itensQuery = supabase
-    .from("itens")
-    .select(
-      `
-      id, nome, codigo_queops, preco_referencia, ativo,
-      classificacao:classificacoes(nome),
-      unidade:unidades_medida(nome),
-      fornecedor:fornecedores!itens_fornecedor_padrao_id_fkey(nome)
-    `
-    )
-    .order("nome");
-
-  if (!incluirInativos) itensQuery = itensQuery.eq("ativo", true);
-  if (q) {
-    const safe = q.replace(/[(),]/g, " ").trim();
-    if (safe) itensQuery = itensQuery.or(`nome.ilike.%${safe}%,codigo_queops.ilike.%${safe}%`);
-  }
-  if (classifId) itensQuery = itensQuery.eq("classificacao_id", classifId);
-  if (semCodigo) itensQuery = itensQuery.is("codigo_queops", null);
-  if (usadoContagem) {
-    const { data: linkedIds } = await supabase
-      .from("template_itens")
-      .select("item_id")
-      .not("item_id", "is", null);
-    const ids = Array.from(new Set((linkedIds ?? []).map((r) => r.item_id))).filter(Boolean) as string[];
-    if (ids.length === 0) {
-      itensQuery = itensQuery.eq("id", "00000000-0000-0000-0000-000000000000");
-    } else {
-      itensQuery = itensQuery.in("id", ids);
-    }
-  }
-
-  // === Produtos (MRP — empanadas + intermediários) ===
-  let produtosQuery = supabase
-    .from("produto")
-    .select("id, codigo_queops, nome, categoria, tipo, unidade_producao, ativo")
-    .order("nome");
-  if (!incluirInativos) produtosQuery = produtosQuery.eq("ativo", true);
-  if (q) {
-    const safe = q.replace(/[(),]/g, " ").trim();
-    if (safe) produtosQuery = produtosQuery.or(`nome.ilike.%${safe}%,codigo_queops.ilike.%${safe}%`);
-  }
-  if (semCodigo) produtosQuery = produtosQuery.is("codigo_queops", null);
-
-  // Carrega de acordo com o filtro
+  // === Atalhos pro hub: contagens das 4 categorias ===
   const [
-    itensRes,
-    produtosRes,
-    { data: classificacoes },
     { count: produtosFinaisCount },
     { count: intermediariosCount },
+    { data: fichaItensIdsRaw },
     { count: totalItensAtivos },
   ] = await Promise.all([
-    buscaItens ? itensQuery : Promise.resolve({ data: [], error: null }),
-    buscaProdutosFinais || buscaProdutosSemi
-      ? produtosQuery
-      : Promise.resolve({ data: [], error: null }),
-    supabase.from("classificacoes").select("id, nome").eq("ativo", true).order("nome"),
     supabase
       .from("produto")
       .select("*", { count: "exact", head: true })
@@ -129,84 +46,84 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
       .select("*", { count: "exact", head: true })
       .eq("ativo", true)
       .eq("tipo", "intermediario"),
+    supabase
+      .from("ficha_item")
+      .select("item_id")
+      .not("item_id", "is", null),
     supabase.from("itens").select("*", { count: "exact", head: true }).eq("ativo", true),
   ]);
 
-  type ItemRow = {
-    id: string;
-    nome: string;
-    codigo_queops: string | null;
-    preco_referencia: number | null;
-    ativo: boolean;
-    classificacao: { nome: string } | null;
-    unidade: { nome: string } | null;
-    fornecedor: { nome: string } | null;
-  };
-  type ProdutoRow = {
-    id: string;
-    codigo_queops: string | null;
-    nome: string;
-    categoria: string;
-    tipo: string;
-    unidade_producao: string;
-    ativo: boolean;
-  };
-
-  const linhas: LinhaUnificada[] = [];
-
-  // Adiciona ITENS (compra)
-  for (const it of (itensRes.data ?? []) as ItemRow[]) {
-    const usos = usosPorItem.get(it.id) ?? 0;
-    const ehMateria = usos > 0;
-    // Aplicar filtro tipo de uso
-    if (tipo === "materia_prima" && !ehMateria) continue;
-    if (tipo === "outros" && ehMateria) continue;
-    linhas.push({
-      kind: "item",
-      id: it.id,
-      codigo: it.codigo_queops,
-      nome: it.nome,
-      ativo: it.ativo,
-      classifOuCategoria: it.classificacao?.nome ?? null,
-      unidade: it.unidade?.nome ?? null,
-      fornecedor: it.fornecedor?.nome ?? null,
-      preco: it.preco_referencia,
-      usosFicha: usos,
-      href: `/itens/${it.id}`,
-      tipoBadge: ehMateria
-        ? { label: "Matéria-prima", emoji: "🌾", cls: "bg-amber-100 text-amber-900" }
-        : { label: "Outro item", emoji: "📦", cls: "bg-zinc-200 text-zinc-700" },
-    });
-  }
-
-  // Adiciona PRODUTOS (fabricação) — finais e/ou semi
-  for (const p of (produtosRes.data ?? []) as ProdutoRow[]) {
-    if (p.tipo === "final" && !buscaProdutosFinais) continue;
-    if (p.tipo === "intermediario" && !buscaProdutosSemi) continue;
-    linhas.push({
-      kind: "produto",
-      id: p.id,
-      codigo: p.codigo_queops,
-      nome: p.nome,
-      ativo: p.ativo,
-      classifOuCategoria: p.categoria,
-      unidade: p.unidade_producao,
-      fornecedor: null,
-      preco: null,
-      usosFicha: 0,
-      href: `/mrp/produtos/${p.id}`,
-      tipoBadge:
-        p.tipo === "final"
-          ? { label: "Produto final", emoji: "🥟", cls: "bg-purple-100 text-purple-900" }
-          : { label: "Semi-acabado", emoji: "🧂", cls: "bg-fuchsia-100 text-fuchsia-900" },
-    });
-  }
-
-  // Ordena pelo nome
-  linhas.sort((a, b) => a.nome.localeCompare(b.nome));
-
-  const materiasPrimasCount = itensUsadosIds.size;
+  const itensUsadosEmFicha = new Set(
+    (fichaItensIdsRaw ?? []).map((r) => r.item_id).filter(Boolean) as string[]
+  );
+  const materiasPrimasCount = itensUsadosEmFicha.size;
   const outrosCount = Math.max(0, (totalItensAtivos ?? 0) - materiasPrimasCount);
+
+  // === Query principal ===
+  let query = supabase
+    .from("itens")
+    .select(
+      `
+      id, nome, codigo_queops, preco_referencia, ativo, prazo_padrao,
+      classificacao:classificacoes(nome),
+      unidade:unidades_medida(nome),
+      fornecedor:fornecedores!itens_fornecedor_padrao_id_fkey(nome),
+      forma_pagto:formas_pagamento!itens_forma_pagto_padrao_id_fkey(nome)
+    `
+    )
+    .order("nome");
+
+  if (!incluirInativos) query = query.eq("ativo", true);
+  if (q) {
+    const safe = q.replace(/[(),]/g, " ").trim();
+    if (safe) {
+      query = query.or(`nome.ilike.%${safe}%,codigo_queops.ilike.%${safe}%`);
+    }
+  }
+  if (classifId) query = query.eq("classificacao_id", classifId);
+  if (semCodigo) query = query.is("codigo_queops", null);
+
+  // Filtro: usados em contagem
+  if (usadoContagem) {
+    const { data: linkedIds } = await supabase
+      .from("template_itens")
+      .select("item_id")
+      .not("item_id", "is", null);
+    const ids = Array.from(new Set((linkedIds ?? []).map((r) => r.item_id))).filter(Boolean) as string[];
+    if (ids.length === 0) {
+      query = query.eq("id", "00000000-0000-0000-0000-000000000000");
+    } else {
+      query = query.in("id", ids);
+    }
+  }
+
+  // Filtro: tipo de uso (matéria-prima / outros)
+  if (tipoUso === "materia_prima") {
+    const ids = Array.from(itensUsadosEmFicha);
+    if (ids.length === 0) {
+      query = query.eq("id", "00000000-0000-0000-0000-000000000000");
+    } else {
+      query = query.in("id", ids);
+    }
+  } else if (tipoUso === "outros") {
+    const ids = Array.from(itensUsadosEmFicha);
+    if (ids.length > 0) {
+      query = query.not("id", "in", `(${ids.map((id) => `"${id}"`).join(",")})`);
+    }
+  }
+
+  const [{ data: itens, error }, { data: classificacoes }] = await Promise.all([
+    query,
+    supabase.from("classificacoes").select("id, nome").eq("ativo", true).order("nome"),
+  ]);
+
+  // Contagem de uso em fichas por item (pra badge)
+  const usosPorItem = new Map<string, number>();
+  for (const r of fichaItensIdsRaw ?? []) {
+    if (r.item_id) {
+      usosPorItem.set(r.item_id, (usosPorItem.get(r.item_id) ?? 0) + 1);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -214,8 +131,12 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
         <div>
           <h1 className="text-2xl font-semibold">Catálogo de itens</h1>
           <p className="text-sm text-zinc-600">
-            Tudo num lugar só: o que você <strong>compra</strong> + o que você{" "}
-            <strong>fabrica</strong>.
+            Itens que você <strong>compra</strong>. Produtos que você{" "}
+            <strong>fabrica</strong> (empanadas, recheios, massas) ficam em{" "}
+            <Link href="/mrp/produtos" className="text-zinc-900 underline-offset-4 hover:underline">
+              /mrp/produtos
+            </Link>
+            .
           </p>
         </div>
         <div className="flex gap-2">
@@ -231,69 +152,81 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
         </div>
       </div>
 
-      {/* === Cards das 4 camadas (todos filtram nesta página) === */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Link href="/itens?tipo=final" className="group">
-          <Card
-            className={`h-full transition-shadow group-hover:shadow-md ${
-              tipo === "final" ? "border-blue-400 ring-2 ring-blue-200" : ""
-            }`}
-          >
-            <CardHeader>
-              <div className="mb-1 text-2xl">🥟</div>
-              <CardDescription className="text-xs">Produtos finais</CardDescription>
-              <CardTitle className="text-2xl">{produtosFinaisCount ?? 0}</CardTitle>
-              <p className="text-[10px] text-zinc-500">(fabricados)</p>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/itens?tipo=semi" className="group">
-          <Card
-            className={`h-full transition-shadow group-hover:shadow-md ${
-              tipo === "semi" ? "border-blue-400 ring-2 ring-blue-200" : ""
-            }`}
-          >
-            <CardHeader>
-              <div className="mb-1 text-2xl">🧂</div>
-              <CardDescription className="text-xs">Semi-acabados</CardDescription>
-              <CardTitle className="text-2xl">{intermediariosCount ?? 0}</CardTitle>
-              <p className="text-[10px] text-zinc-500">(fabricados)</p>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/itens?tipo=materia_prima" className="group">
-          <Card
-            className={`h-full transition-shadow group-hover:shadow-md ${
-              tipo === "materia_prima" ? "border-blue-400 ring-2 ring-blue-200" : ""
-            }`}
-          >
-            <CardHeader>
-              <div className="mb-1 text-2xl">🌾</div>
-              <CardDescription className="text-xs">Matérias-primas</CardDescription>
-              <CardTitle className="text-2xl">{materiasPrimasCount}</CardTitle>
-              <p className="text-[10px] text-zinc-500">(compradas, usadas em ficha)</p>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link href="/itens?tipo=outros" className="group">
-          <Card
-            className={`h-full transition-shadow group-hover:shadow-md ${
-              tipo === "outros" ? "border-blue-400 ring-2 ring-blue-200" : ""
-            }`}
-          >
-            <CardHeader>
-              <div className="mb-1 text-2xl">📦</div>
-              <CardDescription className="text-xs">Outros itens</CardDescription>
-              <CardTitle className="text-2xl">{outrosCount}</CardTitle>
-              <p className="text-[10px] text-zinc-500">(comprados, sem ficha)</p>
-            </CardHeader>
-          </Card>
-        </Link>
+      {/* === Atalhos pelas 4 camadas ===
+          Os 2 primeiros levam pro MRP (módulo separado — fica óbvio pela label ↗).
+          Os 2 últimos filtram nesta mesma página. */}
+      <div>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          Visão geral
+        </h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {/* Cards que LEVAM pra outra área (MRP) — visual diferenciado */}
+          <Link href="/mrp/produtos?tipo=final" className="group">
+            <Card className="relative h-full border-purple-200 bg-purple-50/40 transition-shadow group-hover:shadow-md">
+              <span className="absolute right-2 top-2 rounded-full bg-purple-200 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-900">
+                ↗ MRP
+              </span>
+              <CardHeader>
+                <div className="mb-1 text-2xl">🥟</div>
+                <CardDescription className="text-xs">Produtos finais</CardDescription>
+                <CardTitle className="text-2xl">{produtosFinaisCount ?? 0}</CardTitle>
+                <p className="text-[10px] text-zinc-500">(fabricados — não comprados)</p>
+              </CardHeader>
+            </Card>
+          </Link>
+          <Link href="/mrp/produtos?tipo=intermediario" className="group">
+            <Card className="relative h-full border-purple-200 bg-purple-50/40 transition-shadow group-hover:shadow-md">
+              <span className="absolute right-2 top-2 rounded-full bg-purple-200 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-900">
+                ↗ MRP
+              </span>
+              <CardHeader>
+                <div className="mb-1 text-2xl">🧂</div>
+                <CardDescription className="text-xs">Semi-acabados</CardDescription>
+                <CardTitle className="text-2xl">{intermediariosCount ?? 0}</CardTitle>
+                <p className="text-[10px] text-zinc-500">(fabricados — não comprados)</p>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          {/* Cards que FICAM nesta página — visual padrão */}
+          <Link href="/itens?tipo_uso=materia_prima" className="group">
+            <Card
+              className={`h-full transition-shadow group-hover:shadow-md ${
+                tipoUso === "materia_prima" ? "border-blue-400 ring-2 ring-blue-200" : ""
+              }`}
+            >
+              <CardHeader>
+                <div className="mb-1 text-2xl">🌾</div>
+                <CardDescription className="text-xs">Matérias-primas</CardDescription>
+                <CardTitle className="text-2xl">{materiasPrimasCount}</CardTitle>
+                <p className="text-[10px] text-zinc-500">(compradas, usadas em ficha)</p>
+              </CardHeader>
+            </Card>
+          </Link>
+          <Link href="/itens?tipo_uso=outros" className="group">
+            <Card
+              className={`h-full transition-shadow group-hover:shadow-md ${
+                tipoUso === "outros" ? "border-blue-400 ring-2 ring-blue-200" : ""
+              }`}
+            >
+              <CardHeader>
+                <div className="mb-1 text-2xl">📦</div>
+                <CardDescription className="text-xs">Outros itens</CardDescription>
+                <CardTitle className="text-2xl">{outrosCount}</CardTitle>
+                <p className="text-[10px] text-zinc-500">(comprados, sem ficha)</p>
+              </CardHeader>
+            </Card>
+          </Link>
+        </div>
+        <p className="mt-2 text-[10px] text-zinc-500">
+          🟪 Cards com selo <strong>↗ MRP</strong> levam pra outro módulo (Produtos fabricados ficam
+          fora do catálogo de compras).
+        </p>
       </div>
 
-      {/* === Tabs de filtro === */}
+      {/* === Filtro de tipo de uso (pode mudar sem refiltrar tudo) === */}
       <div className="flex flex-wrap gap-1.5">
-        {(Object.entries(TIPOS) as Array<[TipoFiltro, (typeof TIPOS)[TipoFiltro]]>).map(
+        {(Object.entries(TIPOS_USO) as Array<[TipoUso, (typeof TIPOS_USO)[TipoUso]]>).map(
           ([key, info]) => {
             const params = new URLSearchParams();
             if (q) params.set("q", q);
@@ -301,9 +234,9 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
             if (semCodigo) params.set("sem_codigo", "1");
             if (incluirInativos) params.set("inativos", "1");
             if (usadoContagem) params.set("contagem", "1");
-            if (key !== "todos") params.set("tipo", key);
+            if (key !== "todos") params.set("tipo_uso", key);
             const href = `/itens${params.toString() ? `?${params.toString()}` : ""}`;
-            const ativo = tipo === key;
+            const ativo = tipoUso === key;
             return (
               <Link
                 key={key}
@@ -321,8 +254,9 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
         )}
       </div>
 
+      {/* === Form de filtro detalhado === */}
       <form className="flex flex-wrap items-end gap-2" method="get">
-        {tipo !== "todos" && <input type="hidden" name="tipo" value={tipo} />}
+        {tipoUso !== "todos" && <input type="hidden" name="tipo_uso" value={tipoUso} />}
         <div className="flex flex-1 min-w-[200px] flex-col gap-1.5">
           <label className="text-sm font-medium" htmlFor="q">
             Buscar
@@ -331,7 +265,7 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium" htmlFor="classif">
-            Classificação (só itens de compra)
+            Classificação
           </label>
           <Select id="classif" name="classif" defaultValue={classifId}>
             <option value="">Todas</option>
@@ -360,9 +294,10 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
       </form>
 
       <p className="text-sm text-zinc-600">
-        {linhas.length} {linhas.length === 1 ? "registro" : "registros"} —{" "}
-        {TIPOS[tipo].emoji} {TIPOS[tipo].label.toLowerCase()}
+        {itens?.length ?? 0} {tipoUso === "todos" ? "itens" : TIPOS_USO[tipoUso].label.toLowerCase()} encontrados.
       </p>
+
+      {error && <p className="text-sm text-red-600">Erro: {error.message}</p>}
 
       <Card>
         <CardContent className="p-0">
@@ -370,12 +305,11 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
             <table className="min-w-full text-sm">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-left">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Tipo</th>
                   <th className="px-3 py-2 font-medium">Código</th>
                   <th className="px-3 py-2 font-medium">Nome</th>
-                  <th className="px-3 py-2 font-medium">Categoria / Classificação</th>
+                  <th className="px-3 py-2 font-medium">Classificação</th>
                   <th className="px-3 py-2 font-medium">Unidade</th>
-                  <th className="px-3 py-2 font-medium">Fornecedor</th>
+                  <th className="px-3 py-2 font-medium">Fornecedor padrão</th>
                   <th className="px-3 py-2 text-right font-medium">Preço ref.</th>
                   <th className="px-3 py-2 font-medium">Uso</th>
                   <th className="px-3 py-2 font-medium">Status</th>
@@ -383,60 +317,55 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
                 </tr>
               </thead>
               <tbody>
-                {linhas.map((l) => (
-                  <tr key={`${l.kind}-${l.id}`} className="border-b border-zinc-100 last:border-0">
-                    <td className="px-3 py-2">
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${l.tipoBadge.cls}`}
-                      >
-                        {l.tipoBadge.emoji} {l.tipoBadge.label}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 font-mono text-xs">
-                      {l.codigo ?? <span className="text-amber-600">— sem código —</span>}
-                    </td>
-                    <td className="px-3 py-2 font-medium">{l.nome}</td>
-                    <td className="px-3 py-2 text-xs text-zinc-600">
-                      {l.classifOuCategoria ?? "—"}
-                    </td>
-                    <td className="px-3 py-2 text-zinc-600">{l.unidade ?? "—"}</td>
-                    <td className="px-3 py-2 text-zinc-600">{l.fornecedor ?? "—"}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {l.preco != null ? formatCurrencyBRL(l.preco) : "—"}
-                    </td>
-                    <td className="px-3 py-2">
-                      {l.kind === "item" && l.usosFicha > 0 ? (
-                        <span
-                          className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-900"
-                          title={`Usado em ${l.usosFicha} ficha(s) técnica(s)`}
+                {(itens ?? []).map((i) => {
+                  const usosFicha = usosPorItem.get(i.id) ?? 0;
+                  return (
+                    <tr key={i.id} className="border-b border-zinc-100 last:border-0">
+                      <td className="px-3 py-2 font-mono text-xs">
+                        {i.codigo_queops ?? <span className="text-amber-600">— sem código —</span>}
+                      </td>
+                      <td className="px-3 py-2">{i.nome}</td>
+                      <td className="px-3 py-2 text-xs text-zinc-600">{i.classificacao?.nome ?? "—"}</td>
+                      <td className="px-3 py-2 text-zinc-600">{i.unidade?.nome ?? "—"}</td>
+                      <td className="px-3 py-2 text-zinc-600">{i.fornecedor?.nome ?? "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {formatCurrencyBRL(i.preco_referencia ?? null)}
+                      </td>
+                      <td className="px-3 py-2">
+                        {usosFicha > 0 ? (
+                          <span
+                            className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-900"
+                            title={`Usado em ${usosFicha} ficha(s) técnica(s)`}
+                          >
+                            🍳 {usosFicha}{" "}
+                            {usosFicha === 1 ? "ficha" : "fichas"}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-zinc-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {i.ativo ? (
+                          <span className="text-xs text-emerald-700">ativo</span>
+                        ) : (
+                          <span className="text-xs text-zinc-500">inativo</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <Link
+                          href={`/itens/${i.id}`}
+                          className="text-sm text-zinc-700 underline-offset-4 hover:underline"
                         >
-                          🍳 {l.usosFicha}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-zinc-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {l.ativo ? (
-                        <span className="text-xs text-emerald-700">ativo</span>
-                      ) : (
-                        <span className="text-xs text-zinc-500">inativo</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <Link
-                        href={l.href}
-                        className="text-sm text-zinc-700 underline-offset-4 hover:underline"
-                      >
-                        Editar{l.kind === "produto" ? " (ficha)" : ""}
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {!linhas.length && (
+                          Editar
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!itens?.length && (
                   <tr>
-                    <td colSpan={10} className="px-3 py-6 text-center text-sm text-zinc-500">
-                      Nenhum registro encontrado com esse filtro.
+                    <td colSpan={9} className="px-3 py-6 text-center text-sm text-zinc-500">
+                      Nenhum item encontrado com esse filtro.
                     </td>
                   </tr>
                 )}
