@@ -521,6 +521,7 @@ export type Database = {
           fornecedor_padrao_id: string | null
           id: string
           merged_into_id: string | null
+          mrp_revisado: boolean
           nome: string
           prazo_padrao: string | null
           preco_referencia: number | null
@@ -538,6 +539,7 @@ export type Database = {
           fornecedor_padrao_id?: string | null
           id?: string
           merged_into_id?: string | null
+          mrp_revisado?: boolean
           nome: string
           prazo_padrao?: string | null
           preco_referencia?: number | null
@@ -555,6 +557,7 @@ export type Database = {
           fornecedor_padrao_id?: string | null
           id?: string
           merged_into_id?: string | null
+          mrp_revisado?: boolean
           nome?: string
           prazo_padrao?: string | null
           preco_referencia?: number | null

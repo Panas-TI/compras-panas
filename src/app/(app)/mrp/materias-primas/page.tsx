@@ -108,6 +108,14 @@ export default async function MateriasPrimasPage({
         </div>
       )}
 
+      <div className="rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+        🔍{" "}
+        <Link href="/mrp/materias-primas/revisar" className="font-semibold underline-offset-4 hover:underline">
+          Revisar duplicatas
+        </Link>{" "}
+        — itens que eu criei na importação do Queóps e podem ser os mesmos que já existiam no catálogo.
+      </div>
+
       <form className="flex flex-wrap items-end gap-2" method="get">
         <div className="flex flex-1 min-w-[200px] flex-col gap-1.5">
           <label className="text-sm font-medium" htmlFor="q">
