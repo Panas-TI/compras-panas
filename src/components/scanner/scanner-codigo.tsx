@@ -25,6 +25,9 @@ const ELEMENT_ID = "scanner-codigo-region";
 type ZoomTrackCapabilities = {
   zoom?: { min: number; max: number; step: number };
   torch?: boolean;
+  focusMode?: string[];
+  exposureMode?: string[];
+  whiteBalanceMode?: string[];
 };
 
 export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código", continuo = false }: Props) {
@@ -34,15 +37,19 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
   const [zoom, setZoom] = useState<number>(1);
   const [torchSuportado, setTorchSuportado] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
+  const [decodingFoto, setDecodingFoto] = useState(false);
+  const [decodingStage, setDecodingStage] = useState<string | null>(null);
+  const [erroFoto, setErroFoto] = useState<string | null>(null);
+  const [modoManual, setModoManual] = useState(false);
+  const [codigoManual, setCodigoManual] = useState("");
+  const [camadaUsada, setCamadaUsada] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scannerRef = useRef<unknown>(null);
   const ultimoCodigo = useRef<string | null>(null);
   const ultimoCodigoAt = useRef<number>(0);
-  // Buffer das últimas leituras (anti-falso-positivo INVISÍVEL):
-  // pra aceitar, precisa ver o mesmo código em pelo menos 2 frames dentro de 400ms.
-  // A 24 fps isso é ~10 frames, então leitura genuína passa instantâneo (~80ms).
-  const leiturasRecentes = useRef<Array<{ codigo: string; ts: number }>>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const detectorNativoIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [ultimaLeitura, setUltimaLeitura] = useState<string | null>(null);
 
   // Feedback: beep curto + vibração + banner persistente por 2s
@@ -80,6 +87,10 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
 
   useEffect(() => {
     return () => {
+      if (detectorNativoIntervalRef.current) {
+        clearInterval(detectorNativoIntervalRef.current);
+        detectorNativoIntervalRef.current = null;
+      }
       const s = scannerRef.current as { stop?: () => Promise<void>; clear?: () => void } | null;
       if (s?.stop) {
         s.stop()
@@ -88,6 +99,55 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
       }
     };
   }, []);
+
+  // Handler único de leitura aceita — usado tanto pelo html5-qrcode quanto pelo
+  // BarcodeDetector nativo (rodando em paralelo no mesmo streaming).
+  const aceitarCodigo = (
+    decodedText: string,
+    scanner: { stop: () => Promise<void>; clear: () => void }
+  ) => {
+    const agora = Date.now();
+    const codigoTrim = decodedText.trim();
+
+    // Debounce do código JÁ ACEITO: não reaceitar o mesmo nos próximos 3s
+    if (ultimoCodigo.current === codigoTrim && agora - ultimoCodigoAt.current < 3000) {
+      return;
+    }
+
+    // Rejeita códigos muito curtos (falso positivo de ruído)
+    if (codigoTrim.length < 4) {
+      return;
+    }
+
+    ultimoCodigo.current = codigoTrim;
+    ultimoCodigoAt.current = agora;
+    sinalLeitura(codigoTrim);
+
+    // Para o detector nativo paralelo
+    if (detectorNativoIntervalRef.current) {
+      clearInterval(detectorNativoIntervalRef.current);
+      detectorNativoIntervalRef.current = null;
+    }
+
+    if (!continuo) {
+      // Para o scanner ANTES de notificar — libera a câmera/recursos antes
+      // do código consumidor reagir. Importante no iOS Safari (memória
+      // estourada com câmera ativa + GPS + render simultâneos crashava a tab).
+      scanner
+        .stop()
+        .then(() => {
+          scanner.clear();
+          setAtivo(false);
+          onCodigo(codigoTrim);
+        })
+        .catch(() => {
+          setAtivo(false);
+          onCodigo(codigoTrim);
+        });
+    } else {
+      onCodigo(codigoTrim);
+    }
+  };
 
   const iniciar = async () => {
     setErro(null);
@@ -125,64 +185,77 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
           aspectRatio: 1.333,
           videoConstraints: {
             facingMode: { exact: "environment" },
-            // Reduzi resolução pra 1280x720 — em iPhones mais antigos a tab
-            // crashava de memória com 1920x1080 + GPS + rede simultâneos.
-            // 720p ainda dá nitidez sobrada pra ler Code 128.
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            // Resolução alta (1920x1080) com fallback automático do browser pra menor
+            // se o sensor não suportar. Em Motorola/Samsung baratos, mais pixels =
+            // código de barras pequeno mais nítido.
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            // Modos contínuos: foco, exposição, white balance. Críticos em câmeras
+            // ruins de Android baratos que por padrão ficam embaçadas/mal expostas.
+            advanced: [
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              { focusMode: "continuous" } as any,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              { exposureMode: "continuous" } as any,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              { whiteBalanceMode: "continuous" } as any,
+            ],
           },
         },
-        (decodedText) => {
-          const agora = Date.now();
-          const codigoTrim = decodedText.trim();
-
-          // Debounce do código JÁ ACEITO: não reaceitar o mesmo nos próximos 3s
-          if (ultimoCodigo.current === codigoTrim && agora - ultimoCodigoAt.current < 3000) {
-            return;
-          }
-
-          // Anti-falso-positivo invisível: agrega ao buffer e exige >=2 leituras
-          // do mesmo código nos últimos 400ms pra confirmar. Pra leitura genuína,
-          // que vem em frames consecutivos (~42ms a 24fps), isso passa em ~80ms.
-          const JANELA_MS = 400;
-          const MIN_VEZES = 2;
-          const buf = leiturasRecentes.current.filter((r) => agora - r.ts <= JANELA_MS);
-          buf.push({ codigo: codigoTrim, ts: agora });
-          const vezesIguais = buf.filter((r) => r.codigo === codigoTrim).length;
-          leiturasRecentes.current = buf;
-
-          if (vezesIguais < MIN_VEZES) {
-            return; // ainda não confirmado — aguarda próximo frame
-          }
-
-          // Confirmado!
-          leiturasRecentes.current = [];
-          ultimoCodigo.current = codigoTrim;
-          ultimoCodigoAt.current = agora;
-          sinalLeitura(codigoTrim);
-          if (!continuo) {
-            // Para o scanner ANTES de notificar — libera a câmera/recursos antes
-            // do código consumidor reagir. Importante no iOS Safari (memória
-            // estourada com câmera ativa + GPS + render simultâneos crashava a tab).
-            scanner
-              .stop()
-              .then(() => {
-                scanner.clear();
-                setAtivo(false);
-                onCodigo(codigoTrim);
-              })
-              .catch(() => {
-                setAtivo(false);
-                onCodigo(codigoTrim);
-              });
-          } else {
-            onCodigo(codigoTrim);
-          }
-        },
+        (decodedText) => aceitarCodigo(decodedText, scanner),
         () => {
           // erro por frame — ignora
         }
       );
+
+      // === LOOP PARALELO com BarcodeDetector NATIVO do sistema operacional ===
+      // Quando disponível (Android Chrome, iOS 17+, Edge), é MUITO mais preciso
+      // que o ZXing JS — usa o decoder profissional do SO. Roda em paralelo ao
+      // html5-qrcode; o primeiro que ler vence.
+      type BarcodeDetectorAPI = {
+        new (options?: { formats?: string[] }): {
+          detect: (img: ImageBitmapSource) => Promise<Array<{ rawValue: string }>>;
+        };
+        getSupportedFormats?: () => Promise<string[]>;
+      };
+      const w = window as unknown as { BarcodeDetector?: BarcodeDetectorAPI };
+      if (w.BarcodeDetector) {
+        try {
+          const supported = (await w.BarcodeDetector.getSupportedFormats?.()) ?? [];
+          const desejados = [
+            "code_128",
+            "qr_code",
+            "code_39",
+            "code_93",
+            "ean_13",
+            "ean_8",
+            "itf",
+            "codabar",
+            "data_matrix",
+          ];
+          const formats = desejados.filter((f) => supported.includes(f));
+          const detector = new w.BarcodeDetector(
+            formats.length ? { formats } : undefined
+          );
+          detectorNativoIntervalRef.current = setInterval(async () => {
+            try {
+              const videoEl = document.querySelector(
+                `#${ELEMENT_ID} video`
+              ) as HTMLVideoElement | null;
+              if (!videoEl || videoEl.readyState < 2) return;
+              const results = await detector.detect(videoEl);
+              const primeiro = results.find((r) => r.rawValue?.trim());
+              if (primeiro) {
+                aceitarCodigo(primeiro.rawValue, scanner);
+              }
+            } catch {
+              // ignora frame com erro
+            }
+          }, 200); // 5 detecções por segundo — leve, sem competir com o html5-qrcode
+        } catch {
+          // ignora — sem BarcodeDetector é OK
+        }
+      }
 
       // Tenta detectar capabilities (zoom/torch) do dispositivo
       try {
@@ -193,10 +266,33 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
           const caps = track.getCapabilities?.() as ZoomTrackCapabilities | undefined;
           if (caps?.zoom) {
             setZoomCap({ min: caps.zoom.min, max: caps.zoom.max, step: caps.zoom.step });
-            setZoom(caps.zoom.min);
+            // Inicia em 2x (ou no máx disponível) — câmera ruim foca MUITO melhor
+            // em close. Usuário pode reduzir no slider se quiser.
+            const zoomInicial = Math.min(2, caps.zoom.max);
+            setZoom(zoomInicial);
+            try {
+              await track.applyConstraints({
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                advanced: [{ zoom: zoomInicial } as any],
+              });
+            } catch {
+              // ignora
+            }
           }
           if (caps?.torch) {
             setTorchSuportado(true);
+          }
+          // Força foco contínuo se suportado (algumas câmeras só aplicam via applyConstraints,
+          // não via videoConstraints iniciais).
+          if (caps?.focusMode?.includes("continuous")) {
+            try {
+              await track.applyConstraints({
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                advanced: [{ focusMode: "continuous" } as any],
+              });
+            } catch {
+              // ignora
+            }
           }
         }
       } catch {
@@ -242,6 +338,10 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
   };
 
   const parar = async () => {
+    if (detectorNativoIntervalRef.current) {
+      clearInterval(detectorNativoIntervalRef.current);
+      detectorNativoIntervalRef.current = null;
+    }
     const s = scannerRef.current as { stop?: () => Promise<void>; clear?: () => void } | null;
     if (s?.stop) {
       await s.stop().catch(() => undefined);
@@ -252,7 +352,6 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
     setZoomCap(null);
     setZoom(1);
     setTorchSuportado(false);
-    leiturasRecentes.current = [];
   };
 
   const aplicarZoom = async (v: number) => {
@@ -266,6 +365,270 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
     } catch {
       // ignora
     }
+  };
+
+  // === Pré-processamento da imagem ===
+  // Carrega o file em canvas e aplica:
+  //  1. Escala de cinza ponderada (luminance)
+  //  2. Binarização adaptativa via threshold de Otsu (calcula o limiar ótimo
+  //     que maximiza a variância entre classes — funciona muito bem em fotos
+  //     mal expostas porque se adapta ao histograma de cada imagem)
+  // Retorna um novo Blob PNG com a imagem processada.
+  // Códigos de barras "borrados" ficam decodáveis após binarização.
+  const preProcessarImagem = async (file: File): Promise<Blob | null> => {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close?.();
+
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = img.data;
+      // Escala de cinza
+      const cinza = new Uint8Array(canvas.width * canvas.height);
+      for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+        cinza[j] = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
+      }
+      // Otsu threshold
+      const hist = new Array(256).fill(0);
+      for (let i = 0; i < cinza.length; i++) hist[cinza[i]]++;
+      const total = cinza.length;
+      let sum = 0;
+      for (let t = 0; t < 256; t++) sum += t * hist[t];
+      let sumB = 0, wB = 0, max = 0, threshold = 127;
+      for (let t = 0; t < 256; t++) {
+        wB += hist[t];
+        if (wB === 0) continue;
+        const wF = total - wB;
+        if (wF === 0) break;
+        sumB += t * hist[t];
+        const mB = sumB / wB;
+        const mF = (sum - sumB) / wF;
+        const between = wB * wF * (mB - mF) ** 2;
+        if (between > max) { max = between; threshold = t; }
+      }
+      // Aplica binarização (preto/branco puro)
+      for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+        const v = cinza[j] > threshold ? 255 : 0;
+        data[i] = data[i + 1] = data[i + 2] = v;
+      }
+      ctx.putImageData(img, 0, 0);
+      return await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+    } catch {
+      return null;
+    }
+  };
+
+  // === Tentar BarcodeDetector nativo (Android Chrome, iOS 17+ Safari, Edge) ===
+  // É o decoder do PRÓPRIO sistema operacional — muito mais preciso que ZXing JS.
+  // Suporta Code 128 alfanumérico (ex: C020022310668), QR, EAN, Code 39 etc.
+  // Retorna null se a API não existe ou se não achou nada.
+  const tentarDecoderNativo = async (
+    source: ImageBitmapSource
+  ): Promise<string | null> => {
+    type BarcodeDetectorAPI = {
+      new (options?: { formats?: string[] }): {
+        detect: (img: ImageBitmapSource) => Promise<Array<{ rawValue: string }>>;
+      };
+      getSupportedFormats?: () => Promise<string[]>;
+    };
+    const w = window as unknown as { BarcodeDetector?: BarcodeDetectorAPI };
+    if (!w.BarcodeDetector) return null;
+    try {
+      const supported = (await w.BarcodeDetector.getSupportedFormats?.()) ?? [];
+      const desejados = [
+        "code_128",
+        "qr_code",
+        "code_39",
+        "code_93",
+        "ean_13",
+        "ean_8",
+        "itf",
+        "codabar",
+        "data_matrix",
+      ];
+      const formats = desejados.filter((f) => supported.includes(f));
+      const detector = new w.BarcodeDetector(formats.length ? { formats } : undefined);
+      const results = await detector.detect(source);
+      const primeiro = results.find((r) => r.rawValue?.trim());
+      return primeiro?.rawValue.trim() ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  // === OCR via Tesseract.js (camada DEFINITIVA) ===
+  // Lê o TEXTO impresso embaixo do código de barras (ex: "C020022310668")
+  // que sempre é legível mesmo quando as barras estão borradas demais pros
+  // decoders. 100% client-side, sem chave de API, sem dado saindo da rede.
+  // Pacote ~3MB baixado uma vez e cacheado pelo browser.
+  const tentarOcrTexto = async (file: File | Blob): Promise<string | null> => {
+    try {
+      const mod = await import("tesseract.js");
+      const { recognize } = mod;
+      const { data } = await recognize(file, "eng", {
+        // Whitelist: só caracteres que aparecem em código Queóps (letras maiúsculas
+        // + dígitos). Reduz drasticamente confusão tipo O/0, I/1, S/5.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+      } as Parameters<typeof recognize>[2]);
+
+      const texto = data.text ?? "";
+      // Extrai candidatos: tokens com 8+ caracteres alfanuméricos.
+      // Códigos Queóps têm padrão LETRA + 10-15 dígitos (ex: C020022310668).
+      // Pego o primeiro que casar o padrão estrito, senão o primeiro alfanumérico longo.
+      const linhas = texto
+        .split(/[\s\n\r|]+/)
+        .map((s) => s.replace(/[^A-Z0-9]/g, "").trim())
+        .filter((s) => s.length >= 8);
+
+      // Padrão preferido: 1 letra + 10-15 dígitos
+      const padraoEstrito = /^[A-Z]\d{10,15}$/;
+      const matchEstrito = linhas.find((s) => padraoEstrito.test(s));
+      if (matchEstrito) return matchEstrito;
+
+      // Padrão relaxado: 8+ alfanuméricos
+      const matchRelaxado = linhas.find((s) => /^[A-Z0-9]{8,20}$/.test(s));
+      return matchRelaxado ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  // === FALLBACK: tirar foto via câmera nativa ===
+  // 5 camadas em sequência, do mais barato/rápido pro mais caro/lento:
+  //   1. BarcodeDetector nativo na imagem original
+  //   2. html5-qrcode (ZXing JS) na imagem original
+  //   3. BarcodeDetector nativo na imagem pré-processada (binarizada Otsu)
+  //   4. html5-qrcode na imagem pré-processada
+  //   5. Tesseract.js OCR — lê o texto humano-legível abaixo das barras
+  //
+  // Para todas falharem é praticamente impossível: as primeiras 4 quebram em
+  // foto borrada, mas o OCR lê texto desfocado que ainda esteja parcialmente
+  // legível (que é o caso típico do recibo Queóps).
+  const finalizarComCodigo = (codigo: string, camada: string) => {
+    setCamadaUsada(camada);
+    sinalLeitura(codigo);
+    onCodigo(codigo);
+  };
+
+  const onFotoSelecionada = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDecodingFoto(true);
+    setErroFoto(null);
+    setCamadaUsada(null);
+
+    try {
+      // === CAMADA 1: BarcodeDetector nativo, imagem original ===
+      setDecodingStage("Decoder nativo do sistema...");
+      try {
+        const bitmap = await createImageBitmap(file);
+        const codigo = await tentarDecoderNativo(bitmap);
+        bitmap.close?.();
+        if (codigo) {
+          finalizarComCodigo(codigo, "📱 decoder nativo");
+          return;
+        }
+      } catch {
+        // segue
+      }
+
+      // === CAMADA 2: ZXing JS, imagem original ===
+      setDecodingStage("Decoder JavaScript...");
+      const mod = await import("html5-qrcode");
+      const { Html5Qrcode } = mod;
+      const formatos = [
+        mod.Html5QrcodeSupportedFormats.CODE_128,
+        mod.Html5QrcodeSupportedFormats.QR_CODE,
+        mod.Html5QrcodeSupportedFormats.EAN_13,
+        mod.Html5QrcodeSupportedFormats.EAN_8,
+        mod.Html5QrcodeSupportedFormats.CODE_39,
+        mod.Html5QrcodeSupportedFormats.CODE_93,
+        mod.Html5QrcodeSupportedFormats.ITF,
+        mod.Html5QrcodeSupportedFormats.CODABAR,
+      ];
+      try {
+        const tempScanner = new Html5Qrcode(ELEMENT_ID, {
+          verbose: false,
+          formatsToSupport: formatos,
+        });
+        const result = await tempScanner.scanFile(file, false);
+        finalizarComCodigo(result.trim(), "🔍 ZXing JS");
+        return;
+      } catch {
+        // segue
+      }
+
+      // === CAMADA 3 & 4: pré-processamento Otsu + decoders novamente ===
+      setDecodingStage("Pré-processando imagem (alto contraste)...");
+      const blobProcessado = await preProcessarImagem(file);
+      if (blobProcessado) {
+        // CAMADA 3: BarcodeDetector na imagem binarizada
+        try {
+          const bitmap = await createImageBitmap(blobProcessado);
+          const codigo = await tentarDecoderNativo(bitmap);
+          bitmap.close?.();
+          if (codigo) {
+            finalizarComCodigo(codigo, "📱 nativo + binarização");
+            return;
+          }
+        } catch {
+          // segue
+        }
+        // CAMADA 4: ZXing na imagem binarizada
+        try {
+          const tempScanner2 = new Html5Qrcode(ELEMENT_ID, {
+            verbose: false,
+            formatsToSupport: formatos,
+          });
+          const fileProcessado = new File([blobProcessado], "processada.png", {
+            type: "image/png",
+          });
+          const result = await tempScanner2.scanFile(fileProcessado, false);
+          finalizarComCodigo(result.trim(), "🔍 ZXing + binarização");
+          return;
+        } catch {
+          // segue
+        }
+      }
+
+      // === CAMADA 5: OCR Tesseract.js — lê o texto embaixo do código ===
+      setDecodingStage("Lendo via OCR (pode demorar uns segundos)...");
+      const codigoOcr = await tentarOcrTexto(blobProcessado ?? file);
+      if (codigoOcr) {
+        finalizarComCodigo(codigoOcr, "👁 OCR (texto)");
+        return;
+      }
+
+      // Todas as camadas falharam
+      setErroFoto(
+        "Não consegui ler o código nessa foto, nem pelas barras nem pelo texto. " +
+          "Tira de novo enquadrando SÓ a etiqueta do código (recorta o resto), com boa luz e foco nítido. " +
+          "Ou usa o botão 'Digitar código'."
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setErroFoto(msg);
+    } finally {
+      setDecodingFoto(false);
+      setDecodingStage(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // === FALLBACK 2: digitar manualmente ===
+  const confirmarManual = () => {
+    const c = codigoManual.trim();
+    if (!c) return;
+    sinalLeitura(c);
+    onCodigo(c);
+    setCodigoManual("");
+    setModoManual(false);
   };
 
   const toggleTorch = async () => {
@@ -338,11 +701,105 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
         </div>
       )}
 
-      {/* Botão pra iniciar */}
-      {!ativo && (
-        <Button type="button" onClick={iniciar}>
-          {labelIniciar}
-        </Button>
+      {/* Botões pra iniciar — 3 opções pra cobrir qualquer câmera */}
+      {!ativo && !modoManual && (
+        <div className="flex flex-col gap-2">
+          <Button type="button" onClick={iniciar} disabled={decodingFoto}>
+            {labelIniciar}
+          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={decodingFoto}
+            >
+              {decodingFoto ? "Lendo foto…" : "📸 Tirar foto"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setModoManual(true)}
+              disabled={decodingFoto}
+            >
+              ⌨ Digitar código
+            </Button>
+          </div>
+          <p className="text-[11px] text-zinc-500">
+            <strong>Câmera ruim?</strong> Usa &quot;Tirar foto&quot; — abre o app de câmera nativo
+            (foco muito melhor) e tenta 5 jeitos de ler (decoders + binarização + OCR de texto).
+            Funciona em quase qualquer foto. Ou digita o número à mão.
+          </p>
+          {/* Progresso enquanto decodifica */}
+          {decodingFoto && decodingStage && (
+            <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+                {decodingStage}
+              </div>
+            </div>
+          )}
+          {/* Diagnóstico: qual camada conseguiu ler */}
+          {camadaUsada && !decodingFoto && (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] text-emerald-800">
+              ✓ Lido via <strong>{camadaUsada}</strong>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={onFotoSelecionada}
+            className="hidden"
+          />
+        </div>
+      )}
+
+      {/* Modo digitar manual */}
+      {!ativo && modoManual && (
+        <div className="flex flex-col gap-2 rounded-md border border-zinc-300 bg-zinc-50 p-3">
+          <label className="text-sm font-medium" htmlFor="codigo-manual">
+            Digite o código de barras
+          </label>
+          <input
+            id="codigo-manual"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            autoFocus
+            value={codigoManual}
+            onChange={(e) => setCodigoManual(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                confirmarManual();
+              }
+            }}
+            placeholder="Ex: C020022310668"
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-base"
+          />
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              onClick={confirmarManual}
+              disabled={!codigoManual.trim()}
+              className="flex-1"
+            >
+              ✓ Confirmar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setModoManual(false);
+                setCodigoManual("");
+              }}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </div>
       )}
 
       {ativo && (
@@ -355,6 +812,12 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
       {erro && (
         <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
           ⚠ {erro}
+        </div>
+      )}
+
+      {erroFoto && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          ⚠ {erroFoto}
         </div>
       )}
     </div>
