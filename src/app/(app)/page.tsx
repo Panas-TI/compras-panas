@@ -22,10 +22,6 @@ export default async function HubPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-8 py-8">
-      <div className="rounded-md border-2 border-amber-400 bg-amber-50 px-4 py-3 text-center text-sm text-amber-900">
-        🧪 <strong>TESTE DE DEPLOY (Claude):</strong> Se você está vendo este aviso amarelo,
-        o deploy automático Vercel ↔ GitHub está funcionando. Pode remover depois.
-      </div>
       <div className="text-center">
         <h1 className="text-3xl font-semibold">Compras Panas</h1>
         <p className="mt-2 text-sm text-zinc-600">Escolha o módulo que deseja acessar.</p>
