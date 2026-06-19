@@ -40,8 +40,6 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
   const [decodingFoto, setDecodingFoto] = useState(false);
   const [decodingStage, setDecodingStage] = useState<string | null>(null);
   const [erroFoto, setErroFoto] = useState<string | null>(null);
-  const [modoManual, setModoManual] = useState(false);
-  const [codigoManual, setCodigoManual] = useState("");
   const [camadaUsada, setCamadaUsada] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,6 +48,11 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
   const ultimoCodigoAt = useRef<number>(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const detectorNativoIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Buffer das últimas leituras pra anti-falso-positivo:
+  // exige o mesmo código em pelo menos 2 frames dentro de 400ms antes de aceitar.
+  // Em iPhone bom isso passa em ~80ms (2 frames a 24fps); em câmera ruim filtra
+  // leituras espúrias de 1 frame.
+  const leiturasRecentes = useRef<Array<{ codigo: string; ts: number }>>([]);
   const [ultimaLeitura, setUltimaLeitura] = useState<string | null>(null);
 
   // Feedback: beep curto + vibração + banner persistente por 2s
@@ -119,6 +122,21 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
       return;
     }
 
+    // Anti-falso-positivo: exige ver o mesmo código em 2+ frames dentro de 400ms.
+    // Em iPhone bom isso passa em ~80ms (dois frames a 24fps); em câmera ruim,
+    // filtra leituras espúrias de 1 frame só.
+    const JANELA_MS = 400;
+    const MIN_VEZES = 2;
+    const buf = leiturasRecentes.current.filter((r) => agora - r.ts <= JANELA_MS);
+    buf.push({ codigo: codigoTrim, ts: agora });
+    const vezesIguais = buf.filter((r) => r.codigo === codigoTrim).length;
+    leiturasRecentes.current = buf;
+    if (vezesIguais < MIN_VEZES) {
+      return; // ainda não confirmado — aguarda próximo frame
+    }
+
+    // Confirmado!
+    leiturasRecentes.current = [];
     ultimoCodigo.current = codigoTrim;
     ultimoCodigoAt.current = agora;
     sinalLeitura(codigoTrim);
@@ -266,18 +284,9 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
           const caps = track.getCapabilities?.() as ZoomTrackCapabilities | undefined;
           if (caps?.zoom) {
             setZoomCap({ min: caps.zoom.min, max: caps.zoom.max, step: caps.zoom.step });
-            // Inicia em 2x (ou no máx disponível) — câmera ruim foca MUITO melhor
-            // em close. Usuário pode reduzir no slider se quiser.
-            const zoomInicial = Math.min(2, caps.zoom.max);
-            setZoom(zoomInicial);
-            try {
-              await track.applyConstraints({
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                advanced: [{ zoom: zoomInicial } as any],
-              });
-            } catch {
-              // ignora
-            }
+            // Inicia em zoom normal (1x / mínimo do device). Usuário pode aproximar
+            // pelo slider se quiser.
+            setZoom(caps.zoom.min);
           }
           if (caps?.torch) {
             setTorchSuportado(true);
@@ -352,6 +361,7 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
     setZoomCap(null);
     setZoom(1);
     setTorchSuportado(false);
+    leiturasRecentes.current = [];
   };
 
   const aplicarZoom = async (v: number) => {
@@ -621,16 +631,6 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
     }
   };
 
-  // === FALLBACK 2: digitar manualmente ===
-  const confirmarManual = () => {
-    const c = codigoManual.trim();
-    if (!c) return;
-    sinalLeitura(c);
-    onCodigo(c);
-    setCodigoManual("");
-    setModoManual(false);
-  };
-
   const toggleTorch = async () => {
     const novo = !torchOn;
     setTorchOn(novo);
@@ -701,34 +701,24 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
         </div>
       )}
 
-      {/* Botões pra iniciar — 3 opções pra cobrir qualquer câmera */}
-      {!ativo && !modoManual && (
+      {/* Botões pra iniciar — escanear ao vivo OU tirar foto. Digitar manualmente
+          fica no formulário consumidor (não no scanner). */}
+      {!ativo && (
         <div className="flex flex-col gap-2">
           <Button type="button" onClick={iniciar} disabled={decodingFoto}>
             {labelIniciar}
           </Button>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={decodingFoto}
-            >
-              {decodingFoto ? "Lendo foto…" : "📸 Tirar foto"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setModoManual(true)}
-              disabled={decodingFoto}
-            >
-              ⌨ Digitar código
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={decodingFoto}
+          >
+            {decodingFoto ? "Lendo foto…" : "📸 Tirar foto"}
+          </Button>
           <p className="text-[11px] text-zinc-500">
             <strong>Câmera ruim?</strong> Usa &quot;Tirar foto&quot; — abre o app de câmera nativo
             (foco muito melhor) e tenta 5 jeitos de ler (decoders + binarização + OCR de texto).
-            Funciona em quase qualquer foto. Ou digita o número à mão.
           </p>
           {/* Progresso enquanto decodifica */}
           {decodingFoto && decodingStage && (
@@ -753,52 +743,6 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
             onChange={onFotoSelecionada}
             className="hidden"
           />
-        </div>
-      )}
-
-      {/* Modo digitar manual */}
-      {!ativo && modoManual && (
-        <div className="flex flex-col gap-2 rounded-md border border-zinc-300 bg-zinc-50 p-3">
-          <label className="text-sm font-medium" htmlFor="codigo-manual">
-            Digite o código de barras
-          </label>
-          <input
-            id="codigo-manual"
-            type="text"
-            autoComplete="off"
-            autoCapitalize="characters"
-            autoFocus
-            value={codigoManual}
-            onChange={(e) => setCodigoManual(e.target.value.toUpperCase())}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                confirmarManual();
-              }
-            }}
-            placeholder="Ex: C020022310668"
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-base"
-          />
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              onClick={confirmarManual}
-              disabled={!codigoManual.trim()}
-              className="flex-1"
-            >
-              ✓ Confirmar
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setModoManual(false);
-                setCodigoManual("");
-              }}
-            >
-              Cancelar
-            </Button>
-          </div>
         </div>
       )}
 
