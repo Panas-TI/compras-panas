@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { OfflineStatus } from "@/lib/offline/offline-status";
 import { RegisterSW } from "@/lib/offline/register-sw";
 
-// Identificação da entrega passou a ser CLIENT-SIDE: o motorista digita os 4
+// Identificação da entrega passou a ser CLIENT-SIDE: o motorista digita os 5
 // últimos dígitos do código_queops e o filtro roda em cima da lista de
 // pendentes que já veio carregada no boot da página. Zero round-trip pra
 // validar — funciona até sem internet.
@@ -147,20 +147,20 @@ export function Painel({
     inputRef.current?.focus();
   }, []);
 
-  // Filtro client-side por sufixo de 4 dígitos. Ordenado por hora_entrega
+  // Filtro client-side por sufixo de 5 dígitos. Ordenado por hora_entrega
   // (igual a lista vem do server) — em caso de colisão isso reforça a ordem
   // natural da rota.
   const matches = useMemo(() => {
-    if (sufixo.length !== 4) return [];
+    if (sufixo.length !== 5) return [];
     return pendentes.filter((e) => {
       const cod = e.codigo_queops ?? "";
-      return cod.slice(-4) === sufixo;
+      return cod.slice(-5) === sufixo;
     });
   }, [sufixo, pendentes]);
 
   const onSufixoChange = (raw: string) => {
-    // só dígitos, máx 4
-    const limpo = raw.replace(/\D/g, "").slice(0, 4);
+    // só dígitos, máx 5
+    const limpo = raw.replace(/\D/g, "").slice(0, 5);
     setSufixo(limpo);
     setEscolhida(null);
   };
@@ -221,12 +221,12 @@ export function Painel({
         <OfflineStatus />
       </div>
 
-      {/* CARD PRINCIPAL — input dos 4 últimos dígitos */}
+      {/* CARD PRINCIPAL — input dos 5 últimos dígitos */}
       <Card>
         <CardContent className="flex flex-col gap-3 p-4">
           <div className="flex items-end justify-between gap-2">
             <label htmlFor="sufixo" className="text-sm font-medium">
-              Últimos 4 dígitos do pedido
+              Últimos 5 dígitos do pedido
             </label>
             {sufixo.length > 0 && (
               <button
@@ -245,7 +245,7 @@ export function Painel({
             onChange={(e) => onSufixoChange(e.target.value)}
             inputMode="numeric"
             pattern="[0-9]*"
-            maxLength={4}
+            maxLength={5}
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
@@ -260,7 +260,7 @@ export function Painel({
       </Card>
 
       {/* ZONA DE RESULTADO */}
-      {sufixo.length === 4 && matches.length === 0 && (
+      {sufixo.length === 5 && matches.length === 0 && (
         <Card>
           <CardContent className="flex flex-col gap-1 border-l-4 border-red-400 p-4">
             <div className="text-base font-semibold text-red-800">
@@ -273,7 +273,7 @@ export function Painel({
         </Card>
       )}
 
-      {sufixo.length === 4 && matchUnico && (
+      {sufixo.length === 5 && matchUnico && (
         <Card>
           <CardContent className="flex flex-col gap-3 border-l-4 border-emerald-500 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -325,7 +325,7 @@ export function Painel({
         </Card>
       )}
 
-      {sufixo.length === 4 && !escolhida && matches.length > 1 && (
+      {sufixo.length === 5 && !escolhida && matches.length > 1 && (
         <div className="flex flex-col gap-2">
           <Card>
             <CardContent className="border-l-4 border-amber-400 p-3">
@@ -407,8 +407,8 @@ export function Painel({
         ) : (
           <div className="flex flex-col gap-2">
             {pendentes.map((e) => {
-              const suf = (e.codigo_queops ?? "").slice(-4);
-              const destacar = sufixo.length === 4 && suf === sufixo;
+              const suf = (e.codigo_queops ?? "").slice(-5);
+              const destacar = sufixo.length === 5 && suf === sufixo;
               return (
                 <Card
                   key={e.id}
