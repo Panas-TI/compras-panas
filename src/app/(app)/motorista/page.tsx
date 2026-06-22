@@ -34,7 +34,9 @@ export default async function MotoristaPage() {
   const [{ data: pendentesRaw }, { data: entreguesRaw }] = await Promise.all([
     supabase
       .from("entregas")
-      .select("id, codigo_queops, status, hora_entrega, cliente_nome, bairro, entregue_at, motorista_id")
+      .select(
+        "id, codigo_queops, status, hora_entrega, cliente_nome, bairro, entregue_at, motorista_id, endereco_rua, endereco_numero, endereco_complemento, cidade, uf, valor_total"
+      )
       .eq("data_entrega", hoje)
       .in("status", ["pendente", "em_rota"])
       .or(`motorista_id.is.null,motorista_id.eq.${user.id}`)
