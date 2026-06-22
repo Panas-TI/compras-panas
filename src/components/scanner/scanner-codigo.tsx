@@ -488,22 +488,17 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
       } as Parameters<typeof recognize>[2]);
 
       const texto = data.text ?? "";
-      // Extrai candidatos: tokens com 8+ caracteres alfanuméricos.
-      // Códigos Queóps têm padrão LETRA + 10-15 dígitos (ex: C020022310668).
-      // Pego o primeiro que casar o padrão estrito, senão o primeiro alfanumérico longo.
+      // Códigos Queóps têm formato ESTRITO: 1 letra maiúscula + 10-15 dígitos
+      // (ex: C020022310668). Aceitar SÓ esse padrão evita falsos positivos do
+      // OCR que pegava palavras quaisquer (ex: "SLONTERER", "EBINIFERUELE").
       const linhas = texto
         .split(/[\s\n\r|]+/)
         .map((s) => s.replace(/[^A-Z0-9]/g, "").trim())
-        .filter((s) => s.length >= 8);
+        .filter((s) => s.length >= 11 && s.length <= 16);
 
-      // Padrão preferido: 1 letra + 10-15 dígitos
-      const padraoEstrito = /^[A-Z]\d{10,15}$/;
-      const matchEstrito = linhas.find((s) => padraoEstrito.test(s));
-      if (matchEstrito) return matchEstrito;
-
-      // Padrão relaxado: 8+ alfanuméricos
-      const matchRelaxado = linhas.find((s) => /^[A-Z0-9]{8,20}$/.test(s));
-      return matchRelaxado ?? null;
+      const padraoQueops = /^[A-Z]\d{10,15}$/;
+      const match = linhas.find((s) => padraoQueops.test(s));
+      return match ?? null;
     } catch {
       return null;
     }
@@ -617,9 +612,9 @@ export function ScannerCodigo({ onCodigo, labelIniciar = "📷 Escanear código"
 
       // Todas as camadas falharam
       setErroFoto(
-        "Não consegui ler o código nessa foto, nem pelas barras nem pelo texto. " +
-          "Tira de novo enquadrando SÓ a etiqueta do código (recorta o resto), com boa luz e foco nítido. " +
-          "Ou usa o botão 'Digitar código'."
+        "Não consegui ler nenhum código válido (formato esperado: letra + 12 dígitos, ex: C020022310668). " +
+          "Tira de novo enquadrando SÓ a etiqueta do código de barras (recorta o resto), bem de perto e com boa luz. " +
+          "Ou digita o número à mão no campo abaixo."
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
