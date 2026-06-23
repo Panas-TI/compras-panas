@@ -114,8 +114,7 @@ export function ContagemTable({
       }
       const verbo = res.solic_criada ? "Solicitação criada" : "Solicitação atualizada";
       alert(
-        `${verbo} com ${res.enviadas} ${res.enviadas === 1 ? "item" : "itens"}` +
-        (res.criadas ? ` (${res.criadas} ${res.criadas === 1 ? "item novo cadastrado" : "itens novos cadastrados"} automaticamente)` : "")
+        `${verbo} com ${res.enviadas} ${res.enviadas === 1 ? "item" : "itens"}.`
       );
       if (res.solicitacao_id) {
         router.push(`/solicitacoes/${res.solicitacao_id}`);

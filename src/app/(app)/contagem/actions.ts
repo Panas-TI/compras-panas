@@ -162,7 +162,13 @@ export async function finalizarContagemAction(contagem_id: string): Promise<{ er
 
 export async function enviarParaSolicitacaoAction(
   contagem_id: string
-): Promise<{ error?: string; solicitacao_id?: string; enviadas?: number; criadas?: number; solic_criada?: boolean }> {
+): Promise<{
+  error?: string;
+  solicitacao_id?: string;
+  enviadas?: number;
+  solic_criada?: boolean;
+  pendentes?: Array<{ id: string; texto: string }>;
+}> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Não autenticado." };
@@ -182,6 +188,22 @@ export async function enviarParaSolicitacaoAction(
   if (lerr) return { error: lerr.message };
   if (!linhas || linhas.length === 0) {
     return { error: "Nada pra enviar. Preencha o campo Solicitação em pelo menos uma linha." };
+  }
+
+  // BLOQUEIO: linhas sem item vinculado não podem ser enviadas.
+  // Antes esse fluxo criava itens novos automaticamente, o que gerava
+  // duplicatas no catálogo (sem código Queóps / fornecedor / unidade).
+  // Agora exigimos vínculo explícito pelo usuário.
+  const semItem = linhas.filter((l) => !l.item_id);
+  if (semItem.length > 0) {
+    const amostra = semItem.slice(0, 5).map((l) => `“${l.texto}”`).join(", ");
+    const resto = semItem.length > 5 ? ` e mais ${semItem.length - 5}` : "";
+    return {
+      error:
+        `${semItem.length} ${semItem.length === 1 ? "linha não tem" : "linhas não têm"} item do catálogo vinculado: ` +
+        `${amostra}${resto}. Vincule ${semItem.length === 1 ? "essa linha" : "essas linhas"} a um item antes de enviar.`,
+      pendentes: semItem.map((l) => ({ id: l.id, texto: l.texto })),
+    };
   }
 
   // Procura solicitação em aberto (rascunho) — prioriza a do próprio usuário
@@ -223,70 +245,11 @@ export async function enviarParaSolicitacaoAction(
     solicCriada = true;
   }
 
-  // Carrega catálogo COMPLETO (incluindo inativos) pra evitar recriar duplicatas
-  // que já foram unificadas. Pra inativos com merged_into_id, redireciona.
-  const { data: catalogo } = await supabase
-    .from("itens")
-    .select("id, nome, ativo, merged_into_id");
-  const catEntries = (catalogo ?? []).map((c) => ({
-    // Se o item foi unificado num canônico, usa o id do canônico
-    id: c.merged_into_id ?? c.id,
-    upper: c.nome.toUpperCase(),
-    ativo: c.ativo,
-  }));
-  // Sort por comprimento desc — match mais específico vence
-  catEntries.sort((a, b) => b.upper.length - a.upper.length);
-
-  function matchInCatalog(texto: string): string | null {
-    const upper = texto.toUpperCase().trim();
-    // exato primeiro
-    const exact = catEntries.find((c) => c.upper === upper);
-    if (exact) return exact.id;
-    // contains: catálogo é palavra-chave dentro do texto
-    for (const c of catEntries) {
-      if (c.upper.length < 3) continue;
-      // Regex com word boundary pra não pegar substring no meio de outra palavra
-      const re = new RegExp(`(^|[^A-Za-zÀ-ÿ])${escapeRe(c.upper)}([^A-Za-zÀ-ÿ]|$)`);
-      if (re.test(upper)) return c.id;
-    }
-    return null;
-  }
-
-  function escapeRe(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  }
-
-  async function findOrCreateItemId(nome: string): Promise<{ id: string | null; criado: boolean }> {
-    const trimmed = nome.trim();
-    if (!trimmed) return { id: null, criado: false };
-
-    const matched = matchInCatalog(trimmed);
-    if (matched) return { id: matched, criado: false };
-
-    const { data: created, error } = await supabase
-      .from("itens")
-      .insert({ nome: trimmed, ativo: true })
-      .select("id")
-      .single();
-    if (error) {
-      console.error("Falha ao criar item:", trimmed, error);
-      return { id: null, criado: false };
-    }
-    // Adiciona ao cache local pra próximos matches dentro do mesmo envio
-    catEntries.push({ id: created!.id, upper: trimmed.toUpperCase(), ativo: true });
-    return { id: created!.id, criado: true };
-  }
-
-  let criadas = 0;
   let enviadas = 0;
   const agora = new Date().toISOString();
   for (const l of linhas) {
-    let item_id = l.item_id;
-    if (!item_id) {
-      const res = await findOrCreateItemId(l.texto);
-      item_id = res.id;
-      if (res.criado) criadas++;
-    }
+    const item_id = l.item_id;
+    // Após o bloqueio acima, toda linha tem item_id. Guarda defensivo.
     if (!item_id) continue;
 
     // Busca defaults do item (preço, fornecedor, pagamento, prazo)
@@ -320,7 +283,7 @@ export async function enviarParaSolicitacaoAction(
 
   revalidatePath(`/contagem/${contagem_id}`);
   revalidatePath("/solicitacoes");
-  return { solicitacao_id: solic_id, enviadas, criadas, solic_criada: solicCriada };
+  return { solicitacao_id: solic_id, enviadas, solic_criada: solicCriada };
 }
 
 export async function excluirContagemAction(
