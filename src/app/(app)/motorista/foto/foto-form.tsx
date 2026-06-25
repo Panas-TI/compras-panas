@@ -20,6 +20,23 @@ type ConcluirResp =
   | { ok: true; entregaId: string }
   | { ok: false; error: string };
 
+// Conversão eficiente pra base64 via FileReader (nativo). O loop char-a-char
+// antigo (String.fromCharCode num Uint8Array de vários MB) travava celular
+// fraco tipo Samsung A04. readAsDataURL roda em código nativo, sem montar
+// string gigante na thread JS.
+function blobParaBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      const virgula = result.indexOf(",");
+      resolve(virgula >= 0 ? result.slice(virgula + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Falha ao ler a imagem"));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export function FotoForm({
   entregaId,
   codigo,
@@ -32,31 +49,54 @@ export function FotoForm({
   const fileRef = useRef<HTMLInputElement>(null);
   const [foto, setFoto] = useState<Foto | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [processando, setProcessando] = useState(false);
   const [salvando, startSalvar] = useTransition();
 
   const handleFile = async (file: File) => {
     setErro(null);
+    setProcessando(true);
     try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 2,
-        maxWidthOrHeight: 1600,
-        useWebWorker: true,
-        fileType: "image/jpeg",
-        initialQuality: 0.8,
-      });
-      const buf = await compressed.arrayBuffer();
-      let bin = "";
-      const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+      // Tenta comprimir. Em celular fraco (Samsung A04 e afins) o web worker
+      // ou a memória podem falhar — então caímos em tentativas mais leves e,
+      // no pior caso, usamos a foto original sem comprimir.
+      let processado: Blob = file;
+      try {
+        processado = await imageCompression(file, {
+          maxSizeMB: 2,
+          maxWidthOrHeight: 1600,
+          useWebWorker: true,
+          fileType: "image/jpeg",
+          initialQuality: 0.8,
+        });
+      } catch {
+        try {
+          processado = await imageCompression(file, {
+            maxSizeMB: 2,
+            maxWidthOrHeight: 1280,
+            useWebWorker: false,
+            fileType: "image/jpeg",
+            initialQuality: 0.7,
+          });
+        } catch {
+          // Desiste de comprimir — manda a foto original mesmo.
+          processado = file;
+        }
+      }
+      const base64 = await blobParaBase64(processado);
       setFoto({
-        blob: compressed,
-        base64: btoa(bin),
+        blob: processado,
+        base64,
         mediaType: "image/jpeg",
-        previewUrl: URL.createObjectURL(compressed),
-        sizeKB: Math.round(compressed.size / 1024),
+        previewUrl: URL.createObjectURL(processado),
+        sizeKB: Math.round(processado.size / 1024),
       });
     } catch (e) {
-      setErro(e instanceof Error ? e.message : String(e));
+      setErro(
+        "Não consegui processar a foto. Tenta tirar de novo. " +
+          (e instanceof Error ? `(${e.message})` : "")
+      );
+    } finally {
+      setProcessando(false);
     }
   };
 
@@ -143,10 +183,13 @@ export function FotoForm({
           )}
         </div>
 
+        {/* capture="environment" força a CÂMERA traseira direto, sem opção de
+            galeria. Resolve o caso do Samsung A04 que abria só a galeria. */}
         <input
           ref={fileRef}
           type="file"
           accept="image/*"
+          capture="environment"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -155,8 +198,13 @@ export function FotoForm({
         />
 
         {!foto ? (
-          <Button type="button" onClick={() => fileRef.current?.click()} className="h-16 text-base">
-            📷 Tirar foto do pedido
+          <Button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={processando}
+            className="h-16 text-base"
+          >
+            {processando ? "Processando foto…" : "📷 Tirar foto do pedido"}
           </Button>
         ) : (
           <div className="flex flex-col gap-3">
