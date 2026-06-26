@@ -60,6 +60,7 @@ export function LinhasTable({
   formasPagto,
   isDraft,
   isAprovador,
+  lancada,
 }: {
   solicitacaoId: string;
   initialLinhas: Linha[];
@@ -68,6 +69,9 @@ export function LinhasTable({
   formasPagto: Lookup[];
   isDraft: boolean;
   isAprovador: boolean;
+  // true depois que o comprador clica "Lançar" (enviada_em preenchido).
+  // Aprovação só acontece DEPOIS disso — num rascunho ninguém aprova.
+  lancada: boolean;
 }) {
   const router = useRouter();
   const [linhas, setLinhas] = useState(initialLinhas);
@@ -179,6 +183,13 @@ export function LinhasTable({
         </div>
       )}
 
+      {isAprovador && !lancada && !isDraft && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 print:hidden">
+          ⏳ Esta solicitação ainda é um rascunho do comprador. As opções de aprovar
+          aparecem depois que o comprador clicar em <strong>&quot;Lançar&quot;</strong>.
+        </div>
+      )}
+
       {(isDraft || isAprovador) && (
         <div className="flex items-center gap-3 rounded-md border border-zinc-200 bg-white p-3 print:hidden">
           <div className="flex-1">
@@ -219,6 +230,7 @@ export function LinhasTable({
                 formasPagto={formasPagto}
                 isDraft={isDraft}
                 isAprovador={isAprovador}
+                lancada={lancada}
                 onUpdateLocal={(patch) => updateLinhaLocal(l.id, patch)}
                 onPersist={(field, value) => persistField(l, field, value)}
                 onRemove={() => handleRemove(l.id)}
@@ -264,7 +276,7 @@ export function LinhasTable({
         </div>
       )}
 
-      {!isDraft && isAprovador && linhas.some((l) => l.status === "Para Aprovar") && (
+      {lancada && isAprovador && linhas.some((l) => l.status === "Para Aprovar") && (
         <div className="flex justify-end print:hidden">
           <Button
             disabled={isPending}
@@ -297,6 +309,7 @@ function LinhaTr({
   formasPagto,
   isDraft,
   isAprovador,
+  lancada,
   onUpdateLocal,
   onPersist,
   onRemove,
@@ -307,6 +320,7 @@ function LinhaTr({
   formasPagto: Lookup[];
   isDraft: boolean;
   isAprovador: boolean;
+  lancada: boolean;
   onUpdateLocal: (patch: Partial<Linha>) => void;
   onPersist: (field: keyof Linha, value: unknown) => void;
   onRemove: () => void;
@@ -322,7 +336,7 @@ function LinhaTr({
       !linha.alteracao_confirmada);
   const status = linha.status;
   const emEdicao =
-    !isDraft &&
+    lancada &&
     linha.status === "Volumes ou Preço Alterados" &&
     !linha.alteracao_confirmada;
   const statusStyle = STATUS_STYLES[status] ?? "bg-zinc-100 text-zinc-700 border-zinc-200";
@@ -422,7 +436,7 @@ function LinhaTr({
             Remover
           </button>
         )}
-        {!isDraft && isAprovador && status === "Para Aprovar" && (
+        {lancada && isAprovador && status === "Para Aprovar" && (
           <div className="flex flex-wrap justify-end gap-1">
             {linha.codigo_queops ? (
               <>
@@ -459,7 +473,7 @@ function LinhaTr({
             Confirmar alteração
           </button>
         )}
-        {!isDraft && isAprovador && !emEdicao && status !== "Para Aprovar" && (
+        {lancada && isAprovador && !emEdicao && status !== "Para Aprovar" && (
           <button type="button" onClick={() => onStatusChange("reabrir")} className="text-xs text-zinc-600 hover:underline">
             Reabrir
           </button>

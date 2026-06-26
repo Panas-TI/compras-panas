@@ -127,6 +127,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
         formasPagto={formasPagto ?? []}
         isDraft={canEdit}
         isAprovador={isAprovador}
+        lancada={!isDraft}
       />
     </div>
   );
