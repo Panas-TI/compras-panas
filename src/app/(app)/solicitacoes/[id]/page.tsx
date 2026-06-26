@@ -78,7 +78,9 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
 
   const isDraft = solic.enviada_em === null;
   const isMine = solic.comprador_id === user.id;
-  const canEdit = isDraft && isMine;
+  // Editar/Lançar um rascunho: o próprio comprador OU um aprovador (admin).
+  // O admin tem controle total — pode lançar a solicitação de qualquer comprador.
+  const canEdit = isDraft && (isMine || isAprovador);
 
   const status = computeSolicStatus(
     solic.enviada_em,
