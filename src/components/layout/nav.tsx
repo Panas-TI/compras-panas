@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { roleLabel } from "@/lib/role-label";
 import { logoutAction } from "@/app/login/actions";
 
 type NavItem = { href: string; label: string; subItems?: NavItem[] };
@@ -131,7 +132,7 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
           <span className="text-sm font-semibold">Compras Panas</span>
           <div className="ml-auto flex items-center gap-3 text-sm">
             <span className="hidden text-zinc-600 sm:inline">
-              {nome} ({role})
+              {nome} ({roleLabel(role)})
             </span>
             <form action={logoutAction}>
               <button
@@ -228,7 +229,7 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
             ← Trocar módulo
           </Link>
           <span className="hidden text-zinc-600 sm:inline">
-            {nome} ({role})
+            {nome} ({roleLabel(role)})
           </span>
           <form action={logoutAction}>
             <button

@@ -46,7 +46,7 @@ export function UsersTable({ currentUserId, users }: { currentUserId: string; us
             <Label htmlFor="role">Perfil</Label>
             <Select id="role" name="role" defaultValue="comprador">
               <option value="comprador">Comprador (solicitações + entregas)</option>
-              <option value="aprovador">Aprovador (acesso total)</option>
+              <option value="aprovador">Administrador (acesso total)</option>
               <option value="estoquista">Estoquista (recebimento + contagem)</option>
               <option value="motorista">Motorista (só entregas)</option>
             </Select>
@@ -127,10 +127,10 @@ function UserTr({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
             disabled={isPending}
             className="h-8 max-w-[180px] text-xs"
           >
-            <option value="comprador">comprador</option>
-            <option value="aprovador">aprovador</option>
-            <option value="estoquista">estoquista</option>
-            <option value="motorista">motorista</option>
+            <option value="comprador">Comprador</option>
+            <option value="aprovador">Administrador</option>
+            <option value="estoquista">Estoquista</option>
+            <option value="motorista">Motorista</option>
           </Select>
         )}
       </td>

@@ -26,7 +26,7 @@ export default async function UsuariosPage() {
       <div>
         <h1 className="text-2xl font-semibold">Usuários</h1>
         <p className="text-sm text-zinc-600">
-          Crie contas pros colegas. Aprovadores podem aprovar/recusar compras; compradores só criam solicitações.
+          Crie contas pros colegas. Administradores têm acesso total (aprovam/recusam compras, gerenciam tudo); compradores só criam solicitações.
         </p>
       </div>
       <UsersTable currentUserId={user.id} users={rows} />
