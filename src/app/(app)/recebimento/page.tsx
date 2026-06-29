@@ -6,6 +6,15 @@ import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 export default async function RecebimentoIndexPage() {
   const supabase = await createClient();
 
+  // Estoquista NÃO pode ver valores ($) dos recebimentos — só quantidades.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: meProfile } = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
+    : { data: null };
+  const podeVerValor = meProfile?.role !== "estoquista";
+
   // Busca todas as linhas elegíveis pra recebimento + as já recebidas (pra contar)
   const { data: linhas } = await supabase
     .from("solicitacao_linhas")
@@ -102,12 +111,14 @@ export default async function RecebimentoIndexPage() {
                     <div className="text-xs text-zinc-500">Recebidos</div>
                     <div className="text-lg font-semibold text-emerald-700">{s.recebidos}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs text-zinc-500">Valor pendente</div>
-                    <div className="text-base font-semibold tabular-nums">
-                      {formatCurrencyBRL(s.valor_pendente)}
+                  {podeVerValor && (
+                    <div className="text-right">
+                      <div className="text-xs text-zinc-500">Valor pendente</div>
+                      <div className="text-base font-semibold tabular-nums">
+                        {formatCurrencyBRL(s.valor_pendente)}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
