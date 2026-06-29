@@ -24,6 +24,7 @@ export type LinhaC = {
   solicitacao_qtd: number | null;
   enviado_em: string | null;
   enviado_solicitacao_id: string | null;
+  medida: string | null;
 };
 
 export type TemplateOpt = { id: string; nome: string; descricao: string | null };
@@ -220,6 +221,7 @@ export function ContagemTable({
               <tr>
                 <th className="w-12 px-2 py-1 text-right">#</th>
                 <th className="px-2 py-1">Item</th>
+                <th className="w-24 px-2 py-1">Medida</th>
                 <th className="w-28 px-2 py-1">Quantidade</th>
                 {canRequestPurchase && <th className="w-28 px-2 py-1">Solicitação</th>}
                 <th className="px-2 py-1">Observação</th>
@@ -311,6 +313,15 @@ function LinhaRow({
     <tr className={`border-b border-zinc-100 last:border-0 ${jaEnviado ? "bg-emerald-50/40" : ""}`}>
       <td className="px-2 py-1.5 text-right text-xs text-zinc-400 tabular-nums">{linha.ordem}</td>
       <td className="px-2 py-1.5">{linha.texto}</td>
+      <td className="px-2 py-1.5">
+        {linha.medida ? (
+          <span className="inline-flex rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-700">
+            {linha.medida}
+          </span>
+        ) : (
+          <span className="text-xs text-zinc-300">—</span>
+        )}
+      </td>
       <td className="px-2 py-1.5">
         {finalizada ? (
           <span className="tabular-nums">{qtdStr || "—"}</span>

@@ -29,7 +29,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
   const [{ data: linhasRaw }, { data: templates }] = await Promise.all([
     supabase
       .from("contagem_linhas")
-      .select("id, ordem, secao, texto, quantidade, observacao, solicitacao_qtd, enviado_em, enviado_solicitacao_id")
+      .select("id, ordem, secao, texto, quantidade, observacao, solicitacao_qtd, enviado_em, enviado_solicitacao_id, item:itens(unidade:unidades_medida(nome))")
       .eq("contagem_id", id)
       .order("ordem"),
     supabase.from("templates_contagem").select("id, nome, descricao").eq("ativo", true).order("nome"),
@@ -45,6 +45,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     solicitacao_qtd: l.solicitacao_qtd,
     enviado_em: l.enviado_em,
     enviado_solicitacao_id: l.enviado_solicitacao_id,
+    medida: l.item?.unidade?.nome ?? null,
   }));
 
   const opts: TemplateOpt[] = (templates ?? []).map((t) => ({ id: t.id, nome: t.nome, descricao: t.descricao }));
