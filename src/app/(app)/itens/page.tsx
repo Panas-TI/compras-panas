@@ -2,128 +2,99 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrencyBRL } from "@/lib/utils";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const TIPOS_USO = {
-  todos: { label: "Todos os itens", emoji: "📋" },
-  materia_prima: { label: "Matérias-primas (usadas em ficha)", emoji: "🌾" },
-  outros: { label: "Outros (não usados em ficha)", emoji: "📦" },
-} as const;
+// Item comprado (tabela `itens`)
+type ItemComprado = {
+  id: string;
+  nome: string;
+  codigo_queops: string | null;
+  preco_referencia: number | null;
+  ativo: boolean;
+  classificacao: { nome: string } | null;
+  unidade: { nome: string } | null;
+  fornecedor: { nome: string } | null;
+};
 
-type TipoUso = keyof typeof TIPOS_USO;
+// Produto fabricado (tabela `produto`)
+type ProdutoFabricado = {
+  id: string;
+  nome: string;
+  codigo_queops: string | null;
+  categoria: string | null;
+  unidade_producao: string | null;
+  ativo: boolean;
+};
 
 export default async function ItensPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
-  const classifId = typeof sp.classif === "string" ? sp.classif : "";
-  const semCodigo = sp.sem_codigo === "1";
   const incluirInativos = sp.inativos === "1";
-  const usadoContagem = sp.contagem === "1";
-  const tipoUso = (typeof sp.tipo_uso === "string" && sp.tipo_uso in TIPOS_USO
-    ? sp.tipo_uso
-    : "todos") as TipoUso;
+  const semCodigo = sp.sem_codigo === "1";
 
   const supabase = await createClient();
 
-  // === Atalhos pro hub: contagens das 4 categorias ===
-  const [
-    { count: produtosFinaisCount },
-    { count: intermediariosCount },
-    { data: fichaItensIdsRaw },
-    { count: totalItensAtivos },
-  ] = await Promise.all([
-    supabase
-      .from("produto")
-      .select("*", { count: "exact", head: true })
-      .eq("ativo", true)
-      .eq("tipo", "final"),
-    supabase
-      .from("produto")
-      .select("*", { count: "exact", head: true })
-      .eq("ativo", true)
-      .eq("tipo", "intermediario"),
-    supabase
-      .from("ficha_item")
-      .select("item_id")
-      .not("item_id", "is", null),
-    supabase.from("itens").select("*", { count: "exact", head: true }).eq("ativo", true),
-  ]);
+  const safe = q.replace(/[(),]/g, " ").trim();
+  const orFilter = safe ? `nome.ilike.%${safe}%,codigo_queops.ilike.%${safe}%` : null;
 
-  const itensUsadosEmFicha = new Set(
-    (fichaItensIdsRaw ?? []).map((r) => r.item_id).filter(Boolean) as string[]
-  );
-  const materiasPrimasCount = itensUsadosEmFicha.size;
-  const outrosCount = Math.max(0, (totalItensAtivos ?? 0) - materiasPrimasCount);
-
-  // === Query principal ===
-  let query = supabase
+  // Produtos fabricados (tabela `produto`) — finais e intermediários
+  let qFinais = supabase
+    .from("produto")
+    .select("id, codigo_queops, nome, categoria, unidade_producao, ativo")
+    .eq("tipo", "final");
+  let qInter = supabase
+    .from("produto")
+    .select("id, codigo_queops, nome, categoria, unidade_producao, ativo")
+    .eq("tipo", "intermediario");
+  // Itens comprados (tabela `itens`)
+  let qItens = supabase
     .from("itens")
     .select(
-      `
-      id, nome, codigo_queops, preco_referencia, ativo, prazo_padrao,
-      classificacao:classificacoes(nome),
-      unidade:unidades_medida(nome),
-      fornecedor:fornecedores!itens_fornecedor_padrao_id_fkey(nome),
-      forma_pagto:formas_pagamento!itens_forma_pagto_padrao_id_fkey(nome)
-    `
-    )
-    .order("nome");
+      `id, nome, codigo_queops, preco_referencia, ativo,
+       classificacao:classificacoes(nome),
+       unidade:unidades_medida(nome),
+       fornecedor:fornecedores!itens_fornecedor_padrao_id_fkey(nome)`
+    );
 
-  if (!incluirInativos) query = query.eq("ativo", true);
-  if (q) {
-    const safe = q.replace(/[(),]/g, " ").trim();
-    if (safe) {
-      query = query.or(`nome.ilike.%${safe}%,codigo_queops.ilike.%${safe}%`);
-    }
+  if (!incluirInativos) {
+    qFinais = qFinais.eq("ativo", true);
+    qInter = qInter.eq("ativo", true);
+    qItens = qItens.eq("ativo", true);
   }
-  if (classifId) query = query.eq("classificacao_id", classifId);
-  if (semCodigo) query = query.is("codigo_queops", null);
-
-  // Filtro: usados em contagem
-  if (usadoContagem) {
-    const { data: linkedIds } = await supabase
-      .from("template_itens")
-      .select("item_id")
-      .not("item_id", "is", null);
-    const ids = Array.from(new Set((linkedIds ?? []).map((r) => r.item_id))).filter(Boolean) as string[];
-    if (ids.length === 0) {
-      query = query.eq("id", "00000000-0000-0000-0000-000000000000");
-    } else {
-      query = query.in("id", ids);
-    }
+  if (orFilter) {
+    qFinais = qFinais.or(orFilter);
+    qInter = qInter.or(orFilter);
+    qItens = qItens.or(orFilter);
+  }
+  if (semCodigo) {
+    qFinais = qFinais.is("codigo_queops", null);
+    qInter = qInter.is("codigo_queops", null);
+    qItens = qItens.is("codigo_queops", null);
   }
 
-  // Filtro: tipo de uso (matéria-prima / outros)
-  if (tipoUso === "materia_prima") {
-    const ids = Array.from(itensUsadosEmFicha);
-    if (ids.length === 0) {
-      query = query.eq("id", "00000000-0000-0000-0000-000000000000");
-    } else {
-      query = query.in("id", ids);
-    }
-  } else if (tipoUso === "outros") {
-    const ids = Array.from(itensUsadosEmFicha);
-    if (ids.length > 0) {
-      query = query.not("id", "in", `(${ids.map((id) => `"${id}"`).join(",")})`);
-    }
-  }
+  const [{ data: finais }, { data: intermediarios }, { data: itens }, { data: fichaIdsRaw }] =
+    await Promise.all([
+      qFinais.order("nome"),
+      qInter.order("nome"),
+      qItens.order("nome"),
+      supabase.from("ficha_item").select("item_id").not("item_id", "is", null),
+    ]);
 
-  const [{ data: itens, error }, { data: classificacoes }] = await Promise.all([
-    query,
-    supabase.from("classificacoes").select("id, nome").eq("ativo", true).order("nome"),
-  ]);
+  // Itens usados em ficha técnica = matérias-primas; resto = outros
+  const usados = new Set(
+    (fichaIdsRaw ?? []).map((r) => r.item_id).filter(Boolean) as string[]
+  );
+  const itensList = (itens ?? []) as unknown as ItemComprado[];
+  const materiasPrimas = itensList.filter((i) => usados.has(i.id));
+  const outros = itensList.filter((i) => !usados.has(i.id));
 
-  // Contagem de uso em fichas por item (pra badge)
-  const usosPorItem = new Map<string, number>();
-  for (const r of fichaItensIdsRaw ?? []) {
-    if (r.item_id) {
-      usosPorItem.set(r.item_id, (usosPorItem.get(r.item_id) ?? 0) + 1);
-    }
-  }
+  const finaisList = (finais ?? []) as ProdutoFabricado[];
+  const interList = (intermediarios ?? []) as ProdutoFabricado[];
+
+  const total = finaisList.length + interList.length + itensList.length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -131,12 +102,8 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
         <div>
           <h1 className="text-2xl font-semibold">Catálogo de itens</h1>
           <p className="text-sm text-zinc-600">
-            Itens que você <strong>compra</strong>. Produtos que você{" "}
-            <strong>fabrica</strong> (empanadas, recheios, massas) ficam em{" "}
-            <Link href="/mrp/produtos" className="text-zinc-900 underline-offset-4 hover:underline">
-              /mrp/produtos
-            </Link>
-            .
+            Tudo num lugar só, organizado por categoria. Produtos fabricados abrem a ficha técnica;
+            itens comprados abrem o cadastro.
           </p>
         </div>
         <div className="flex gap-2">
@@ -152,137 +119,17 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
         </div>
       </div>
 
-      {/* === Atalhos pelas 4 camadas ===
-          Os 2 primeiros levam pro MRP (módulo separado — fica óbvio pela label ↗).
-          Os 2 últimos filtram nesta mesma página. */}
-      <div>
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          Visão geral
-        </h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {/* Cards que LEVAM pra outra área (MRP) — visual diferenciado */}
-          <Link href="/mrp/produtos?tipo=final" className="group">
-            <Card className="relative h-full border-purple-200 bg-purple-50/40 transition-shadow group-hover:shadow-md">
-              <span className="absolute right-2 top-2 rounded-full bg-purple-200 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-900">
-                ↗ MRP
-              </span>
-              <CardHeader>
-                <div className="mb-1 text-2xl">🥟</div>
-                <CardDescription className="text-xs">Produtos finais</CardDescription>
-                <CardTitle className="text-2xl">{produtosFinaisCount ?? 0}</CardTitle>
-                <p className="text-[10px] text-zinc-500">(fabricados — não comprados)</p>
-              </CardHeader>
-            </Card>
-          </Link>
-          <Link href="/mrp/produtos?tipo=intermediario" className="group">
-            <Card className="relative h-full border-purple-200 bg-purple-50/40 transition-shadow group-hover:shadow-md">
-              <span className="absolute right-2 top-2 rounded-full bg-purple-200 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-900">
-                ↗ MRP
-              </span>
-              <CardHeader>
-                <div className="mb-1 text-2xl">🧂</div>
-                <CardDescription className="text-xs">Semi-acabados</CardDescription>
-                <CardTitle className="text-2xl">{intermediariosCount ?? 0}</CardTitle>
-                <p className="text-[10px] text-zinc-500">(fabricados — não comprados)</p>
-              </CardHeader>
-            </Card>
-          </Link>
-
-          {/* Cards que FICAM nesta página — visual padrão */}
-          <Link href="/itens?tipo_uso=materia_prima" className="group">
-            <Card
-              className={`h-full transition-shadow group-hover:shadow-md ${
-                tipoUso === "materia_prima" ? "border-blue-400 ring-2 ring-blue-200" : ""
-              }`}
-            >
-              <CardHeader>
-                <div className="mb-1 text-2xl">🌾</div>
-                <CardDescription className="text-xs">Matérias-primas</CardDescription>
-                <CardTitle className="text-2xl">{materiasPrimasCount}</CardTitle>
-                <p className="text-[10px] text-zinc-500">(compradas, usadas em ficha)</p>
-              </CardHeader>
-            </Card>
-          </Link>
-          <Link href="/itens?tipo_uso=outros" className="group">
-            <Card
-              className={`h-full transition-shadow group-hover:shadow-md ${
-                tipoUso === "outros" ? "border-blue-400 ring-2 ring-blue-200" : ""
-              }`}
-            >
-              <CardHeader>
-                <div className="mb-1 text-2xl">📦</div>
-                <CardDescription className="text-xs">Outros itens</CardDescription>
-                <CardTitle className="text-2xl">{outrosCount}</CardTitle>
-                <p className="text-[10px] text-zinc-500">(comprados, sem ficha)</p>
-              </CardHeader>
-            </Card>
-          </Link>
-        </div>
-        <p className="mt-2 text-[10px] text-zinc-500">
-          🟪 Cards com selo <strong>↗ MRP</strong> levam pra outro módulo (Produtos fabricados ficam
-          fora do catálogo de compras).
-        </p>
-      </div>
-
-      {/* === Filtro de tipo de uso (pode mudar sem refiltrar tudo) === */}
-      <div className="flex flex-wrap gap-1.5">
-        {(Object.entries(TIPOS_USO) as Array<[TipoUso, (typeof TIPOS_USO)[TipoUso]]>).map(
-          ([key, info]) => {
-            const params = new URLSearchParams();
-            if (q) params.set("q", q);
-            if (classifId) params.set("classif", classifId);
-            if (semCodigo) params.set("sem_codigo", "1");
-            if (incluirInativos) params.set("inativos", "1");
-            if (usadoContagem) params.set("contagem", "1");
-            if (key !== "todos") params.set("tipo_uso", key);
-            const href = `/itens${params.toString() ? `?${params.toString()}` : ""}`;
-            const ativo = tipoUso === key;
-            return (
-              <Link
-                key={key}
-                href={href}
-                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  ativo
-                    ? "border-blue-400 bg-blue-100 text-blue-900"
-                    : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
-                }`}
-              >
-                {info.emoji} {info.label}
-              </Link>
-            );
-          }
-        )}
-      </div>
-
-      {/* === Form de filtro detalhado === */}
+      {/* Busca */}
       <form className="flex flex-wrap items-end gap-2" method="get">
-        {tipoUso !== "todos" && <input type="hidden" name="tipo_uso" value={tipoUso} />}
         <div className="flex flex-1 min-w-[200px] flex-col gap-1.5">
           <label className="text-sm font-medium" htmlFor="q">
             Buscar
           </label>
           <Input id="q" name="q" defaultValue={q} placeholder="nome ou código Queóps" />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium" htmlFor="classif">
-            Classificação
-          </label>
-          <Select id="classif" name="classif" defaultValue={classifId}>
-            <option value="">Todas</option>
-            {(classificacoes ?? []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </Select>
-        </div>
         <label className="flex items-center gap-2 px-2 pb-2.5 text-sm">
           <input type="checkbox" name="sem_codigo" value="1" defaultChecked={semCodigo} />
           Sem código Queóps
-        </label>
-        <label className="flex items-center gap-2 px-2 pb-2.5 text-sm">
-          <input type="checkbox" name="contagem" value="1" defaultChecked={usadoContagem} />
-          Usados em contagem
         </label>
         <label className="flex items-center gap-2 px-2 pb-2.5 text-sm">
           <input type="checkbox" name="inativos" value="1" defaultChecked={incluirInativos} />
@@ -293,87 +140,185 @@ export default async function ItensPage({ searchParams }: { searchParams: Search
         </Button>
       </form>
 
-      <p className="text-sm text-zinc-600">
-        {itens?.length ?? 0} {tipoUso === "todos" ? "itens" : TIPOS_USO[tipoUso].label.toLowerCase()} encontrados.
-      </p>
+      <p className="text-sm text-zinc-600">{total} itens no total.</p>
 
-      {error && <p className="text-sm text-red-600">Erro: {error.message}</p>}
-
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="border-b border-zinc-200 bg-zinc-50 text-left">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Código</th>
-                  <th className="px-3 py-2 font-medium">Nome</th>
-                  <th className="px-3 py-2 font-medium">Classificação</th>
-                  <th className="px-3 py-2 font-medium">Unidade</th>
-                  <th className="px-3 py-2 font-medium">Fornecedor padrão</th>
-                  <th className="px-3 py-2 text-right font-medium">Preço ref.</th>
-                  <th className="px-3 py-2 font-medium">Uso</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
-                  <th className="px-3 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {(itens ?? []).map((i) => {
-                  const usosFicha = usosPorItem.get(i.id) ?? 0;
-                  return (
-                    <tr key={i.id} className="border-b border-zinc-100 last:border-0">
-                      <td className="px-3 py-2 font-mono text-xs">
-                        {i.codigo_queops ?? <span className="text-amber-600">— sem código —</span>}
-                      </td>
-                      <td className="px-3 py-2">{i.nome}</td>
-                      <td className="px-3 py-2 text-xs text-zinc-600">{i.classificacao?.nome ?? "—"}</td>
-                      <td className="px-3 py-2 text-zinc-600">{i.unidade?.nome ?? "—"}</td>
-                      <td className="px-3 py-2 text-zinc-600">{i.fornecedor?.nome ?? "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {formatCurrencyBRL(i.preco_referencia ?? null)}
-                      </td>
-                      <td className="px-3 py-2">
-                        {usosFicha > 0 ? (
-                          <span
-                            className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-900"
-                            title={`Usado em ${usosFicha} ficha(s) técnica(s)`}
-                          >
-                            🍳 {usosFicha}{" "}
-                            {usosFicha === 1 ? "ficha" : "fichas"}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-zinc-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        {i.ativo ? (
-                          <span className="text-xs text-emerald-700">ativo</span>
-                        ) : (
-                          <span className="text-xs text-zinc-500">inativo</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <Link
-                          href={`/itens/${i.id}`}
-                          className="text-sm text-zinc-700 underline-offset-4 hover:underline"
-                        >
-                          Editar
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {!itens?.length && (
-                  <tr>
-                    <td colSpan={9} className="px-3 py-6 text-center text-sm text-zinc-500">
-                      Nenhum item encontrado com esse filtro.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* === Seções colapsáveis por categoria === */}
+      <SecaoFabricados
+        emoji="🥟"
+        titulo="Produtos acabados"
+        descricao="fabricados — abrem a ficha técnica"
+        lista={finaisList}
+      />
+      <SecaoFabricados
+        emoji="🧂"
+        titulo="Semi-acabados"
+        descricao="fabricados — abrem a ficha técnica"
+        lista={interList}
+      />
+      <SecaoComprados
+        emoji="🌾"
+        titulo="Matérias-primas"
+        descricao="compradas, usadas em ficha técnica"
+        lista={materiasPrimas}
+      />
+      <SecaoComprados
+        emoji="📦"
+        titulo="Outros itens"
+        descricao="comprados, sem ficha técnica"
+        lista={outros}
+      />
     </div>
+  );
+}
+
+// ---- Seção de produtos fabricados (tabela produto) ----
+function SecaoFabricados({
+  emoji,
+  titulo,
+  descricao,
+  lista,
+}: {
+  emoji: string;
+  titulo: string;
+  descricao: string;
+  lista: ProdutoFabricado[];
+}) {
+  return (
+    <details open className="overflow-hidden rounded-lg border border-purple-200 bg-white">
+      <summary className="flex cursor-pointer select-none items-center justify-between gap-2 bg-purple-50/50 px-4 py-3 hover:bg-purple-50">
+        <span className="flex items-center gap-2 font-semibold text-zinc-800">
+          <span className="text-lg">{emoji}</span>
+          {titulo}
+          <span className="rounded-full bg-purple-200 px-2 py-0.5 text-xs font-bold text-purple-900">
+            {lista.length}
+          </span>
+        </span>
+        <span className="text-xs font-normal text-zinc-500">{descricao}</span>
+      </summary>
+      {lista.length === 0 ? (
+        <div className="px-4 py-6 text-center text-sm text-zinc-400">Nenhum item nesta categoria.</div>
+      ) : (
+        <div className="overflow-x-auto border-t border-zinc-100">
+          <table className="min-w-full text-sm">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-left">
+              <tr>
+                <th className="px-3 py-2 font-medium">Código</th>
+                <th className="px-3 py-2 font-medium">Nome</th>
+                <th className="px-3 py-2 font-medium">Categoria</th>
+                <th className="px-3 py-2 font-medium">Unidade</th>
+                <th className="px-3 py-2 font-medium">Status</th>
+                <th className="px-3 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lista.map((p) => (
+                <tr key={p.id} className="border-b border-zinc-100 last:border-0">
+                  <td className="px-3 py-2 font-mono text-xs">
+                    {p.codigo_queops ?? <span className="text-amber-600">— sem código —</span>}
+                  </td>
+                  <td className="px-3 py-2">{p.nome}</td>
+                  <td className="px-3 py-2 text-xs text-zinc-600">{p.categoria ?? "—"}</td>
+                  <td className="px-3 py-2 text-zinc-600">{p.unidade_producao ?? "—"}</td>
+                  <td className="px-3 py-2">
+                    {p.ativo ? (
+                      <span className="text-xs text-emerald-700">ativo</span>
+                    ) : (
+                      <span className="text-xs text-zinc-500">inativo</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Link
+                      href={`/mrp/produtos/${p.id}`}
+                      className="text-sm text-zinc-700 underline-offset-4 hover:underline"
+                    >
+                      Ver ficha
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </details>
+  );
+}
+
+// ---- Seção de itens comprados (tabela itens) ----
+function SecaoComprados({
+  emoji,
+  titulo,
+  descricao,
+  lista,
+}: {
+  emoji: string;
+  titulo: string;
+  descricao: string;
+  lista: ItemComprado[];
+}) {
+  return (
+    <details open className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+      <summary className="flex cursor-pointer select-none items-center justify-between gap-2 bg-zinc-50 px-4 py-3 hover:bg-zinc-100">
+        <span className="flex items-center gap-2 font-semibold text-zinc-800">
+          <span className="text-lg">{emoji}</span>
+          {titulo}
+          <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-bold text-zinc-700">
+            {lista.length}
+          </span>
+        </span>
+        <span className="text-xs font-normal text-zinc-500">{descricao}</span>
+      </summary>
+      {lista.length === 0 ? (
+        <div className="px-4 py-6 text-center text-sm text-zinc-400">Nenhum item nesta categoria.</div>
+      ) : (
+        <div className="overflow-x-auto border-t border-zinc-100">
+          <table className="min-w-full text-sm">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-left">
+              <tr>
+                <th className="px-3 py-2 font-medium">Código</th>
+                <th className="px-3 py-2 font-medium">Nome</th>
+                <th className="px-3 py-2 font-medium">Classificação</th>
+                <th className="px-3 py-2 font-medium">Unidade</th>
+                <th className="px-3 py-2 font-medium">Fornecedor padrão</th>
+                <th className="px-3 py-2 text-right font-medium">Preço ref.</th>
+                <th className="px-3 py-2 font-medium">Status</th>
+                <th className="px-3 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lista.map((i) => (
+                <tr key={i.id} className="border-b border-zinc-100 last:border-0">
+                  <td className="px-3 py-2 font-mono text-xs">
+                    {i.codigo_queops ?? <span className="text-amber-600">— sem código —</span>}
+                  </td>
+                  <td className="px-3 py-2">{i.nome}</td>
+                  <td className="px-3 py-2 text-xs text-zinc-600">{i.classificacao?.nome ?? "—"}</td>
+                  <td className="px-3 py-2 text-zinc-600">{i.unidade?.nome ?? "—"}</td>
+                  <td className="px-3 py-2 text-zinc-600">{i.fornecedor?.nome ?? "—"}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {formatCurrencyBRL(i.preco_referencia ?? null)}
+                  </td>
+                  <td className="px-3 py-2">
+                    {i.ativo ? (
+                      <span className="text-xs text-emerald-700">ativo</span>
+                    ) : (
+                      <span className="text-xs text-zinc-500">inativo</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Link
+                      href={`/itens/${i.id}`}
+                      className="text-sm text-zinc-700 underline-offset-4 hover:underline"
+                    >
+                      Editar
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </details>
   );
 }
