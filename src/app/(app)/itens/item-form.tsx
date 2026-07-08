@@ -152,14 +152,16 @@ export function ItemForm({
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="embalagem_compra_nome">Nome da embalagem</Label>
-                <Input
+                <Label htmlFor="embalagem_compra_nome">Tipo de embalagem</Label>
+                <Select
                   id="embalagem_compra_nome"
                   name="embalagem_compra_nome"
                   defaultValue={defaults.embalagem_compra_nome ?? ""}
-                  placeholder="ex: CAIXA, FARDO"
-                  maxLength={40}
-                />
+                >
+                  <option value="">— sem embalagem (avulso) —</option>
+                  <option value="CAIXA">Caixa</option>
+                  <option value="FARDO">Fardo</option>
+                </Select>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="qtd_por_embalagem">Unidades por embalagem</Label>
