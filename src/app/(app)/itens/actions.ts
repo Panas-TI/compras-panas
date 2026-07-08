@@ -31,6 +31,8 @@ function readPayload(formData: FormData) {
     forma_pagto_padrao_id: optionalId("forma_pagto_padrao_id"),
     preco_referencia: parseNumberBR(get("preco_referencia")),
     prazo_padrao: get("prazo_padrao") || null,
+    embalagem_compra_nome: get("embalagem_compra_nome") || null,
+    qtd_por_embalagem: Math.max(1, parseNumberBR(get("qtd_por_embalagem")) ?? 1),
     ativo: formData.get("ativo") === "on",
   };
 }

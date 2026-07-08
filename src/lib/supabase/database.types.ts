@@ -516,6 +516,7 @@ export type Database = {
           classificacao_id: string | null
           codigo_queops: string | null
           criado_em: string
+          embalagem_compra_nome: string | null
           fator_conversao_ficha: number | null
           forma_pagto_padrao_id: string | null
           fornecedor_padrao_id: string | null
@@ -525,6 +526,7 @@ export type Database = {
           nome: string
           prazo_padrao: string | null
           preco_referencia: number | null
+          qtd_por_embalagem: number
           unidade_ficha: string | null
           unidade_id: string | null
         }
@@ -534,6 +536,7 @@ export type Database = {
           classificacao_id?: string | null
           codigo_queops?: string | null
           criado_em?: string
+          embalagem_compra_nome?: string | null
           fator_conversao_ficha?: number | null
           forma_pagto_padrao_id?: string | null
           fornecedor_padrao_id?: string | null
@@ -543,6 +546,7 @@ export type Database = {
           nome: string
           prazo_padrao?: string | null
           preco_referencia?: number | null
+          qtd_por_embalagem?: number
           unidade_ficha?: string | null
           unidade_id?: string | null
         }
@@ -552,6 +556,7 @@ export type Database = {
           classificacao_id?: string | null
           codigo_queops?: string | null
           criado_em?: string
+          embalagem_compra_nome?: string | null
           fator_conversao_ficha?: number | null
           forma_pagto_padrao_id?: string | null
           fornecedor_padrao_id?: string | null
@@ -561,6 +566,7 @@ export type Database = {
           nome?: string
           prazo_padrao?: string | null
           preco_referencia?: number | null
+          qtd_por_embalagem?: number
           unidade_ficha?: string | null
           unidade_id?: string | null
         }

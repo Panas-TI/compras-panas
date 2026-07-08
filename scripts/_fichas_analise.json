@@ -1,0 +1,7539 @@
+{
+  "produtos": [
+    {
+      "codigo": "021101",
+      "nome": "02. CARNE",
+      "insumos": [
+        {
+          "codigo": "032007",
+          "nome": "RECHEIO CARNE",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.045,
+          "linha": 94
+        },
+        {
+          "codigo": "051002",
+          "nome": "CARNE BOVINA MOIDA",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0311,
+          "linha": 95
+        },
+        {
+          "codigo": "051015",
+          "nome": "PROTEINA DE SOJA NATURAL",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0016,
+          "linha": 96
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0034,
+          "linha": 97
+        },
+        {
+          "codigo": "057013",
+          "nome": "CEBOLINHA",
+          "nivel": 2,
+          "unidade": "UN",
+          "qtd_total": 0.0031,
+          "linha": 98
+        },
+        {
+          "codigo": "057019",
+          "nome": "LOURO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 99
+        },
+        {
+          "codigo": "057039",
+          "nome": "SALSA",
+          "nivel": 2,
+          "unidade": "UN",
+          "qtd_total": 0.0003,
+          "linha": 100
+        },
+        {
+          "codigo": "058004",
+          "nome": "ALHO EM PASTA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0008,
+          "linha": 101
+        },
+        {
+          "codigo": "058013",
+          "nome": "CALDO DE CARNE KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 102
+        },
+        {
+          "codigo": "058019",
+          "nome": "CREME DE CEBOLA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 103
+        },
+        {
+          "codigo": "058033",
+          "nome": "OREGANO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 104
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 105
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 106
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 107
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 108
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 109
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 110
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 111
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 112
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 113
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 114
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 115
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 116
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 117
+        },
+        {
+          "codigo": "062089",
+          "nome": "SACO PP 11X20X0.05",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 118
+        }
+      ]
+    },
+    {
+      "codigo": "021102",
+      "nome": "04. CARNE PICANTE",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 123
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 124
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 125
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 126
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 127
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 128
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 129
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 130
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 131
+        },
+        {
+          "codigo": "032011",
+          "nome": "RECHEIO CARNE PICANTE",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.045,
+          "linha": 132
+        },
+        {
+          "codigo": "032007",
+          "nome": "RECHEIO CARNE",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0396,
+          "linha": 133
+        },
+        {
+          "codigo": "051002",
+          "nome": "CARNE BOVINA MOIDA",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0274,
+          "linha": 134
+        },
+        {
+          "codigo": "051015",
+          "nome": "PROTEINA DE SOJA NATURAL",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0014,
+          "linha": 135
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.003,
+          "linha": 136
+        },
+        {
+          "codigo": "057013",
+          "nome": "CEBOLINHA",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.0027,
+          "linha": 137
+        },
+        {
+          "codigo": "057019",
+          "nome": "LOURO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 138
+        },
+        {
+          "codigo": "057039",
+          "nome": "SALSA",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.0003,
+          "linha": 139
+        },
+        {
+          "codigo": "058004",
+          "nome": "ALHO EM PASTA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0007,
+          "linha": 140
+        },
+        {
+          "codigo": "058013",
+          "nome": "CALDO DE CARNE KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 141
+        },
+        {
+          "codigo": "058019",
+          "nome": "CREME DE CEBOLA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 142
+        },
+        {
+          "codigo": "058033",
+          "nome": "OREGANO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 143
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 144
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 145
+        },
+        {
+          "codigo": "055002",
+          "nome": "AZEITONA VERDE FATIADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.004,
+          "linha": 146
+        },
+        {
+          "codigo": "055021",
+          "nome": "MOLHO DE PIMENTA LITRO",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0015,
+          "linha": 147
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 148
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 149
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 150
+        }
+      ]
+    },
+    {
+      "codigo": "021103",
+      "nome": "06. ESPINAFRE",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 155
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 156
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 157
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 158
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 159
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 160
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 161
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 162
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 163
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 164
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 165
+        },
+        {
+          "codigo": "032033",
+          "nome": "RECHEIO ESPINAFRE TORTILLA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.045,
+          "linha": 166
+        },
+        {
+          "codigo": "031005",
+          "nome": "MOLHO BRANCO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0211,
+          "linha": 167
+        }
+      ]
+    },
+    {
+      "codigo": "021104",
+      "nome": "07. FRANGO",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 190
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 191
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 192
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 193
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 194
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 195
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 196
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 197
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 198
+        },
+        {
+          "codigo": "032017",
+          "nome": "RECHEIO FRANGO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.045,
+          "linha": 199
+        },
+        {
+          "codigo": "051006",
+          "nome": "FILE DE FRANGO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0377,
+          "linha": 200
+        },
+        {
+          "codigo": "055023",
+          "nome": "MOLHO DE TOMATE REFOGADO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0038,
+          "linha": 201
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0004,
+          "linha": 202
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0038,
+          "linha": 203
+        },
+        {
+          "codigo": "057039",
+          "nome": "SALSA",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.0002,
+          "linha": 204
+        },
+        {
+          "codigo": "058014",
+          "nome": "CALDO DE GALINHA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 205
+        },
+        {
+          "codigo": "058033",
+          "nome": "OREGANO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 206
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 207
+        },
+        {
+          "codigo": "058045",
+          "nome": "MOLHO DE ALHO 0.900ML",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0008,
+          "linha": 208
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 209
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0189,
+          "linha": 210
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 211
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 212
+        }
+      ]
+    },
+    {
+      "codigo": "021105",
+      "nome": "08. MILHO",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 217
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 218
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 219
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 220
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 221
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 222
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 223
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 224
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 225
+        },
+        {
+          "codigo": "032020",
+          "nome": "RECHEIO MILHO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 226
+        },
+        {
+          "codigo": "031005",
+          "nome": "MOLHO BRANCO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0469,
+          "linha": 227
+        },
+        {
+          "codigo": "054002",
+          "nome": "MANTEIGA SEM SAL KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0059,
+          "linha": 228
+        },
+        {
+          "codigo": "055014",
+          "nome": "LEITE INTEGRAL LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0234,
+          "linha": 229
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0059,
+          "linha": 230
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0004,
+          "linha": 231
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0234,
+          "linha": 232
+        },
+        {
+          "codigo": "055005",
+          "nome": "MILHO ENLATADO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0312,
+          "linha": 233
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 234
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 235
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 236
+        }
+      ]
+    },
+    {
+      "codigo": "021201",
+      "nome": "01. CALABRESA",
+      "insumos": [
+        {
+          "codigo": "032004",
+          "nome": "RECHEIO CALABRESA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.04,
+          "linha": 242
+        },
+        {
+          "codigo": "053002",
+          "nome": "LINGUICA CALAB (PIZZA/MASSA)",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.02,
+          "linha": 243
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0168,
+          "linha": 244
+        },
+        {
+          "codigo": "054012",
+          "nome": "REQUEIJAO AMIDO (CATUPIRY) KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0034,
+          "linha": 245
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 246
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 247
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 248
+        }
+      ]
+    },
+    {
+      "codigo": "021202",
+      "nome": "03. CARNE GAUCHA",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 265
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 266
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 267
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 268
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 269
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 270
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 271
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 272
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 273
+        },
+        {
+          "codigo": "032010",
+          "nome": "RECHEIO CARNE GAUCHA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.045,
+          "linha": 274
+        },
+        {
+          "codigo": "028506",
+          "nome": "OVO",
+          "nivel": 2,
+          "unidade": "UN",
+          "qtd_total": 0.1579,
+          "linha": 275
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0008,
+          "linha": 276
+        },
+        {
+          "codigo": "058034",
+          "nome": "OVO",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.1579,
+          "linha": 277
+        },
+        {
+          "codigo": "032007",
+          "nome": "RECHEIO CARNE",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0316,
+          "linha": 278
+        },
+        {
+          "codigo": "051002",
+          "nome": "CARNE BOVINA MOIDA",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0218,
+          "linha": 279
+        },
+        {
+          "codigo": "051015",
+          "nome": "PROTEINA DE SOJA NATURAL",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0011,
+          "linha": 280
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0024,
+          "linha": 281
+        },
+        {
+          "codigo": "057013",
+          "nome": "CEBOLINHA",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.0022,
+          "linha": 282
+        },
+        {
+          "codigo": "057019",
+          "nome": "LOURO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 283
+        },
+        {
+          "codigo": "057039",
+          "nome": "SALSA",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.0002,
+          "linha": 284
+        },
+        {
+          "codigo": "058004",
+          "nome": "ALHO EM PASTA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0005,
+          "linha": 285
+        },
+        {
+          "codigo": "058013",
+          "nome": "CALDO DE CARNE KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 286
+        },
+        {
+          "codigo": "058019",
+          "nome": "CREME DE CEBOLA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 287
+        },
+        {
+          "codigo": "058033",
+          "nome": "OREGANO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 288
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 289
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 290
+        },
+        {
+          "codigo": "055002",
+          "nome": "AZEITONA VERDE FATIADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0039,
+          "linha": 291
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 292
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 293
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 294
+        }
+      ]
+    },
+    {
+      "codigo": "021203",
+      "nome": "05. CEBOLA E QUEIJO",
+      "insumos": [
+        {
+          "codigo": "032012",
+          "nome": "RECHEIO CEBOLA E QUEIJO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.04,
+          "linha": 299
+        },
+        {
+          "codigo": "031007",
+          "nome": "CEBOLA REFOGADA",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0074,
+          "linha": 300
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0001,
+          "linha": 301
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0104,
+          "linha": 302
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 303
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0279,
+          "linha": 304
+        },
+        {
+          "codigo": "057014",
+          "nome": "CEBOLINHA CEBOULETTE",
+          "nivel": 2,
+          "unidade": "UN",
+          "qtd_total": 0.0279,
+          "linha": 305
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 306
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 307
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 308
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 309
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 310
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 311
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 312
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 313
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 314
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 315
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 316
+        }
+      ]
+    },
+    {
+      "codigo": "021204",
+      "nome": "09. NAPOLITANO",
+      "insumos": [
+        {
+          "codigo": "032021",
+          "nome": "RECHEIO NAPOLITANO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 321
+        },
+        {
+          "codigo": "053003",
+          "nome": "PRESUNTO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0125,
+          "linha": 322
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.025,
+          "linha": 323
+        },
+        {
+          "codigo": "057033",
+          "nome": "TOMATE KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0125,
+          "linha": 324
+        },
+        {
+          "codigo": "058029",
+          "nome": "MANJERICAO SECO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 325
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 326
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 327
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 328
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 329
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 334
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 335
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 336
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 337
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 338
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 339
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 340
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 341
+        }
+      ]
+    },
+    {
+      "codigo": "021205",
+      "nome": "10. PRESUNTO E QUEIJO",
+      "insumos": [
+        {
+          "codigo": "032026",
+          "nome": "RECHEIO PRESUNTO E QUEIJO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.04,
+          "linha": 346
+        },
+        {
+          "codigo": "053003",
+          "nome": "PRESUNTO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.02,
+          "linha": 347
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.016,
+          "linha": 348
+        },
+        {
+          "codigo": "054012",
+          "nome": "REQUEIJAO AMIDO (CATUPIRY) KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.004,
+          "linha": 349
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 350
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 351
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 352
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 353
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 354
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 355
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 356
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 357
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 358
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 359
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 360
+        }
+      ]
+    },
+    {
+      "codigo": "021106",
+      "nome": "11. QUEIJO",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 365
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 366
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 367
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 368
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 369
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 370
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 371
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 372
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 373
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.04,
+          "linha": 374
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 375
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 376
+        }
+      ]
+    },
+    {
+      "codigo": "021206",
+      "nome": "25. PALMITO E QUEIJO",
+      "insumos": [
+        {
+          "codigo": "032022",
+          "nome": "RECHEIO PALMITO E QUEIJO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.04,
+          "linha": 381
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.025,
+          "linha": 382
+        },
+        {
+          "codigo": "055006",
+          "nome": "PALMITO PICADO CONSERVA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.015,
+          "linha": 383
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 384
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 385
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 386
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 387
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 388
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 389
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 390
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 391
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 392
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 393
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 394
+        }
+      ]
+    },
+    {
+      "codigo": "021207",
+      "nome": "26. BROCOLIS COM CATUPIRY",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 399
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 400
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 401
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 402
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 403
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 404
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 405
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 406
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 407
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 408
+        },
+        {
+          "codigo": "054012",
+          "nome": "REQUEIJAO AMIDO (CATUPIRY) KG",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.015,
+          "linha": 409
+        }
+      ]
+    },
+    {
+      "codigo": "021208",
+      "nome": "27. MILHO C/ BACON",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "0,0800",
+          "qtd_total": 0.3748,
+          "linha": 437
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "0,2451",
+          "qtd_total": 0.0038,
+          "linha": 438
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "0,0020",
+          "qtd_total": 0.0004,
+          "linha": 439
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "0,0600",
+          "qtd_total": 0.0034,
+          "linha": 440
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "1,0000",
+          "qtd_total": 0.0,
+          "linha": 441
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "0,0980",
+          "qtd_total": 0.0686,
+          "linha": 442
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "0,0980",
+          "qtd_total": 0.0817,
+          "linha": 443
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "0,7353",
+          "qtd_total": 0.205,
+          "linha": 444
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "0,0012",
+          "qtd_total": 0.0157,
+          "linha": 445
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "1,0000",
+          "qtd_total": 1.18,
+          "linha": 446
+        },
+        {
+          "codigo": "032035",
+          "nome": "RECHEIO MILHO E BACON",
+          "nivel": 1,
+          "unidade": "0,0450",
+          "qtd_total": 0.797,
+          "linha": 447
+        },
+        {
+          "codigo": "031010",
+          "nome": "BACON RALADO FRITO",
+          "nivel": 3,
+          "unidade": "0,1278",
+          "qtd_total": 0.4705,
+          "linha": 448
+        },
+        {
+          "codigo": "053001",
+          "nome": "BACON KG",
+          "nivel": 4,
+          "unidade": "2,7000",
+          "qtd_total": 0.4686,
+          "linha": 449
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 4,
+          "unidade": "0,0400",
+          "qtd_total": 0.0019,
+          "linha": 450
+        },
+        {
+          "codigo": "032020",
+          "nome": "RECHEIO MILHO",
+          "nivel": 3,
+          "unidade": "0,8333",
+          "qtd_total": 0.3265,
+          "linha": 451
+        },
+        {
+          "codigo": "031005",
+          "nome": "MOLHO BRANCO",
+          "nivel": 4,
+          "unidade": "0,9375",
+          "qtd_total": 0.2656,
+          "linha": 452
+        },
+        {
+          "codigo": "054002",
+          "nome": "MANTEIGA SEM SAL KG",
+          "nivel": 5,
+          "unidade": "0,1250",
+          "qtd_total": 0.173,
+          "linha": 453
+        },
+        {
+          "codigo": "055014",
+          "nome": "LEITE INTEGRAL LITRO",
+          "nivel": 5,
+          "unidade": "0,5000",
+          "qtd_total": 0.0765,
+          "linha": 454
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 5,
+          "unidade": "0,1250",
+          "qtd_total": 0.0153,
+          "linha": 455
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 5,
+          "unidade": "0,0075",
+          "qtd_total": 0.0008,
+          "linha": 456
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 5,
+          "unidade": "0,5000",
+          "qtd_total": 0.0,
+          "linha": 457
+        },
+        {
+          "codigo": "055005",
+          "nome": "MILHO ENLATADO KG",
+          "nivel": 4,
+          "unidade": "0,6250",
+          "qtd_total": 0.0606,
+          "linha": 458
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "0,0031",
+          "qtd_total": 0.0003,
+          "linha": 459
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "1,0000",
+          "qtd_total": 0.0139,
+          "linha": 460
+        }
+      ]
+    },
+    {
+      "codigo": "021301",
+      "nome": "21. 4 QUEIJOS",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "0,0800",
+          "qtd_total": 0.3748,
+          "linha": 466
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "0,2451",
+          "qtd_total": 0.0038,
+          "linha": 467
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "0,0020",
+          "qtd_total": 0.0004,
+          "linha": 468
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "0,0600",
+          "qtd_total": 0.0034,
+          "linha": 469
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "1,0000",
+          "qtd_total": 0.0,
+          "linha": 470
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "0,0980",
+          "qtd_total": 0.0686,
+          "linha": 471
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "0,0980",
+          "qtd_total": 0.0817,
+          "linha": 472
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "0,7353",
+          "qtd_total": 0.205,
+          "linha": 473
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "0,0012",
+          "qtd_total": 0.0157,
+          "linha": 474
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "1,0000",
+          "qtd_total": 1.18,
+          "linha": 475
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "1,0000",
+          "qtd_total": 0.0139,
+          "linha": 476
+        },
+        {
+          "codigo": "032036",
+          "nome": "RECHEIO QUATRO QUEIJOS NOVO",
+          "nivel": 1,
+          "unidade": "0,0400",
+          "qtd_total": 0.5863,
+          "linha": 477
+        },
+        {
+          "codigo": "054007",
+          "nome": "QUEIJO GORGONZOLA KG",
+          "nivel": 3,
+          "unidade": "0,1409",
+          "qtd_total": 0.0818,
+          "linha": 478
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 3,
+          "unidade": "0,5525",
+          "qtd_total": 0.2651,
+          "linha": 479
+        },
+        {
+          "codigo": "054010",
+          "nome": "QUEIJO PARMESAO RALADO KG",
+          "nivel": 3,
+          "unidade": "0,0580",
+          "qtd_total": 0.1302,
+          "linha": 480
+        },
+        {
+          "codigo": "054014",
+          "nome": "CREME CULINARIO KG",
+          "nivel": 3,
+          "unidade": "0,2486",
+          "qtd_total": 0.1092,
+          "linha": 481
+        }
+      ]
+    },
+    {
+      "codigo": "021302",
+      "nome": "23. CARNE CHEDDAR",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "0,0800",
+          "qtd_total": 0.3748,
+          "linha": 486
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "0,2451",
+          "qtd_total": 0.0038,
+          "linha": 487
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "0,0020",
+          "qtd_total": 0.0004,
+          "linha": 488
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "0,0600",
+          "qtd_total": 0.0034,
+          "linha": 489
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "1,0000",
+          "qtd_total": 0.0,
+          "linha": 490
+        }
+      ]
+    },
+    {
+      "codigo": "021303",
+      "nome": "24. FRANGO CATUPIRY",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 519
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 520
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 521
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 522
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 523
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 524
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 525
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 526
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 527
+        },
+        {
+          "codigo": "032017",
+          "nome": "RECHEIO FRANGO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.035,
+          "linha": 528
+        },
+        {
+          "codigo": "051006",
+          "nome": "FILE DE FRANGO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0294,
+          "linha": 529
+        },
+        {
+          "codigo": "055023",
+          "nome": "MOLHO DE TOMATE REFOGADO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0029,
+          "linha": 530
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0003,
+          "linha": 531
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0029,
+          "linha": 532
+        },
+        {
+          "codigo": "057039",
+          "nome": "SALSA",
+          "nivel": 2,
+          "unidade": "UN",
+          "qtd_total": 0.0002,
+          "linha": 533
+        },
+        {
+          "codigo": "058014",
+          "nome": "CALDO DE GALINHA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 534
+        },
+        {
+          "codigo": "058033",
+          "nome": "OREGANO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 535
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 536
+        },
+        {
+          "codigo": "058045",
+          "nome": "MOLHO DE ALHO 0.900ML",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0006,
+          "linha": 537
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 538
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0147,
+          "linha": 539
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 540
+        },
+        {
+          "codigo": "054012",
+          "nome": "REQUEIJAO AMIDO (CATUPIRY) KG",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.015,
+          "linha": 541
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 542
+        }
+      ]
+    },
+    {
+      "codigo": "021304",
+      "nome": "34. STROGONOFF CARNE",
+      "insumos": [
+        {
+          "codigo": "032030",
+          "nome": "RECHEIO STROGONOFF CARNE",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 547
+        },
+        {
+          "codigo": "051010",
+          "nome": "CARNE BOVINA ISCAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0347,
+          "linha": 548
+        },
+        {
+          "codigo": "054014",
+          "nome": "CREME CULINARIO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0104,
+          "linha": 549
+        },
+        {
+          "codigo": "055023",
+          "nome": "MOLHO DE TOMATE REFOGADO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0069,
+          "linha": 550
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0003,
+          "linha": 551
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0035,
+          "linha": 552
+        },
+        {
+          "codigo": "058004",
+          "nome": "ALHO EM PASTA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0007,
+          "linha": 553
+        },
+        {
+          "codigo": "058005",
+          "nome": "AMACIANTE DE CARNE KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0007,
+          "linha": 554
+        },
+        {
+          "codigo": "058007",
+          "nome": "AMIDO DE MILHO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 555
+        },
+        {
+          "codigo": "058019",
+          "nome": "CREME DE CEBOLA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 556
+        },
+        {
+          "codigo": "058029",
+          "nome": "MANJERICAO SECO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 557
+        },
+        {
+          "codigo": "058033",
+          "nome": "OREGANO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 558
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 559
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 560
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 562
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 563
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 564
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 565
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 566
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 567
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 568
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 569
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 570
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 571
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 572
+        }
+      ]
+    },
+    {
+      "codigo": "021308",
+      "nome": "55. 4QJS C/CEBOLA CARAMELIZADA",
+      "insumos": [
+        {
+          "codigo": "031009",
+          "nome": "CEBOLA CARAMELIZADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.01,
+          "linha": 581
+        },
+        {
+          "codigo": "054002",
+          "nome": "MANTEIGA SEM SAL KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.001,
+          "linha": 582
+        },
+        {
+          "codigo": "055035",
+          "nome": "VINAGRE DE ALCOOL LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0025,
+          "linha": 583
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 584
+        },
+        {
+          "codigo": "058002",
+          "nome": "ACUCAR REFINADO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.015,
+          "linha": 585
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 586
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 587
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 588
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 589
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 590
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 591
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 592
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 593
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 594
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 595
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 596
+        },
+        {
+          "codigo": "032036",
+          "nome": "RECHEIO QUATRO QUEIJOS NOVO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.04,
+          "linha": 597
+        },
+        {
+          "codigo": "054007",
+          "nome": "QUEIJO GORGONZOLA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0056,
+          "linha": 598
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0221,
+          "linha": 599
+        },
+        {
+          "codigo": "054010",
+          "nome": "QUEIJO PARMESAO RALADO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0023,
+          "linha": 600
+        },
+        {
+          "codigo": "054014",
+          "nome": "CREME CULINARIO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0099,
+          "linha": 601
+        }
+      ]
+    },
+    {
+      "codigo": "021309",
+      "nome": "56. CAPRESE",
+      "insumos": [
+        {
+          "codigo": "032034",
+          "nome": "RECHEIO CAPRESE",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.04,
+          "linha": 606
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.028,
+          "linha": 607
+        },
+        {
+          "codigo": "057021",
+          "nome": "MANJERICAO FRESCO",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.032,
+          "linha": 608
+        },
+        {
+          "codigo": "057032",
+          "nome": "TOMATE CEREJA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.012,
+          "linha": 609
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 610
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 611
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 612
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 613
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 614
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 615
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 616
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 617
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 618
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 619
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 620
+        }
+      ]
+    },
+    {
+      "codigo": "021401",
+      "nome": "31. CAMARAO",
+      "insumos": [
+        {
+          "codigo": "032005",
+          "nome": "RECHEIO CAMARAO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.045,
+          "linha": 626
+        },
+        {
+          "codigo": "052002",
+          "nome": "CAMARAO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0439,
+          "linha": 627
+        },
+        {
+          "codigo": "055020",
+          "nome": "MOLHO DE ALHO LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0005,
+          "linha": 628
+        },
+        {
+          "codigo": "055021",
+          "nome": "MOLHO DE PIMENTA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0005,
+          "linha": 629
+        },
+        {
+          "codigo": "055023",
+          "nome": "MOLHO DE TOMATE REFOGADO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0107,
+          "linha": 630
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0002,
+          "linha": 631
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0046,
+          "linha": 632
+        },
+        {
+          "codigo": "057018",
+          "nome": "LIMAO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0007,
+          "linha": 633
+        },
+        {
+          "codigo": "057039",
+          "nome": "SALSA",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.0011,
+          "linha": 634
+        },
+        {
+          "codigo": "058007",
+          "nome": "AMIDO DE MILHO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 635
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 636
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 637
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0032,
+          "linha": 638
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 639
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 640
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 641
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 642
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 643
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 644
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 645
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 646
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 647
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 648
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 649
+        }
+      ]
+    },
+    {
+      "codigo": "021306",
+      "nome": "52. PORTEÑA",
+      "insumos": [
+        {
+          "codigo": "032023",
+          "nome": "RECHEIO PORTEÑA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 658
+        },
+        {
+          "codigo": "051010",
+          "nome": "CARNE BOVINA ISCAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0439,
+          "linha": 659
+        },
+        {
+          "codigo": "054002",
+          "nome": "MANTEIGA SEM SAL KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0039,
+          "linha": 660
+        },
+        {
+          "codigo": "055002",
+          "nome": "AZEITONA VERDE FATIADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0065,
+          "linha": 661
+        },
+        {
+          "codigo": "055021",
+          "nome": "MOLHO DE PIMENTA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0017,
+          "linha": 662
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0088,
+          "linha": 663
+        },
+        {
+          "codigo": "057013",
+          "nome": "CEBOLINHA",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.0001,
+          "linha": 664
+        },
+        {
+          "codigo": "058005",
+          "nome": "AMACIANTE DE CARNE KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0009,
+          "linha": 665
+        },
+        {
+          "codigo": "058033",
+          "nome": "OREGANO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 666
+        },
+        {
+          "codigo": "058035",
+          "nome": "PAPRICA PICANTE KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0004,
+          "linha": 667
+        },
+        {
+          "codigo": "058037",
+          "nome": "PIMENTA DO REINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 668
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 669
+        },
+        {
+          "codigo": "058040",
+          "nome": "UVA PASSA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0053,
+          "linha": 670
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 671
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 672
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 673
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 674
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 675
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 676
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 677
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 678
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 679
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 680
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 681
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 682
+        }
+      ]
+    },
+    {
+      "codigo": "021307",
+      "nome": "54. CARNE DE PANELA",
+      "insumos": [
+        {
+          "codigo": "032009",
+          "nome": "RECHEIO CARNE DE PANELA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 687
+        },
+        {
+          "codigo": "051001",
+          "nome": "ACEM / AGULHA CONGELADA",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0524,
+          "linha": 688
+        },
+        {
+          "codigo": "055007",
+          "nome": "TOMATE SECO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0021,
+          "linha": 689
+        },
+        {
+          "codigo": "055021",
+          "nome": "MOLHO DE PIMENTA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0004,
+          "linha": 690
+        },
+        {
+          "codigo": "055023",
+          "nome": "MOLHO DE TOMATE REFOGADO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0154,
+          "linha": 691
+        },
+        {
+          "codigo": "057039",
+          "nome": "SALSA",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.0018,
+          "linha": 692
+        },
+        {
+          "codigo": "058004",
+          "nome": "ALHO EM PASTA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0007,
+          "linha": 693
+        },
+        {
+          "codigo": "058005",
+          "nome": "AMACIANTE DE CARNE KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0004,
+          "linha": 694
+        },
+        {
+          "codigo": "058019",
+          "nome": "CREME DE CEBOLA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 695
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 696
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.035,
+          "linha": 697
+        },
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 698
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 699
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 700
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 701
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 702
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 703
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 704
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 705
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 706
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 707
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 708
+        }
+      ]
+    },
+    {
+      "codigo": "021501",
+      "nome": "43. CHOCOLATE MISTO",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 714
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 715
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 716
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 717
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 718
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 719
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 720
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 721
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 722
+        },
+        {
+          "codigo": "055029",
+          "nome": "RECHEIO FORN. CHOCO. BRANCO KG",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.025,
+          "linha": 723
+        },
+        {
+          "codigo": "055030",
+          "nome": "RECHEIO FORN. CHOCO. PRETO KG",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.025,
+          "linha": 724
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 725
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 726
+        }
+      ]
+    },
+    {
+      "codigo": "021502",
+      "nome": "44. CHOCOLATE PRETO",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 731
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 736
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 737
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 738
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 739
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 740
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 741
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 742
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 743
+        },
+        {
+          "codigo": "055030",
+          "nome": "RECHEIO FORN. CHOCO. PRETO KG",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 744
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 745
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 746
+        }
+      ]
+    },
+    {
+      "codigo": "021503",
+      "nome": "45. ROMEU E JULIETA",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 751
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 752
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 753
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 754
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 755
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 756
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 757
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 758
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 759
+        },
+        {
+          "codigo": "058028",
+          "nome": "GOIABADA KG",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.02,
+          "linha": 760
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.03,
+          "linha": 761
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 762
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 763
+        }
+      ]
+    },
+    {
+      "codigo": "021504",
+      "nome": "46. MACA COM CANELA",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 768
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 769
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 770
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 771
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 772
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 773
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 774
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 775
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 776
+        },
+        {
+          "codigo": "032019",
+          "nome": "RECHEIO MACA E CANELA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 777
+        },
+        {
+          "codigo": "057018",
+          "nome": "LIMAO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0029,
+          "linha": 778
+        },
+        {
+          "codigo": "057020",
+          "nome": "MACA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0536,
+          "linha": 779
+        },
+        {
+          "codigo": "058002",
+          "nome": "ACUCAR REFINADO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0065,
+          "linha": 780
+        },
+        {
+          "codigo": "058007",
+          "nome": "AMIDO DE MILHO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0013,
+          "linha": 781
+        },
+        {
+          "codigo": "058016",
+          "nome": "CANELA EM PO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 782
+        },
+        {
+          "codigo": "058018",
+          "nome": "CRAVO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 783
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 784
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0163,
+          "linha": 785
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 786
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 787
+        }
+      ]
+    },
+    {
+      "codigo": "021505",
+      "nome": "47. DOCE DE LEITE",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 792
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 793
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 794
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 795
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 796
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 797
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 798
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 799
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 800
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 801
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 802
+        },
+        {
+          "codigo": "055011",
+          "nome": "DOCE DE LEITE KG",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 803
+        }
+      ]
+    },
+    {
+      "codigo": "021601",
+      "nome": "61. INTEGRAL BROCOLIS",
+      "insumos": [
+        {
+          "codigo": "033002",
+          "nome": "MASSA EMPANADA INTEGRAL",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 809
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.019,
+          "linha": 810
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 811
+        }
+      ]
+    },
+    {
+      "codigo": "021602",
+      "nome": "62. INTEGRAL CARNE",
+      "insumos": [
+        {
+          "codigo": "032007",
+          "nome": "RECHEIO CARNE",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 838
+        },
+        {
+          "codigo": "051002",
+          "nome": "CARNE BOVINA MOIDA",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0346,
+          "linha": 839
+        },
+        {
+          "codigo": "051015",
+          "nome": "PROTEINA DE SOJA NATURAL",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0017,
+          "linha": 840
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0038,
+          "linha": 841
+        },
+        {
+          "codigo": "057013",
+          "nome": "CEBOLINHA",
+          "nivel": 2,
+          "unidade": "UN",
+          "qtd_total": 0.0035,
+          "linha": 842
+        },
+        {
+          "codigo": "057019",
+          "nome": "LOURO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 843
+        },
+        {
+          "codigo": "057039",
+          "nome": "SALSA",
+          "nivel": 2,
+          "unidade": "UN",
+          "qtd_total": 0.0003,
+          "linha": 844
+        },
+        {
+          "codigo": "058004",
+          "nome": "ALHO EM PASTA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0009,
+          "linha": 845
+        },
+        {
+          "codigo": "058013",
+          "nome": "CALDO DE CARNE KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 846
+        },
+        {
+          "codigo": "058019",
+          "nome": "CREME DE CEBOLA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 847
+        },
+        {
+          "codigo": "058033",
+          "nome": "OREGANO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 848
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 849
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 850
+        },
+        {
+          "codigo": "033002",
+          "nome": "MASSA EMPANADA INTEGRAL",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 851
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.019,
+          "linha": 852
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 853
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0011,
+          "linha": 854
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.019,
+          "linha": 855
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0089,
+          "linha": 856
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0089,
+          "linha": 857
+        },
+        {
+          "codigo": "058023",
+          "nome": "FARINHA DE TRIGO INTEGRAL KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0506,
+          "linha": 858
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 859
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 860
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 861
+        }
+      ]
+    },
+    {
+      "codigo": "021603",
+      "nome": "63. INTEGRAL ESPINAFRE",
+      "insumos": [
+        {
+          "codigo": "032016",
+          "nome": "RECHEIO ESPINAFRE",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 866
+        },
+        {
+          "codigo": "031005",
+          "nome": "MOLHO BRANCO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0449,
+          "linha": 867
+        },
+        {
+          "codigo": "054002",
+          "nome": "MANTEIGA SEM SAL KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0056,
+          "linha": 868
+        },
+        {
+          "codigo": "055014",
+          "nome": "LEITE INTEGRAL LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0224,
+          "linha": 869
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0056,
+          "linha": 870
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 871
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0224,
+          "linha": 872
+        },
+        {
+          "codigo": "031008",
+          "nome": "ESPINAFRE PICADO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0337,
+          "linha": 873
+        },
+        {
+          "codigo": "058015",
+          "nome": "CALDO DE LEGUME",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 874
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.1026,
+          "linha": 875
+        },
+        {
+          "codigo": "611303",
+          "nome": "ESPINAFRE CONGELADO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0733,
+          "linha": 876
+        },
+        {
+          "codigo": "054008",
+          "nome": "QUEIJO MUSSARELA 1º  KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0067,
+          "linha": 877
+        },
+        {
+          "codigo": "054010",
+          "nome": "QUEIJO PARMESAO RALADO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0022,
+          "linha": 878
+        },
+        {
+          "codigo": "055020",
+          "nome": "MOLHO DE ALHO LITRO",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.0034,
+          "linha": 879
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0014,
+          "linha": 880
+        },
+        {
+          "codigo": "033002",
+          "nome": "MASSA EMPANADA INTEGRAL",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 881
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 2,
+          "unidade": "L",
+          "qtd_total": 0.019,
+          "linha": 882
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 883
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0011,
+          "linha": 884
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.019,
+          "linha": 885
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0089,
+          "linha": 886
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0089,
+          "linha": 887
+        },
+        {
+          "codigo": "058023",
+          "nome": "FARINHA DE TRIGO INTEGRAL KG",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0506,
+          "linha": 888
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 2,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 889
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 890
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 891
+        }
+      ]
+    },
+    {
+      "codigo": "021604",
+      "nome": "64. INTEGRAL FRANGO",
+      "insumos": [
+        {
+          "codigo": "032017",
+          "nome": "RECHEIO FRANGO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 900
+        },
+        {
+          "codigo": "051006",
+          "nome": "FILE DE FRANGO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0419,
+          "linha": 901
+        },
+        {
+          "codigo": "055023",
+          "nome": "MOLHO DE TOMATE REFOGADO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0042,
+          "linha": 902
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0004,
+          "linha": 903
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0042,
+          "linha": 904
+        },
+        {
+          "codigo": "057039",
+          "nome": "SALSA",
+          "nivel": 3,
+          "unidade": "UN",
+          "qtd_total": 0.0003,
+          "linha": 905
+        },
+        {
+          "codigo": "058014",
+          "nome": "CALDO DE GALINHA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 906
+        },
+        {
+          "codigo": "058033",
+          "nome": "OREGANO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 907
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 908
+        },
+        {
+          "codigo": "058045",
+          "nome": "MOLHO DE ALHO 0.900ML",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0009,
+          "linha": 909
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 910
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.021,
+          "linha": 911
+        },
+        {
+          "codigo": "033002",
+          "nome": "MASSA EMPANADA INTEGRAL",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 912
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.019,
+          "linha": 913
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 914
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0011,
+          "linha": 915
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.019,
+          "linha": 916
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0089,
+          "linha": 917
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0089,
+          "linha": 918
+        },
+        {
+          "codigo": "058023",
+          "nome": "FARINHA DE TRIGO INTEGRAL KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0506,
+          "linha": 919
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 920
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 921
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 922
+        }
+      ]
+    },
+    {
+      "codigo": "021607",
+      "nome": "66. INTEGRAL BERINGELA PANAS",
+      "insumos": [
+        {
+          "codigo": "033002",
+          "nome": "MASSA EMPANADA INTEGRAL",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 927
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.019,
+          "linha": 928
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 929
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0011,
+          "linha": 930
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.019,
+          "linha": 931
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0089,
+          "linha": 932
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0089,
+          "linha": 933
+        },
+        {
+          "codigo": "058023",
+          "nome": "FARINHA DE TRIGO INTEGRAL KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0506,
+          "linha": 934
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 935
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 936
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 937
+        },
+        {
+          "codigo": "032038",
+          "nome": "RECHEIO BERINJELA PANAS",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 938
+        },
+        {
+          "codigo": "055002",
+          "nome": "AZEITONA VERDE FATIADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0033,
+          "linha": 939
+        },
+        {
+          "codigo": "055020",
+          "nome": "MOLHO DE ALHO LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0004,
+          "linha": 940
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0033,
+          "linha": 941
+        },
+        {
+          "codigo": "057010",
+          "nome": "BERINJELA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0359,
+          "linha": 942
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0065,
+          "linha": 943
+        },
+        {
+          "codigo": "057026",
+          "nome": "PIMENTAO VERDE",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0049,
+          "linha": 944
+        },
+        {
+          "codigo": "057027",
+          "nome": "PIMENTAO VERMELHO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0049,
+          "linha": 945
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0067,
+          "linha": 946
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 947
+        },
+        {
+          "codigo": "058059",
+          "nome": "TOMILHO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 948
+        }
+      ]
+    },
+    {
+      "codigo": "021701",
+      "nome": "12. BROCOLIS",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 954
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 955
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 956
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 957
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 958
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 959
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 960
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 961
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 962
+        },
+        {
+          "codigo": "032003",
+          "nome": "RECHEIO BROCOLIS",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 963
+        },
+        {
+          "codigo": "031006",
+          "nome": "BROCOLIS PICADO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0521,
+          "linha": 964
+        },
+        {
+          "codigo": "058015",
+          "nome": "CALDO DE LEGUME",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 965
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.096,
+          "linha": 966
+        },
+        {
+          "codigo": "611302",
+          "nome": "BROCOLIS CONGELADO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0686,
+          "linha": 967
+        },
+        {
+          "codigo": "055020",
+          "nome": "MOLHO DE ALHO LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0009,
+          "linha": 968
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0002,
+          "linha": 969
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0083,
+          "linha": 970
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0006,
+          "linha": 971
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 972
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 973
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 978
+        }
+      ]
+    },
+    {
+      "codigo": "021703",
+      "nome": "14. ESPINAFRE PALMITO",
+      "insumos": [
+        {
+          "codigo": "033001",
+          "nome": "MASSA EMPANADA",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.08,
+          "linha": 983
+        },
+        {
+          "codigo": "033003",
+          "nome": "AGUA PARA MASSA EMPANADA",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 984
+        },
+        {
+          "codigo": "058012",
+          "nome": "CACHAÇA (AGUARDENTE) LITRO",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0,
+          "linha": 985
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0012,
+          "linha": 986
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.0196,
+          "linha": 987
+        },
+        {
+          "codigo": "054003",
+          "nome": "MARGARINA FOLHADA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 988
+        },
+        {
+          "codigo": "054004",
+          "nome": "MARGARINA MASSAS KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0078,
+          "linha": 989
+        },
+        {
+          "codigo": "058024",
+          "nome": "FARINHA DE TRIGO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0588,
+          "linha": 990
+        },
+        {
+          "codigo": "058056",
+          "nome": "PROPIONATO DE CALCIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0001,
+          "linha": 991
+        },
+        {
+          "codigo": "032032",
+          "nome": "RECHEIO ESPINAFRE COM PALMITO",
+          "nivel": 1,
+          "unidade": "KG",
+          "qtd_total": 0.05,
+          "linha": 992
+        },
+        {
+          "codigo": "031008",
+          "nome": "ESPINAFRE PICADO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0337,
+          "linha": 993
+        },
+        {
+          "codigo": "058015",
+          "nome": "CALDO DE LEGUME",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0003,
+          "linha": 994
+        },
+        {
+          "codigo": "610008",
+          "nome": "AGUA (DMAE)",
+          "nivel": 4,
+          "unidade": "L",
+          "qtd_total": 0.1026,
+          "linha": 995
+        },
+        {
+          "codigo": "611303",
+          "nome": "ESPINAFRE CONGELADO KG",
+          "nivel": 4,
+          "unidade": "KG",
+          "qtd_total": 0.0733,
+          "linha": 996
+        },
+        {
+          "codigo": "055006",
+          "nome": "PALMITO PICADO CONSERVA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0112,
+          "linha": 997
+        },
+        {
+          "codigo": "055020",
+          "nome": "MOLHO DE ALHO LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0005,
+          "linha": 998
+        },
+        {
+          "codigo": "055028",
+          "nome": "OLEO DE SOJA LITRO",
+          "nivel": 3,
+          "unidade": "L",
+          "qtd_total": 0.0006,
+          "linha": 999
+        },
+        {
+          "codigo": "057012",
+          "nome": "CEBOLA BRANCA KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0045,
+          "linha": 1000
+        },
+        {
+          "codigo": "058039",
+          "nome": "SAL FINO KG",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0002,
+          "linha": 1001
+        },
+        {
+          "codigo": "058055",
+          "nome": "SORBATO DE POTASSIO",
+          "nivel": 3,
+          "unidade": "KG",
+          "qtd_total": 0.0,
+          "linha": 1002
+        },
+        {
+          "codigo": "610009",
+          "nome": "MAO DE OBRA",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 1003
+        },
+        {
+          "codigo": "062047",
+          "nome": "FILME PP 10X10X0.0025",
+          "nivel": 1,
+          "unidade": "UN",
+          "qtd_total": 1.0,
+          "linha": 1004
+        }
+      ]
+    }
+  ],
+  "materias_primas": [
+    {
+      "codigo": "028506",
+      "nome": "OVO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021202"
+      ],
+      "niveis": [
+        2
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "031005",
+      "nome": "MOLHO BRANCO",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021103",
+        "021105",
+        "021208",
+        "021603"
+      ],
+      "niveis": [
+        2,
+        3,
+        4
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "031006",
+      "nome": "BROCOLIS PICADO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021701"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "031007",
+      "nome": "CEBOLA REFOGADA",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021203"
+      ],
+      "niveis": [
+        2
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "031008",
+      "nome": "ESPINAFRE PICADO",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021603",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "031009",
+      "nome": "CEBOLA CARAMELIZADA",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021308"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "031010",
+      "nome": "BACON RALADO FRITO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021208"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032003",
+      "nome": "RECHEIO BROCOLIS",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021701"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032004",
+      "nome": "RECHEIO CALABRESA",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021201"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032005",
+      "nome": "RECHEIO CAMARAO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021401"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032007",
+      "nome": "RECHEIO CARNE",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021202",
+        "021602"
+      ],
+      "niveis": [
+        1,
+        2
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032009",
+      "nome": "RECHEIO CARNE DE PANELA",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021307"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032010",
+      "nome": "RECHEIO CARNE GAUCHA",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021202"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032011",
+      "nome": "RECHEIO CARNE PICANTE",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021102"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032012",
+      "nome": "RECHEIO CEBOLA E QUEIJO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021203"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032016",
+      "nome": "RECHEIO ESPINAFRE",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021603"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032017",
+      "nome": "RECHEIO FRANGO",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021104",
+        "021303",
+        "021604"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032019",
+      "nome": "RECHEIO MACA E CANELA",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021504"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032020",
+      "nome": "RECHEIO MILHO",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021105",
+        "021208"
+      ],
+      "niveis": [
+        1,
+        3
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032021",
+      "nome": "RECHEIO NAPOLITANO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021204"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032022",
+      "nome": "RECHEIO PALMITO E QUEIJO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021206"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032023",
+      "nome": "RECHEIO PORTEÑA",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021306"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": true,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032026",
+      "nome": "RECHEIO PRESUNTO E QUEIJO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021205"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032030",
+      "nome": "RECHEIO STROGONOFF CARNE",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021304"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032032",
+      "nome": "RECHEIO ESPINAFRE COM PALMITO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021703"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032033",
+      "nome": "RECHEIO ESPINAFRE TORTILLA",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021103"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032034",
+      "nome": "RECHEIO CAPRESE",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021309"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032035",
+      "nome": "RECHEIO MILHO E BACON",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021208"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032036",
+      "nome": "RECHEIO QUATRO QUEIJOS NOVO",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021301",
+        "021308"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "032038",
+      "nome": "RECHEIO BERINJELA PANAS",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021607"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "033001",
+      "nome": "MASSA EMPANADA",
+      "ocorrencias": 30,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021201",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021302",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "033002",
+      "nome": "MASSA EMPANADA INTEGRAL",
+      "ocorrencias": 5,
+      "usado_em_produtos": [
+        "021601",
+        "021602",
+        "021603",
+        "021604",
+        "021607"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "033003",
+      "nome": "AGUA PARA MASSA EMPANADA",
+      "ocorrencias": 35,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021201",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021302",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021601",
+        "021602",
+        "021603",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": true,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "051001",
+      "nome": "ACEM / AGULHA CONGELADA",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021307"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "051002",
+      "nome": "CARNE BOVINA MOIDA",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021202",
+        "021602"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "051006",
+      "nome": "FILE DE FRANGO",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021104",
+        "021303",
+        "021604"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "051010",
+      "nome": "CARNE BOVINA ISCAS KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021304",
+        "021306"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "051015",
+      "nome": "PROTEINA DE SOJA NATURAL",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021202",
+        "021602"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "052002",
+      "nome": "CAMARAO KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021401"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "053001",
+      "nome": "BACON KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021208"
+      ],
+      "niveis": [
+        4
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "053002",
+      "nome": "LINGUICA CALAB (PIZZA/MASSA)",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021201"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "053003",
+      "nome": "PRESUNTO KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021204",
+        "021205"
+      ],
+      "niveis": [
+        2
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "054002",
+      "nome": "MANTEIGA SEM SAL KG",
+      "ocorrencias": 5,
+      "usado_em_produtos": [
+        "021105",
+        "021208",
+        "021306",
+        "021308",
+        "021603"
+      ],
+      "niveis": [
+        3,
+        4,
+        5
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "054003",
+      "nome": "MARGARINA FOLHADA KG",
+      "ocorrencias": 32,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021602",
+        "021603",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "054004",
+      "nome": "MARGARINA MASSAS KG",
+      "ocorrencias": 32,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021602",
+        "021603",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "054007",
+      "nome": "QUEIJO GORGONZOLA KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021301",
+        "021308"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "054008",
+      "nome": "QUEIJO MUSSARELA 1º  KG",
+      "ocorrencias": 11,
+      "usado_em_produtos": [
+        "021106",
+        "021201",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021301",
+        "021308",
+        "021309",
+        "021503",
+        "021603"
+      ],
+      "niveis": [
+        1,
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "054010",
+      "nome": "QUEIJO PARMESAO RALADO KG",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021301",
+        "021308",
+        "021603"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "054012",
+      "nome": "REQUEIJAO AMIDO (CATUPIRY) KG",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021201",
+        "021205",
+        "021207",
+        "021303"
+      ],
+      "niveis": [
+        1,
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": true,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "054014",
+      "nome": "CREME CULINARIO KG",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021301",
+        "021304",
+        "021308"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055002",
+      "nome": "AZEITONA VERDE FATIADA KG",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021102",
+        "021202",
+        "021306",
+        "021607"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055005",
+      "nome": "MILHO ENLATADO KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021105",
+        "021208"
+      ],
+      "niveis": [
+        3,
+        4
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055006",
+      "nome": "PALMITO PICADO CONSERVA KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021206",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055007",
+      "nome": "TOMATE SECO KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021307"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055011",
+      "nome": "DOCE DE LEITE KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021505"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055014",
+      "nome": "LEITE INTEGRAL LITRO",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021105",
+        "021208",
+        "021603"
+      ],
+      "niveis": [
+        3,
+        4,
+        5
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055020",
+      "nome": "MOLHO DE ALHO LITRO",
+      "ocorrencias": 5,
+      "usado_em_produtos": [
+        "021401",
+        "021603",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055021",
+      "nome": "MOLHO DE PIMENTA LITRO",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021102",
+        "021306",
+        "021307",
+        "021401"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055023",
+      "nome": "MOLHO DE TOMATE REFOGADO KG",
+      "ocorrencias": 6,
+      "usado_em_produtos": [
+        "021104",
+        "021303",
+        "021304",
+        "021307",
+        "021401",
+        "021604"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055028",
+      "nome": "OLEO DE SOJA LITRO",
+      "ocorrencias": 11,
+      "usado_em_produtos": [
+        "021104",
+        "021202",
+        "021203",
+        "021208",
+        "021303",
+        "021304",
+        "021401",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3,
+        4
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055029",
+      "nome": "RECHEIO FORN. CHOCO. BRANCO KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021501"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055030",
+      "nome": "RECHEIO FORN. CHOCO. PRETO KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021501",
+        "021502"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "055035",
+      "nome": "VINAGRE DE ALCOOL LITRO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021308"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "057010",
+      "nome": "BERINJELA KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021607"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "057012",
+      "nome": "CEBOLA BRANCA KG",
+      "ocorrencias": 15,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021104",
+        "021202",
+        "021203",
+        "021303",
+        "021304",
+        "021306",
+        "021308",
+        "021401",
+        "021602",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "057013",
+      "nome": "CEBOLINHA",
+      "ocorrencias": 5,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021202",
+        "021306",
+        "021602"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "057014",
+      "nome": "CEBOLINHA CEBOULETTE",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021203"
+      ],
+      "niveis": [
+        2
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "057018",
+      "nome": "LIMAO KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021401",
+        "021504"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "057019",
+      "nome": "LOURO KG",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021202",
+        "021602"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "057020",
+      "nome": "MACA KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021504"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "057021",
+      "nome": "MANJERICAO FRESCO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021309"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "057026",
+      "nome": "PIMENTAO VERDE",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021607"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "057027",
+      "nome": "PIMENTAO VERMELHO KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021607"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "057032",
+      "nome": "TOMATE CEREJA KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021309"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "057033",
+      "nome": "TOMATE KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021204"
+      ],
+      "niveis": [
+        2
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "057039",
+      "nome": "SALSA",
+      "ocorrencias": 9,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021104",
+        "021202",
+        "021303",
+        "021307",
+        "021401",
+        "021602",
+        "021604"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "058002",
+      "nome": "ACUCAR REFINADO KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021308",
+        "021504"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058004",
+      "nome": "ALHO EM PASTA KG",
+      "ocorrencias": 6,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021202",
+        "021304",
+        "021307",
+        "021602"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058005",
+      "nome": "AMACIANTE DE CARNE KG",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021304",
+        "021306",
+        "021307"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058007",
+      "nome": "AMIDO DE MILHO KG",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021304",
+        "021401",
+        "021504"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058012",
+      "nome": "CACHAÇA (AGUARDENTE) LITRO",
+      "ocorrencias": 35,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021201",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021302",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021601",
+        "021602",
+        "021603",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        3,
+        4
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": true,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058013",
+      "nome": "CALDO DE CARNE KG",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021202",
+        "021602"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058014",
+      "nome": "CALDO DE GALINHA KG",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021104",
+        "021303",
+        "021604"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058015",
+      "nome": "CALDO DE LEGUME",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021603",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        3,
+        4
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058016",
+      "nome": "CANELA EM PO KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021504"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "058018",
+      "nome": "CRAVO KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021504"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "058019",
+      "nome": "CREME DE CEBOLA KG",
+      "ocorrencias": 6,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021202",
+        "021304",
+        "021307",
+        "021602"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058023",
+      "nome": "FARINHA DE TRIGO INTEGRAL KG",
+      "ocorrencias": 4,
+      "usado_em_produtos": [
+        "021602",
+        "021603",
+        "021604",
+        "021607"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058024",
+      "nome": "FARINHA DE TRIGO KG",
+      "ocorrencias": 31,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021603",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058028",
+      "nome": "GOIABADA KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021503"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058029",
+      "nome": "MANJERICAO SECO KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021204",
+        "021304"
+      ],
+      "niveis": [
+        2
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "058033",
+      "nome": "OREGANO KG",
+      "ocorrencias": 9,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021104",
+        "021202",
+        "021303",
+        "021304",
+        "021306",
+        "021602",
+        "021604"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "058034",
+      "nome": "OVO",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021202"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058035",
+      "nome": "PAPRICA PICANTE KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021306"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058037",
+      "nome": "PIMENTA DO REINO KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021306"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "058039",
+      "nome": "SAL FINO KG",
+      "ocorrencias": 54,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021302",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021602",
+        "021603",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058040",
+      "nome": "UVA PASSA KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021306"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "058045",
+      "nome": "MOLHO DE ALHO 0.900ML",
+      "ocorrencias": 3,
+      "usado_em_produtos": [
+        "021104",
+        "021303",
+        "021604"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "058055",
+      "nome": "SORBATO DE POTASSIO",
+      "ocorrencias": 17,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021104",
+        "021202",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021401",
+        "021504",
+        "021602",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "058056",
+      "nome": "PROPIONATO DE CALCIO",
+      "ocorrencias": 32,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021602",
+        "021603",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "058059",
+      "nome": "TOMILHO KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021607"
+      ],
+      "niveis": [
+        3
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "062047",
+      "nome": "FILME PP 10X10X0.0025",
+      "ocorrencias": 31,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021208",
+        "021301",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021602",
+        "021603",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "062089",
+      "nome": "SACO PP 11X20X0.05",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021101"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "610008",
+      "nome": "AGUA (DMAE)",
+      "ocorrencias": 45,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021302",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021602",
+        "021603",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "intermediario": false,
+      "ignorado": true,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "610009",
+      "nome": "MAO DE OBRA",
+      "ocorrencias": 32,
+      "usado_em_produtos": [
+        "021101",
+        "021102",
+        "021103",
+        "021104",
+        "021105",
+        "021106",
+        "021202",
+        "021203",
+        "021204",
+        "021205",
+        "021206",
+        "021207",
+        "021208",
+        "021301",
+        "021303",
+        "021304",
+        "021306",
+        "021307",
+        "021308",
+        "021309",
+        "021401",
+        "021501",
+        "021502",
+        "021503",
+        "021504",
+        "021505",
+        "021602",
+        "021603",
+        "021604",
+        "021607",
+        "021701",
+        "021703"
+      ],
+      "niveis": [
+        1
+      ],
+      "intermediario": false,
+      "ignorado": true,
+      "bug_conhecido": false,
+      "tem_item_compra": false
+    },
+    {
+      "codigo": "611302",
+      "nome": "BROCOLIS CONGELADO KG",
+      "ocorrencias": 1,
+      "usado_em_produtos": [
+        "021701"
+      ],
+      "niveis": [
+        4
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    },
+    {
+      "codigo": "611303",
+      "nome": "ESPINAFRE CONGELADO KG",
+      "ocorrencias": 2,
+      "usado_em_produtos": [
+        "021603",
+        "021703"
+      ],
+      "niveis": [
+        3,
+        4
+      ],
+      "intermediario": false,
+      "ignorado": false,
+      "bug_conhecido": false,
+      "tem_item_compra": true
+    }
+  ]
+}

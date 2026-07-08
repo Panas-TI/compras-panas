@@ -18,6 +18,8 @@ export type ItemFormDefaults = {
   forma_pagto_padrao_id?: string | null;
   preco_referencia?: number | null;
   prazo_padrao?: string | null;
+  embalagem_compra_nome?: string | null;
+  qtd_por_embalagem?: number | null;
   ativo?: boolean;
 };
 
@@ -139,6 +141,40 @@ export function ItemForm({
             placeholder="ex: 28/56D"
             maxLength={50}
           />
+        </div>
+
+        {/* Embalagem de compra — estoque conta por unidade, financeiro compra por caixa/fardo */}
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3">
+            <p className="mb-2 text-xs font-medium text-zinc-600">
+              📦 Embalagem de compra (opcional) — deixe em branco se o item é comprado avulso.
+              Ex: bobina térmica é contada por unidade, mas comprada em CAIXA de 30.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="embalagem_compra_nome">Nome da embalagem</Label>
+                <Input
+                  id="embalagem_compra_nome"
+                  name="embalagem_compra_nome"
+                  defaultValue={defaults.embalagem_compra_nome ?? ""}
+                  placeholder="ex: CAIXA, FARDO"
+                  maxLength={40}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="qtd_por_embalagem">Unidades por embalagem</Label>
+                <Input
+                  id="qtd_por_embalagem"
+                  name="qtd_por_embalagem"
+                  defaultValue={
+                    defaults.qtd_por_embalagem != null ? String(defaults.qtd_por_embalagem) : "1"
+                  }
+                  placeholder="ex: 30"
+                  inputMode="decimal"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 sm:col-span-2">

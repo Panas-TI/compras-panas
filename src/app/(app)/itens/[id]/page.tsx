@@ -43,6 +43,8 @@ export default async function EditarItemPage({ params }: { params: Promise<{ id:
               forma_pagto_padrao_id: item.forma_pagto_padrao_id,
               preco_referencia: item.preco_referencia,
               prazo_padrao: item.prazo_padrao,
+              embalagem_compra_nome: item.embalagem_compra_nome,
+              qtd_por_embalagem: item.qtd_por_embalagem,
               ativo: item.ativo,
             }}
             classificacoes={classificacoes ?? []}

@@ -28,6 +28,8 @@ export type Linha = {
   codigo_queops: string | null;
   classificacao_nome: string | null;
   unidade_nome: string | null;
+  embalagem_nome: string | null;
+  qtd_por_embalagem: number;
   volume_estoque: number | null;
   volume_solicitado: number | null;
   preco: number | null;
@@ -367,8 +369,11 @@ function LinhaTr({
         />
       </td>
       <td className="px-1 py-1.5">
-        <NumberCell
-          value={linha.volume_solicitado}
+        <VolumeSolicCell
+          volume={linha.volume_solicitado}
+          qtdPorEmbalagem={linha.qtd_por_embalagem}
+          embalagemNome={linha.embalagem_nome}
+          unidadeNome={linha.unidade_nome}
           editable={editable}
           onCommit={(v) => {
             onUpdateLocal({ volume_solicitado: v });
@@ -524,6 +529,77 @@ function parseDraftNumber(s: string): number | null {
   if (!s.trim()) return null;
   const n = Number(s.replace(/\./g, "").replace(",", "."));
   return Number.isFinite(n) ? n : null;
+}
+
+// Célula de "Solicitação". Se o item tem embalagem de compra (qtd > 1), o
+// comprador digita QUANTAS EMBALAGENS (caixas/fardos) e a gente guarda o
+// volume em unidades (embalagens × qtd). Arredonda pra cima pro múltiplo.
+function VolumeSolicCell({
+  volume,
+  qtdPorEmbalagem,
+  embalagemNome,
+  unidadeNome,
+  editable,
+  onCommit,
+}: {
+  volume: number | null;
+  qtdPorEmbalagem: number;
+  embalagemNome: string | null;
+  unidadeNome: string | null;
+  editable: boolean;
+  onCommit: (unidades: number | null) => void;
+}) {
+  const temEmbalagem = qtdPorEmbalagem > 1;
+  const embalagens =
+    volume != null && temEmbalagem ? Math.ceil(volume / qtdPorEmbalagem) : null;
+  // Hook sempre chamado no topo (regra dos hooks), mesmo sem embalagem.
+  const [draft, setDraft] = useState(embalagens != null ? String(embalagens) : "");
+
+  // Sem embalagem → comportamento normal (unidades)
+  if (!temEmbalagem) {
+    return <NumberCell value={volume} editable={editable} onCommit={onCommit} />;
+  }
+
+  const rotulo = embalagemNome || "cx";
+  const un = unidadeNome || "un";
+
+  if (!editable) {
+    const totalUn = volume ?? 0;
+    return (
+      <div className="text-right">
+        <div className="tabular-nums">{embalagens ?? "—"} {rotulo}</div>
+        <div className="text-[10px] text-zinc-500">{formatNumberBR(totalUn, 0)} {un}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-0.5">
+      <div className="flex items-center gap-1">
+        <input
+          type="text"
+          inputMode="numeric"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => {
+            const n = parseDraftNumber(draft);
+            const nEmb = n != null && n > 0 ? Math.ceil(n) : null;
+            onCommit(nEmb != null ? nEmb * qtdPorEmbalagem : null);
+            setDraft(nEmb != null ? String(nEmb) : "");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+          placeholder="0"
+          className="h-7 w-full max-w-[64px] rounded border border-zinc-200 bg-white px-1.5 text-right text-sm tabular-nums focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+        />
+        <span className="text-[10px] font-medium text-zinc-600">{rotulo}</span>
+      </div>
+      <span className="text-[10px] text-zinc-500">
+        = {formatNumberBR((embalagens ?? 0) * qtdPorEmbalagem, 0)} {un}
+      </span>
+    </div>
+  );
 }
 
 function LookupCell({
