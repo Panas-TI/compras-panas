@@ -359,14 +359,8 @@ function LinhaTr({
         </div>
       </td>
       <td className="px-1 py-1.5">
-        <NumberCell
-          value={linha.volume_estoque}
-          editable={editable}
-          onCommit={(v) => {
-            onUpdateLocal({ volume_estoque: v });
-            onPersist("volume_estoque", v);
-          }}
-        />
+        {/* Estoque vem da contagem — somente leitura, não editável aqui */}
+        <NumberCell value={linha.volume_estoque} editable={false} onCommit={() => {}} />
       </td>
       <td className="px-1 py-1.5">
         <VolumeSolicCell
