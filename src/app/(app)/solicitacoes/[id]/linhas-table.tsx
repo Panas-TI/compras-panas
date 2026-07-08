@@ -377,15 +377,8 @@ function LinhaTr({
       </td>
       <td className="px-1 py-1.5 text-zinc-600">{linha.unidade_nome ?? "—"}</td>
       <td className="px-1 py-1.5">
-        <NumberCell
-          value={linha.preco}
-          editable={editable}
-          fraction={4}
-          onCommit={(v) => {
-            onUpdateLocal({ preco: v });
-            onPersist("preco", v);
-          }}
-        />
+        {/* Preço vem do cadastro do item — somente leitura na solicitação */}
+        <NumberCell value={linha.preco} editable={false} fraction={4} onCommit={() => {}} />
       </td>
       <td className="px-1 py-1.5 text-right tabular-nums">{formatCurrencyBRL(linha.valor ?? 0)}</td>
       <td className="px-1 py-1.5">
