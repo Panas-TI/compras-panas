@@ -161,6 +161,9 @@ export function ItemForm({
                   <option value="">— sem embalagem (avulso) —</option>
                   <option value="CAIXA">Caixa</option>
                   <option value="FARDO">Fardo</option>
+                  <option value="ROLO">Rolo</option>
+                  <option value="MILHEIRO">Milheiro</option>
+                  <option value="PACOTE">Pacote</option>
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
