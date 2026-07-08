@@ -531,6 +531,17 @@ function parseDraftNumber(s: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// Abrevia a unidade de estoque pra caber na célula estreita.
+function abrevUnidade(nome: string | null): string {
+  switch ((nome || "").toUpperCase()) {
+    case "UNIDADE": return "un";
+    case "KG": return "kg";
+    case "LITRO": return "L";
+    case "MOLHO": return "mç";
+    default: return (nome || "un").toLowerCase();
+  }
+}
+
 // Célula de "Solicitação". Se o item tem embalagem de compra (qtd > 1), o
 // comprador digita QUANTAS EMBALAGENS (caixas/fardos) e a gente guarda o
 // volume em unidades (embalagens × qtd). Arredonda pra cima pro múltiplo.
@@ -560,43 +571,44 @@ function VolumeSolicCell({
     return <NumberCell value={volume} editable={editable} onCommit={onCommit} />;
   }
 
-  const rotulo = embalagemNome || "cx";
-  const un = unidadeNome || "un";
+  const rotulo = (embalagemNome || "cx").toLowerCase();
+  const un = abrevUnidade(unidadeNome);
+  const totalUn = (embalagens ?? 0) * qtdPorEmbalagem;
 
   if (!editable) {
-    const totalUn = volume ?? 0;
     return (
-      <div className="text-right">
-        <div className="tabular-nums">{embalagens ?? "—"} {rotulo}</div>
-        <div className="text-[10px] text-zinc-500">{formatNumberBR(totalUn, 0)} {un}</div>
+      <div className="whitespace-nowrap text-right leading-tight">
+        <div className="tabular-nums">
+          {embalagens ?? "—"} <span className="text-[10px] text-zinc-500">{rotulo}</span>
+        </div>
+        <div className="text-[10px] text-zinc-400">{formatNumberBR(volume ?? 0, 0)} {un}</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-end gap-0.5">
-      <div className="flex items-center gap-1">
-        <input
-          type="text"
-          inputMode="numeric"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => {
-            const n = parseDraftNumber(draft);
-            const nEmb = n != null && n > 0 ? Math.ceil(n) : null;
-            onCommit(nEmb != null ? nEmb * qtdPorEmbalagem : null);
-            setDraft(nEmb != null ? String(nEmb) : "");
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          }}
-          placeholder="0"
-          className="h-7 w-full max-w-[64px] rounded border border-zinc-200 bg-white px-1.5 text-right text-sm tabular-nums focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
-        />
-        <span className="text-[10px] font-medium text-zinc-600">{rotulo}</span>
-      </div>
-      <span className="text-[10px] text-zinc-500">
-        = {formatNumberBR((embalagens ?? 0) * qtdPorEmbalagem, 0)} {un}
+    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+      <input
+        type="text"
+        inputMode="numeric"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          const n = parseDraftNumber(draft);
+          const nEmb = n != null && n > 0 ? Math.ceil(n) : null;
+          onCommit(nEmb != null ? nEmb * qtdPorEmbalagem : null);
+          setDraft(nEmb != null ? String(nEmb) : "");
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+        placeholder="0"
+        title={`${rotulo} de ${formatNumberBR(qtdPorEmbalagem, 0)} ${un}`}
+        className="h-7 w-12 rounded border border-zinc-200 bg-white px-1 text-right text-sm tabular-nums focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+      />
+      <span className="flex flex-col text-[9px] leading-tight text-zinc-500">
+        <span className="font-medium">{rotulo}</span>
+        <span className="text-zinc-400">={formatNumberBR(totalUn, 0)}{un}</span>
       </span>
     </div>
   );
