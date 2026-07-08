@@ -404,14 +404,8 @@ function LinhaTr({
         />
       </td>
       <td className="px-1 py-1.5">
-        <TextCell
-          value={linha.prazo}
-          editable={editable}
-          onCommit={(v) => {
-            onUpdateLocal({ prazo: v });
-            onPersist("prazo", v);
-          }}
-        />
+        {/* Prazo vem do cadastro do item — somente leitura na solicitação */}
+        <TextCell value={linha.prazo} editable={false} onCommit={() => {}} />
       </td>
       <td className="px-1 py-1.5">
         <span className={cn("inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-xs", statusStyle)}>
