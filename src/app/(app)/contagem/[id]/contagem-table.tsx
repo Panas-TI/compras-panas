@@ -47,7 +47,12 @@ export function ContagemTable({
   const [showImport, setShowImport] = useState(false);
   const [selectedTpl, setSelectedTpl] = useState(templates[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [busca, setBusca] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // Coluna "Solicitação" só aparece DEPOIS que a contagem foi finalizada.
+  // Enquanto conta, o estoquista vê só Quantidade e Observação.
+  const mostrarSolic = canRequestPurchase && finalizada;
 
   const handleImport = () => {
     if (!selectedTpl) return;
@@ -144,9 +149,15 @@ export function ContagemTable({
   };
 
 
+  // Filtro de busca por item (nome/texto) — vale durante e depois da contagem
+  const q = busca.trim().toLowerCase();
+  const linhasFiltradas = q
+    ? linhas.filter((l) => l.texto.toLowerCase().includes(q))
+    : linhas;
+
   // Agrupa por seção pra exibir como subgrupos
   const grupos: Array<{ secao: string | null; itens: LinhaC[] }> = [];
-  for (const l of linhas) {
+  for (const l of linhasFiltradas) {
     const last = grupos[grupos.length - 1];
     if (!last || last.secao !== l.secao) {
       grupos.push({ secao: l.secao, itens: [l] });
@@ -188,7 +199,7 @@ export function ContagemTable({
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="text-zinc-600">{totalPreenchidas} de {linhas.length} preenchidas</span>
-          {canRequestPurchase && linhas.some((l) => (l.solicitacao_qtd ?? 0) > 0 && !l.enviado_em) && (
+          {mostrarSolic && linhas.some((l) => (l.solicitacao_qtd ?? 0) > 0 && !l.enviado_em) && (
             <Button onClick={handleEnviar} disabled={isPending}>
               Enviar para solicitações
             </Button>
@@ -203,9 +214,24 @@ export function ContagemTable({
         </div>
       </div>
 
+      {linhas.length > 0 && (
+        <Input
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="🔎 Buscar item pelo nome..."
+          className="max-w-md print:hidden"
+        />
+      )}
+
       {linhas.length === 0 && (
         <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-10 text-center text-sm text-zinc-500">
           Nenhum item ainda. Clique em "Importar itens" pra carregar uma pasta.
+        </div>
+      )}
+
+      {linhas.length > 0 && grupos.length === 0 && (
+        <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-8 text-center text-sm text-zinc-500">
+          Nenhum item encontrado com &quot;{busca}&quot;.
         </div>
       )}
 
@@ -223,7 +249,7 @@ export function ContagemTable({
                 <th className="px-2 py-1">Item</th>
                 <th className="w-24 px-2 py-1">Medida</th>
                 <th className="w-28 px-2 py-1">Quantidade</th>
-                {canRequestPurchase && <th className="w-28 px-2 py-1">Solicitação</th>}
+                {mostrarSolic && <th className="w-28 px-2 py-1">Solicitação</th>}
                 <th className="px-2 py-1">Observação</th>
                 {!finalizada && <th className="w-20 px-2 py-1"></th>}
               </tr>
@@ -234,7 +260,7 @@ export function ContagemTable({
                   key={l.id}
                   linha={l}
                   finalizada={finalizada}
-                  canRequestPurchase={canRequestPurchase}
+                  canRequestPurchase={mostrarSolic}
                   onUpdateQtdLocal={(q) => updateQtdLocal(l.id, q)}
                   onUpdateObsLocal={(o) => updateObsLocal(l.id, o)}
                   onUpdateSolicLocal={(q) => updateSolicLocal(l.id, q)}
