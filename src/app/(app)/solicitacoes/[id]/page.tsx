@@ -40,7 +40,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
       `
       id, item_id, volume_estoque, volume_solicitado, preco, valor,
       fornecedor_id, forma_pagto_id, prazo, status, alteracao_confirmada,
-      item:itens(nome, codigo_queops, embalagem_compra_nome, qtd_por_embalagem,
+      item:itens(nome, codigo_queops, preco_referencia, embalagem_compra_nome, qtd_por_embalagem,
         classificacao:classificacoes(nome),
         unidade:unidades_medida(nome)
       )
@@ -49,25 +49,57 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
     .eq("solicitacao_id", id)
     .order("criado_em", { ascending: true });
 
-  const linhas: Linha[] = (linhasRaw ?? []).map((l) => ({
-    id: l.id,
-    item_id: l.item_id,
-    nome_item: l.item?.nome ?? "(item removido)",
-    codigo_queops: l.item?.codigo_queops ?? null,
-    classificacao_nome: l.item?.classificacao?.nome ?? null,
-    unidade_nome: l.item?.unidade?.nome ?? null,
-    embalagem_nome: l.item?.embalagem_compra_nome ?? null,
-    qtd_por_embalagem: l.item?.qtd_por_embalagem ?? 1,
-    volume_estoque: l.volume_estoque,
-    volume_solicitado: l.volume_solicitado,
-    preco: l.preco,
-    valor: l.valor,
-    fornecedor_id: l.fornecedor_id,
-    forma_pagto_id: l.forma_pagto_id,
-    prazo: l.prazo,
-    status: l.status,
-    alteracao_confirmada: l.alteracao_confirmada,
-  }));
+  // RASCUNHO sempre reflete o preço ATUAL do catálogo (congela só no Lançar).
+  // Se o preço de referência do item mudou depois que a linha foi criada,
+  // sincroniza a linha aqui mesmo, antes de renderizar.
+  const ehRascunho = solic.enviada_em === null;
+  const dessincronizadas = ehRascunho
+    ? (linhasRaw ?? []).filter(
+        (l) =>
+          l.item?.preco_referencia != null &&
+          (l.preco == null || Math.abs(Number(l.preco) - Number(l.item.preco_referencia)) >= 0.005)
+      )
+    : [];
+  if (dessincronizadas.length > 0) {
+    await Promise.all(
+      dessincronizadas.map((l) =>
+        supabase
+          .from("solicitacao_linhas")
+          .update({ preco: Number(l.item!.preco_referencia) })
+          .eq("id", l.id)
+      )
+    );
+  }
+
+  const linhas: Linha[] = (linhasRaw ?? []).map((l) => {
+    // Usa o preço sincronizado no render (valor é recalculado pelo banco;
+    // aqui recalcula local pra exibir certo sem refetch)
+    const precoAtual =
+      ehRascunho && l.item?.preco_referencia != null ? l.item.preco_referencia : l.preco;
+    const valorAtual =
+      ehRascunho && l.item?.preco_referencia != null
+        ? Number(l.volume_solicitado ?? 0) * Number(precoAtual ?? 0)
+        : l.valor;
+    return {
+      id: l.id,
+      item_id: l.item_id,
+      nome_item: l.item?.nome ?? "(item removido)",
+      codigo_queops: l.item?.codigo_queops ?? null,
+      classificacao_nome: l.item?.classificacao?.nome ?? null,
+      unidade_nome: l.item?.unidade?.nome ?? null,
+      embalagem_nome: l.item?.embalagem_compra_nome ?? null,
+      qtd_por_embalagem: l.item?.qtd_por_embalagem ?? 1,
+      volume_estoque: l.volume_estoque,
+      volume_solicitado: l.volume_solicitado,
+      preco: precoAtual,
+      valor: valorAtual,
+      fornecedor_id: l.fornecedor_id,
+      forma_pagto_id: l.forma_pagto_id,
+      prazo: l.prazo,
+      status: l.status,
+      alteracao_confirmada: l.alteracao_confirmada,
+    };
+  });
 
   const [{ data: items }, { data: fornecedores }, { data: formasPagto }] = await Promise.all([
     supabase
