@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateBR } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinhasTable, type Linha } from "./linhas-table";
+import { DatasSolicitacao } from "./datas-solicitacao";
 import { DeleteButton } from "./delete-button";
 import { PrintButton } from "./print-button";
 import { computeSolicStatus } from "../status";
@@ -96,9 +97,12 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold">
-            Solicitação {formatDateBR(solic.data_inicio)} a {formatDateBR(solic.data_fim)}
-          </h1>
+          <DatasSolicitacao
+            solicitacaoId={solic.id}
+            dataInicio={solic.data_inicio}
+            dataFim={solic.data_fim}
+            canEdit={canEdit}
+          />
           <p className="text-sm text-zinc-600">
             Comprador: {solic.comprador?.nome ?? "—"} · Status: <strong>{status}</strong>
             {solic.observacoes && <> · {solic.observacoes}</>}

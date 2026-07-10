@@ -204,6 +204,33 @@ export async function enviarParaAprovacaoAction(solicitacao_id: string): Promise
   return {};
 }
 
+// Edita a data da solicitação — só permitido enquanto RASCUNHO (não lançada).
+export async function atualizarDatasSolicitacaoAction(
+  solicitacao_id: string,
+  data_inicio: string,
+  data_fim: string
+): Promise<{ error?: string }> {
+  if (!data_inicio || !data_fim) return { error: "Datas inválidas." };
+  const supabase = await createClient();
+  const { data: solic } = await supabase
+    .from("solicitacoes_semanais")
+    .select("enviada_em")
+    .eq("id", solicitacao_id)
+    .maybeSingle();
+  if (!solic) return { error: "Solicitação não encontrada." };
+  if (solic.enviada_em !== null) {
+    return { error: "Solicitação já lançada — a data não pode mais ser alterada." };
+  }
+  const { error } = await supabase
+    .from("solicitacoes_semanais")
+    .update({ data_inicio, data_fim })
+    .eq("id", solicitacao_id);
+  if (error) return { error: error.message };
+  revalidatePath(`/solicitacoes/${solicitacao_id}`);
+  revalidatePath("/solicitacoes");
+  return {};
+}
+
 export async function aprovarLinhaAction(linha_id: string): Promise<{ error?: string }> {
   const supabase = await createClient();
   const { error, data } = await supabase
