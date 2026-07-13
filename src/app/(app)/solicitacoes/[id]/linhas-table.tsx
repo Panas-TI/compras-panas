@@ -79,7 +79,9 @@ export function LinhasTable({
   const [linhas, setLinhas] = useState(initialLinhas);
   const [addingItem, setAddingItem] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [ordem, setOrdem] = useState<"original" | "fornecedor" | "alfabetica">("original");
+  const [ordem, setOrdem] = useState<
+    "original" | "fornecedor" | "alfabetica" | "preco_desc" | "preco_asc"
+  >("original");
   const [isPending, startTransition] = useTransition();
 
   const usedItemIds = new Set(linhas.map((l) => l.item_id));
@@ -95,6 +97,11 @@ export function LinhasTable({
             const fb = fornNome.get(b.fornecedor_id ?? "") ?? "￿";
             const cmp = fa.localeCompare(fb, "pt-BR");
             if (cmp !== 0) return cmp;
+          }
+          if (ordem === "preco_desc" || ordem === "preco_asc") {
+            const pa = Number(a.preco ?? 0);
+            const pb = Number(b.preco ?? 0);
+            if (pa !== pb) return ordem === "preco_desc" ? pb - pa : pa - pb;
           }
           return a.nome_item.localeCompare(b.nome_item, "pt-BR");
         });
@@ -230,12 +237,18 @@ export function LinhasTable({
           <Select
             id="ordem"
             value={ordem}
-            onChange={(e) => setOrdem(e.target.value as "original" | "fornecedor" | "alfabetica")}
+            onChange={(e) =>
+              setOrdem(
+                e.target.value as "original" | "fornecedor" | "alfabetica" | "preco_desc" | "preco_asc"
+              )
+            }
             className="h-8 w-auto min-w-[160px] text-xs"
           >
             <option value="original">Ordem original</option>
             <option value="fornecedor">Fornecedor</option>
             <option value="alfabetica">Item (A–Z)</option>
+            <option value="preco_desc">Preço (maior → menor)</option>
+            <option value="preco_asc">Preço (menor → maior)</option>
           </Select>
         </div>
       )}
