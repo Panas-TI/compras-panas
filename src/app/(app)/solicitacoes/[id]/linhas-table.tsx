@@ -79,9 +79,25 @@ export function LinhasTable({
   const [linhas, setLinhas] = useState(initialLinhas);
   const [addingItem, setAddingItem] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [ordem, setOrdem] = useState<"original" | "fornecedor" | "alfabetica">("original");
   const [isPending, startTransition] = useTransition();
 
   const usedItemIds = new Set(linhas.map((l) => l.item_id));
+
+  // Ordenação de exibição (não altera a ordem salva no banco)
+  const fornNome = new Map(fornecedores.map((f) => [f.id, f.nome]));
+  const linhasExibidas =
+    ordem === "original"
+      ? linhas
+      : [...linhas].sort((a, b) => {
+          if (ordem === "fornecedor") {
+            const fa = fornNome.get(a.fornecedor_id ?? "") ?? "￿"; // sem fornecedor vai pro fim
+            const fb = fornNome.get(b.fornecedor_id ?? "") ?? "￿";
+            const cmp = fa.localeCompare(fb, "pt-BR");
+            if (cmp !== 0) return cmp;
+          }
+          return a.nome_item.localeCompare(b.nome_item, "pt-BR");
+        });
 
   const handleAdd = (item: PickableItem) => {
     setErrorMsg(null);
@@ -206,6 +222,24 @@ export function LinhasTable({
         </div>
       )}
 
+      {linhas.length > 1 && (
+        <div className="flex items-center justify-end gap-2 print:hidden">
+          <label htmlFor="ordem" className="text-xs font-medium text-zinc-600">
+            Ordenar por
+          </label>
+          <Select
+            id="ordem"
+            value={ordem}
+            onChange={(e) => setOrdem(e.target.value as "original" | "fornecedor" | "alfabetica")}
+            className="h-8 w-auto min-w-[160px] text-xs"
+          >
+            <option value="original">Ordem original</option>
+            <option value="fornecedor">Fornecedor</option>
+            <option value="alfabetica">Item (A–Z)</option>
+          </Select>
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-md border border-zinc-200 bg-white">
         <table className="w-full text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-left">
@@ -224,7 +258,7 @@ export function LinhasTable({
             </tr>
           </thead>
           <tbody>
-            {linhas.map((l) => (
+            {linhasExibidas.map((l) => (
               <LinhaTr
                 key={l.id}
                 linha={l}
