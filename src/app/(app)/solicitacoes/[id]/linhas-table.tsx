@@ -80,7 +80,7 @@ export function LinhasTable({
   const [addingItem, setAddingItem] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [ordem, setOrdem] = useState<
-    "original" | "fornecedor" | "alfabetica" | "preco_desc" | "preco_asc"
+    "original" | "fornecedor" | "alfabetica" | "valor_desc" | "valor_asc"
   >("original");
   const [isPending, startTransition] = useTransition();
 
@@ -98,10 +98,10 @@ export function LinhasTable({
             const cmp = fa.localeCompare(fb, "pt-BR");
             if (cmp !== 0) return cmp;
           }
-          if (ordem === "preco_desc" || ordem === "preco_asc") {
-            const pa = Number(a.preco ?? 0);
-            const pb = Number(b.preco ?? 0);
-            if (pa !== pb) return ordem === "preco_desc" ? pb - pa : pa - pb;
+          if (ordem === "valor_desc" || ordem === "valor_asc") {
+            const va = Number(a.valor ?? 0);
+            const vb = Number(b.valor ?? 0);
+            if (va !== vb) return ordem === "valor_desc" ? vb - va : va - vb;
           }
           return a.nome_item.localeCompare(b.nome_item, "pt-BR");
         });
@@ -239,7 +239,7 @@ export function LinhasTable({
             value={ordem}
             onChange={(e) =>
               setOrdem(
-                e.target.value as "original" | "fornecedor" | "alfabetica" | "preco_desc" | "preco_asc"
+                e.target.value as "original" | "fornecedor" | "alfabetica" | "valor_desc" | "valor_asc"
               )
             }
             className="h-8 w-auto min-w-[160px] text-xs"
@@ -247,8 +247,8 @@ export function LinhasTable({
             <option value="original">Ordem original</option>
             <option value="fornecedor">Fornecedor</option>
             <option value="alfabetica">Item (A–Z)</option>
-            <option value="preco_desc">Preço (maior → menor)</option>
-            <option value="preco_asc">Preço (menor → maior)</option>
+            <option value="valor_desc">Valor (maior → menor)</option>
+            <option value="valor_asc">Valor (menor → maior)</option>
           </Select>
         </div>
       )}
