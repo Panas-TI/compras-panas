@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import {
   addItemAoGrupoAction,
   updateItemDoGrupoAction,
   removerItemDoGrupoAction,
-  moverItemAction,
+  reordenarItensAction,
 } from "../actions";
 
 export type GrupoItem = {
@@ -201,7 +201,60 @@ function ListaItens({
   catalogo: CatalogItem[];
   onError: (s: string | null) => void;
 }) {
-  if (itens.length === 0) {
+  const router = useRouter();
+  // Lista local pra drag & drop otimista; re-sincroniza quando o server atualiza
+  const [lista, setLista] = useState(itens);
+  useEffect(() => setLista(itens), [itens]);
+
+  // Estado do drag: qual item está "armado" (mouse na alça), qual está sendo
+  // arrastado e sobre qual linha o cursor está (antes/depois)
+  const [armedId, setArmedId] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [over, setOver] = useState<{ id: string; pos: "antes" | "depois" } | null>(null);
+  const [, startTransition] = useTransition();
+
+  const soltar = (targetId: string) => {
+    if (!dragId || !over || dragId === targetId) return;
+    const dragged = lista.find((l) => l.id === dragId);
+    const target = lista.find((l) => l.id === targetId);
+    if (!dragged || !target) return;
+
+    // Remove o arrastado, insere na posição do alvo e herda a seção do alvo
+    const sem = lista.filter((l) => l.id !== dragId);
+    const idx = sem.findIndex((l) => l.id === targetId);
+    const insertAt = over.pos === "antes" ? idx : idx + 1;
+    const movido = { ...dragged, secao: target.secao };
+    const novo = [...sem.slice(0, insertAt), movido, ...sem.slice(insertAt)].map((l, i) => ({
+      ...l,
+      ordem: i + 1,
+    }));
+
+    const anterior = lista;
+    setLista(novo);
+    setDragId(null);
+    setOver(null);
+    setArmedId(null);
+
+    // Persiste só o que mudou
+    const mudancas = novo
+      .filter((n) => {
+        const o = anterior.find((x) => x.id === n.id);
+        return !o || o.ordem !== n.ordem || o.secao !== n.secao;
+      })
+      .map((n) => ({ id: n.id, ordem: n.ordem, secao: n.secao }));
+    onError(null);
+    startTransition(async () => {
+      const res = await reordenarItensAction(grupoId, mudancas);
+      if (res.error) {
+        setLista(anterior); // desfaz visual se falhou
+        onError(res.error);
+      } else {
+        router.refresh();
+      }
+    });
+  };
+
+  if (lista.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-10 text-center text-sm text-zinc-500">
         Nenhum item no grupo. Use o formulário acima.
@@ -211,7 +264,7 @@ function ListaItens({
 
   // Agrupa por seção (mantendo ordem)
   const grupos: { secao: string | null; itens: GrupoItem[] }[] = [];
-  for (const it of itens) {
+  for (const it of lista) {
     const last = grupos[grupos.length - 1];
     if (!last || last.secao !== it.secao) {
       grupos.push({ secao: it.secao, itens: [it] });
@@ -238,12 +291,43 @@ function ListaItens({
                 <th className="w-12 px-2 py-1 text-right">#</th>
                 <th className="w-24 px-2 py-1">Código</th>
                 <th className="px-2 py-1">Item</th>
-                <th className="w-44 px-2 py-1">Ações</th>
+                <th className="w-44 px-2 py-1 text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
               {g.itens.map((it) => (
-                <ItemRow key={it.id} item={it} catalogo={catalogo} onError={onError} />
+                <ItemRow
+                  key={it.id}
+                  item={it}
+                  catalogo={catalogo}
+                  onError={onError}
+                  dnd={{
+                    armed: armedId === it.id,
+                    dragging: dragId === it.id,
+                    over: over?.id === it.id ? over.pos : null,
+                    onArm: () => setArmedId(it.id),
+                    onDisarm: () => setArmedId(null),
+                    onDragStart: () => setDragId(it.id),
+                    onDragEnd: () => {
+                      setDragId(null);
+                      setOver(null);
+                      setArmedId(null);
+                    },
+                    onDragOver: (e: React.DragEvent) => {
+                      if (!dragId || dragId === it.id) return;
+                      e.preventDefault();
+                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      const pos = e.clientY < r.top + r.height / 2 ? "antes" : "depois";
+                      setOver((cur) =>
+                        cur?.id === it.id && cur.pos === pos ? cur : { id: it.id, pos }
+                      );
+                    },
+                    onDrop: (e: React.DragEvent) => {
+                      e.preventDefault();
+                      soltar(it.id);
+                    },
+                  }}
+                />
               ))}
             </tbody>
           </table>
@@ -252,6 +336,18 @@ function ListaItens({
     </div>
   );
 }
+
+type DndProps = {
+  armed: boolean;
+  dragging: boolean;
+  over: "antes" | "depois" | null;
+  onArm: () => void;
+  onDisarm: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+};
 
 function SecaoHeader({
   grupoId,
@@ -326,10 +422,12 @@ function ItemRow({
   item,
   catalogo,
   onError,
+  dnd,
 }: {
   item: GrupoItem;
   catalogo: CatalogItem[];
   onError: (s: string | null) => void;
+  dnd: DndProps;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -339,15 +437,13 @@ function ItemRow({
   const displayCode = item.item_codigo;
 
   const persistLink = (newId: string | null) => {
-    if (newId === item.item_id) return;
+    if (newId === item.item_id || !newId) return;
     onError(null);
     startTransition(async () => {
-      // Se ligar a um item do cadastro, atualiza também o texto pro nome do catálogo
-      let patch: { item_id: string | null; texto?: string } = { item_id: newId };
-      if (newId) {
-        const found = catalogo.find((c) => c.id === newId);
-        if (found) patch.texto = found.nome;
-      }
+      // Ao vincular, atualiza também o texto pro nome do catálogo
+      const patch: { item_id: string; texto?: string } = { item_id: newId };
+      const found = catalogo.find((c) => c.id === newId);
+      if (found) patch.texto = found.nome;
       const res = await updateItemDoGrupoAction(item.id, patch);
       if (res.error) onError(res.error);
       else router.refresh();
@@ -363,83 +459,72 @@ function ItemRow({
     });
   };
 
-  const mover = (direcao: "cima" | "baixo") => {
-    startTransition(async () => {
-      const res = await moverItemAction(item.id, direcao);
-      if (res.error) onError(res.error);
-      else router.refresh();
-    });
-  };
-
-  // Se item não está linkado ao catálogo, mostra modo "vincular"
-  if (!item.item_id) {
-    return (
-      <tr className="border-b border-zinc-100 bg-amber-50/30 last:border-0">
-        <td className="px-2 py-1.5 text-right text-xs text-zinc-400">{item.ordem}</td>
-        <td className="px-2 py-1.5 text-xs text-amber-700">sem cadastro</td>
-        <td className="px-2 py-1.5">
-          <div className="mb-1 text-sm">{item.texto}</div>
-          <ItemDropdown
-            catalogo={catalogo}
-            value={null}
-            onChange={persistLink}
-            placeholder="Vincular ao item do cadastro..."
-          />
-        </td>
-        <td className="px-2 py-1.5">
-          <AcoesItem mover={mover} remover={remover} isPending={isPending} />
-        </td>
-      </tr>
-    );
-  }
+  // Feedback visual: linha arrastada fica translúcida; alvo ganha borda azul
+  const rowClass = [
+    "border-b border-zinc-100 last:border-0",
+    item.item_id ? "" : "bg-amber-50/30",
+    dnd.dragging ? "opacity-40" : "",
+    dnd.over === "antes" ? "border-t-2 border-t-blue-500" : "",
+    dnd.over === "depois" ? "border-b-2 border-b-blue-500" : "",
+  ].join(" ");
 
   return (
-    <tr className="border-b border-zinc-100 last:border-0">
+    <tr
+      className={rowClass}
+      draggable={dnd.armed}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        dnd.onDragStart();
+      }}
+      onDragEnd={dnd.onDragEnd}
+      onDragOver={dnd.onDragOver}
+      onDrop={dnd.onDrop}
+    >
       <td className="px-2 py-1.5 text-right text-xs text-zinc-400">{item.ordem}</td>
-      <td className="px-2 py-1.5 font-mono text-xs">
-        {displayCode ?? <span className="text-amber-600">—</span>}
-      </td>
-      <td className="px-2 py-1.5">{displayName}</td>
+      {item.item_id ? (
+        <>
+          <td className="px-2 py-1.5 font-mono text-xs">
+            {displayCode ?? <span className="text-amber-600">—</span>}
+          </td>
+          <td className="px-2 py-1.5">{displayName}</td>
+        </>
+      ) : (
+        <>
+          <td className="px-2 py-1.5 text-xs text-amber-700">sem cadastro</td>
+          <td className="px-2 py-1.5">
+            <div className="mb-1 text-sm">{item.texto}</div>
+            <ItemDropdown
+              catalogo={catalogo}
+              value={null}
+              onChange={persistLink}
+              placeholder="Vincular ao item do cadastro..."
+            />
+          </td>
+        </>
+      )}
       <td className="px-2 py-1.5">
-        <AcoesItem mover={mover} remover={remover} isPending={isPending} />
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={remover}
+            disabled={isPending}
+            className="text-xs text-red-600 hover:underline disabled:opacity-50"
+          >
+            Remover
+          </button>
+          {/* Alça de arrastar: segura aqui e arrasta pra cima/baixo ou pra outra seção */}
+          <span
+            onMouseDown={dnd.onArm}
+            onMouseUp={dnd.onDisarm}
+            title="Segure e arraste pra mover (funciona entre seções)"
+            className="cursor-grab select-none rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 active:cursor-grabbing"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M2 4.5h12M2 8h12M2 11.5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </span>
+        </div>
       </td>
     </tr>
-  );
-}
-
-function AcoesItem({
-  mover,
-  remover,
-  isPending,
-}: {
-  mover: (d: "cima" | "baixo") => void;
-  remover: () => void;
-  isPending: boolean;
-}) {
-  return (
-    <div className="flex gap-2">
-      <button
-        onClick={() => mover("cima")}
-        disabled={isPending}
-        className="text-xs text-zinc-600 hover:underline disabled:opacity-50"
-      >
-        ↑
-      </button>
-      <button
-        onClick={() => mover("baixo")}
-        disabled={isPending}
-        className="text-xs text-zinc-600 hover:underline disabled:opacity-50"
-      >
-        ↓
-      </button>
-      <button
-        onClick={remover}
-        disabled={isPending}
-        className="text-xs text-red-600 hover:underline disabled:opacity-50"
-      >
-        Remover
-      </button>
-    </div>
   );
 }
 
@@ -489,20 +574,6 @@ function ItemDropdown({
       />
       {open && filtered.length > 0 && (
         <div className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-md border border-zinc-200 bg-white shadow-lg">
-          {value && (
-            <button
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setQuery("");
-                setOpen(false);
-                onChange(null);
-              }}
-              className="block w-full px-3 py-1.5 text-left text-xs italic text-zinc-500 hover:bg-zinc-50"
-            >
-              — desvincular —
-            </button>
-          )}
           {filtered.map((c) => (
             <button
               key={c.id}

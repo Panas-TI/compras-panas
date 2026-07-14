@@ -137,7 +137,14 @@ export async function updateItemDoGrupoAction(
     dirty.texto = v;
   }
   if (patch.secao !== undefined) dirty.secao = patch.secao?.trim() || null;
-  if (patch.item_id !== undefined) dirty.item_id = patch.item_id || null;
+  if (patch.item_id !== undefined) {
+    // Desvincular é proibido — linha sem item do cadastro vira órfã e quebra
+    // contagem/solicitação. Pra tirar a linha, use "Remover".
+    if (!patch.item_id) {
+      return { error: "Todo item do grupo precisa estar vinculado ao cadastro. Pra tirar a linha, use 'Remover'." };
+    }
+    dirty.item_id = patch.item_id;
+  }
   if (patch.ordem !== undefined) dirty.ordem = patch.ordem;
 
   const { error, data } = await supabase
@@ -162,6 +169,36 @@ export async function removerItemDoGrupoAction(id: string): Promise<{ error?: st
   const { error } = await supabase.from("template_itens").delete().eq("id", id);
   if (error) return { error: error.message };
   if (data) revalidatePath(`/itens/grupos/${data.template_id}`);
+  return {};
+}
+
+// Reordenação em lote (drag & drop): recebe só as linhas que mudaram de
+// posição/seção e persiste. Duas fases pra não colidir com unique de ordem.
+export async function reordenarItensAction(
+  template_id: string,
+  mudancas: { id: string; ordem: number; secao: string | null }[]
+): Promise<{ error?: string }> {
+  if (!mudancas.length) return {};
+  const supabase = await createClient();
+  // fase 1: ordens temporárias fora do range real
+  for (const m of mudancas) {
+    const { error } = await supabase
+      .from("template_itens")
+      .update({ ordem: -100000 - m.ordem })
+      .eq("id", m.id)
+      .eq("template_id", template_id);
+    if (error) return { error: error.message };
+  }
+  // fase 2: valores finais
+  for (const m of mudancas) {
+    const { error } = await supabase
+      .from("template_itens")
+      .update({ ordem: m.ordem, secao: m.secao?.trim() || null })
+      .eq("id", m.id)
+      .eq("template_id", template_id);
+    if (error) return { error: error.message };
+  }
+  revalidatePath(`/itens/grupos/${template_id}`);
   return {};
 }
 
