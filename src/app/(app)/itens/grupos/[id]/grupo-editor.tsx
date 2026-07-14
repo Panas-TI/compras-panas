@@ -59,6 +59,92 @@ export function GrupoEditor({
       <AdicionarItem grupoId={grupoId} catalogo={catalogo} onError={setError} />
 
       <ListaItens grupoId={grupoId} itens={itensIniciais} catalogo={catalogo} onError={setError} />
+
+      <NovaSecao grupoId={grupoId} catalogo={catalogo} onError={setError} />
+    </div>
+  );
+}
+
+function NovaSecao({
+  grupoId,
+  catalogo,
+  onError,
+}: {
+  grupoId: string;
+  catalogo: CatalogItem[];
+  onError: (s: string | null) => void;
+}) {
+  const router = useRouter();
+  const [aberto, setAberto] = useState(false);
+  const [nome, setNome] = useState("");
+  const [itemId, setItemId] = useState<string | null>(null);
+  const [pickerKey, setPickerKey] = useState(0);
+  const [isPending, startTransition] = useTransition();
+
+  const criar = () => {
+    onError(null);
+    if (!nome.trim()) return onError("Dê um nome pra nova seção.");
+    if (!itemId) return onError("Escolha o primeiro item da seção.");
+    startTransition(async () => {
+      const res = await addItemAoGrupoAction(grupoId, itemId, nome.trim());
+      if (res.error) onError(res.error);
+      else {
+        setNome("");
+        setItemId(null);
+        setAberto(false);
+        setPickerKey((k) => k + 1);
+        router.refresh();
+      }
+    });
+  };
+
+  if (!aberto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAberto(true)}
+        className="self-start rounded-md border border-dashed border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50"
+      >
+        + Nova seção
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-zinc-200 bg-white p-3">
+      <h2 className="mb-2 text-sm font-semibold">Nova seção</h2>
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="flex w-64 flex-col gap-1">
+          <Label className="text-xs">Nome da seção</Label>
+          <Input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Ex: ITENS CONGELADOS"
+            autoFocus
+          />
+        </div>
+        <div className="flex flex-1 min-w-[260px] flex-col gap-1">
+          <Label className="text-xs">Primeiro item da seção</Label>
+          <ItemDropdown key={pickerKey} catalogo={catalogo} value={itemId} onChange={setItemId} />
+        </div>
+        <Button onClick={criar} disabled={isPending || !nome.trim() || !itemId}>
+          {isPending ? "..." : "Criar seção"}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setAberto(false);
+            setNome("");
+            setItemId(null);
+          }}
+        >
+          Cancelar
+        </Button>
+      </div>
+      <p className="mt-2 text-xs text-zinc-500">
+        A seção é criada junto com esse primeiro item. Depois é só usar &quot;+ Adicionar item nesta
+        seção&quot; ou arrastar mais itens pra ela.
+      </p>
     </div>
   );
 }
