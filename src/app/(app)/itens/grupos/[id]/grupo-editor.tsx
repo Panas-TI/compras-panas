@@ -442,37 +442,46 @@ function ListaItens({
 
   return (
     <div className="flex flex-col gap-3">
-      {grupos.map((g, gi) => (
-        <div key={gi} className="overflow-hidden rounded-md border border-zinc-200 bg-white">
+      {grupos.map((g, gi) => {
+        const isDragThis = g.secao != null && dragSecao === g.secao;
+        const overThis = g.secao != null && overSecao?.secao === g.secao ? overSecao.pos : null;
+        return (
+          <div
+            key={gi}
+            className={[
+              "overflow-hidden rounded-md border border-zinc-200 bg-white",
+              isDragThis ? "opacity-40" : "",
+              overThis === "antes" ? "border-t-2 border-t-blue-600" : "",
+              overThis === "depois" ? "border-b-2 border-b-blue-600" : "",
+            ].join(" ")}
+            // Soltar a SEÇÃO em qualquer lugar do bloco (cabeçalho OU itens)
+            onDragOver={(e) => {
+              if (dragSecao === null || g.secao == null || dragSecao === g.secao) return;
+              e.preventDefault();
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const pos = e.clientY < r.top + r.height / 2 ? "antes" : "depois";
+              setOverSecao((cur) =>
+                cur?.secao === g.secao && cur.pos === pos
+                  ? cur
+                  : { secao: g.secao as string, pos }
+              );
+            }}
+            onDrop={(e) => {
+              if (dragSecao === null || g.secao == null) return;
+              e.preventDefault();
+              soltarSecao(g.secao as string);
+            }}
+          >
           {g.secao && (
             <SecaoHeader
               grupoId={grupoId}
               secao={g.secao}
               catalogo={catalogo}
               onError={onError}
-              secaoDnd={{
-                dragging: dragSecao === g.secao,
-                over: overSecao?.secao === g.secao ? overSecao.pos : null,
-                onDragStart: () => setDragSecao(g.secao),
-                onDragEnd: () => {
-                  setDragSecao(null);
-                  setOverSecao(null);
-                },
-                onDragOver: (e: React.DragEvent) => {
-                  if (dragSecao === null || dragSecao === g.secao) return;
-                  e.preventDefault();
-                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  const pos = e.clientY < r.top + r.height / 2 ? "antes" : "depois";
-                  setOverSecao((cur) =>
-                    cur?.secao === g.secao && cur.pos === pos
-                      ? cur
-                      : { secao: g.secao as string, pos }
-                  );
-                },
-                onDrop: (e: React.DragEvent) => {
-                  e.preventDefault();
-                  soltarSecao(g.secao as string);
-                },
+              onDragStartSecao={() => setDragSecao(g.secao)}
+              onDragEndSecao={() => {
+                setDragSecao(null);
+                setOverSecao(null);
               }}
             />
           )}
@@ -522,8 +531,9 @@ function ListaItens({
               ))}
             </tbody>
           </table>
-        </div>
-      ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -540,27 +550,20 @@ type DndProps = {
   onDrop: (e: React.DragEvent) => void;
 };
 
-type SecaoDndProps = {
-  dragging: boolean;
-  over: "antes" | "depois" | null;
-  onDragStart: () => void;
-  onDragEnd: () => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent) => void;
-};
-
 function SecaoHeader({
   grupoId,
   secao,
   catalogo,
   onError,
-  secaoDnd,
+  onDragStartSecao,
+  onDragEndSecao,
 }: {
   grupoId: string;
   secao: string;
   catalogo: CatalogItem[];
   onError: (s: string | null) => void;
-  secaoDnd: SecaoDndProps;
+  onDragStartSecao: () => void;
+  onDragEndSecao: () => void;
 }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
@@ -584,27 +587,18 @@ function SecaoHeader({
     });
   };
 
-  const headerClass = [
-    "border-b border-zinc-200 bg-zinc-50 px-3 py-2",
-    secaoDnd.dragging ? "opacity-40" : "",
-    secaoDnd.over === "antes" ? "border-t-2 border-t-blue-600" : "",
-    secaoDnd.over === "depois" ? "border-b-2 border-b-blue-600" : "",
-  ].join(" ");
-
   return (
     <div
-      className={headerClass}
+      className="border-b border-zinc-200 bg-zinc-50 px-3 py-2"
       draggable={armed}
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
-        secaoDnd.onDragStart();
+        onDragStartSecao();
       }}
       onDragEnd={() => {
         setArmed(false);
-        secaoDnd.onDragEnd();
+        onDragEndSecao();
       }}
-      onDragOver={secaoDnd.onDragOver}
-      onDrop={secaoDnd.onDrop}
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-2">
