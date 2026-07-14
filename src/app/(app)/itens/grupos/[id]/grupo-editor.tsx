@@ -340,6 +340,51 @@ function ListaItens({
     });
   };
 
+  // Drag de SEÇÕES inteiras (bloco): reordena todos os itens da seção junto
+  const [dragSecao, setDragSecao] = useState<string | null>(null);
+  const [overSecao, setOverSecao] = useState<{ secao: string; pos: "antes" | "depois" } | null>(null);
+
+  const soltarSecao = (targetSecao: string) => {
+    if (dragSecao === null || !overSecao || dragSecao === targetSecao) return;
+    // monta os blocos na ordem atual
+    const blocos: { secao: string | null; itens: GrupoItem[] }[] = [];
+    for (const it of lista) {
+      const last = blocos[blocos.length - 1];
+      if (!last || last.secao !== it.secao) blocos.push({ secao: it.secao, itens: [it] });
+      else last.itens.push(it);
+    }
+    const di = blocos.findIndex((b) => b.secao === dragSecao);
+    if (di < 0) return;
+    const [movido] = blocos.splice(di, 1);
+    let ti = blocos.findIndex((b) => b.secao === targetSecao);
+    if (ti < 0) return;
+    if (overSecao.pos === "depois") ti += 1;
+    blocos.splice(ti, 0, movido);
+
+    const anterior = lista;
+    const novo = blocos.flatMap((b) => b.itens).map((l, i) => ({ ...l, ordem: i + 1 }));
+    setLista(novo);
+    setDragSecao(null);
+    setOverSecao(null);
+
+    const mudancas = novo
+      .filter((n) => {
+        const o = anterior.find((x) => x.id === n.id);
+        return !o || o.ordem !== n.ordem;
+      })
+      .map((n) => ({ id: n.id, ordem: n.ordem, secao: n.secao }));
+    onError(null);
+    startTransition(async () => {
+      const res = await reordenarItensAction(grupoId, mudancas);
+      if (res.error) {
+        setLista(anterior);
+        onError(res.error);
+      } else {
+        router.refresh();
+      }
+    });
+  };
+
   if (lista.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-10 text-center text-sm text-zinc-500">
@@ -369,6 +414,30 @@ function ListaItens({
               secao={g.secao}
               catalogo={catalogo}
               onError={onError}
+              secaoDnd={{
+                dragging: dragSecao === g.secao,
+                over: overSecao?.secao === g.secao ? overSecao.pos : null,
+                onDragStart: () => setDragSecao(g.secao),
+                onDragEnd: () => {
+                  setDragSecao(null);
+                  setOverSecao(null);
+                },
+                onDragOver: (e: React.DragEvent) => {
+                  if (dragSecao === null || dragSecao === g.secao) return;
+                  e.preventDefault();
+                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  const pos = e.clientY < r.top + r.height / 2 ? "antes" : "depois";
+                  setOverSecao((cur) =>
+                    cur?.secao === g.secao && cur.pos === pos
+                      ? cur
+                      : { secao: g.secao as string, pos }
+                  );
+                },
+                onDrop: (e: React.DragEvent) => {
+                  e.preventDefault();
+                  soltarSecao(g.secao as string);
+                },
+              }}
             />
           )}
           <table className="w-full text-sm">
@@ -435,22 +504,34 @@ type DndProps = {
   onDrop: (e: React.DragEvent) => void;
 };
 
+type SecaoDndProps = {
+  dragging: boolean;
+  over: "antes" | "depois" | null;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+};
+
 function SecaoHeader({
   grupoId,
   secao,
   catalogo,
   onError,
+  secaoDnd,
 }: {
   grupoId: string;
   secao: string;
   catalogo: CatalogItem[];
   onError: (s: string | null) => void;
+  secaoDnd: SecaoDndProps;
 }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [itemId, setItemId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [pickerKey, setPickerKey] = useState(0);
+  const [armed, setArmed] = useState(false);
 
   const adicionar = () => {
     if (!itemId) return;
@@ -467,10 +548,43 @@ function SecaoHeader({
     });
   };
 
+  const headerClass = [
+    "border-b border-zinc-200 bg-zinc-50 px-3 py-2",
+    secaoDnd.dragging ? "opacity-40" : "",
+    secaoDnd.over === "antes" ? "border-t-2 border-t-blue-600" : "",
+    secaoDnd.over === "depois" ? "border-b-2 border-b-blue-600" : "",
+  ].join(" ");
+
   return (
-    <div className="border-b border-zinc-200 bg-zinc-50 px-3 py-2">
+    <div
+      className={headerClass}
+      draggable={armed}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        secaoDnd.onDragStart();
+      }}
+      onDragEnd={() => {
+        setArmed(false);
+        secaoDnd.onDragEnd();
+      }}
+      onDragOver={secaoDnd.onDragOver}
+      onDrop={secaoDnd.onDrop}
+    >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-zinc-800">{secao}</span>
+        <span className="flex items-center gap-2">
+          {/* Alça pra arrastar a SEÇÃO INTEIRA de lugar */}
+          <span
+            onMouseDown={() => setArmed(true)}
+            onMouseUp={() => setArmed(false)}
+            title="Segure e arraste pra mover a seção inteira"
+            className="cursor-grab select-none rounded p-0.5 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600 active:cursor-grabbing"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M2 4.5h12M2 8h12M2 11.5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className="text-sm font-semibold text-zinc-800">{secao}</span>
+        </span>
         <button
           type="button"
           onClick={() => setAberto((v) => !v)}
