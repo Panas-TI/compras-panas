@@ -21,12 +21,17 @@ const MRP_SUB: NavItem[] = [
   { href: "/mrp/relatorios", label: "Relatórios MRP" },
 ];
 
-// Itens do módulo Estoque (MRP é um sub-grupo)
-const ESTOQUE_ITEMS: NavItem[] = [
-  { href: "/estoque", label: "Início" },
+// Movimentação: fluxo semanal de estoque (dropdown)
+const MOVIMENTACAO_SUB: NavItem[] = [
   { href: "/solicitacoes", label: "Solicitações" },
   { href: "/recebimento", label: "Recebimento" },
   { href: "/contagem", label: "Contagem" },
+];
+
+// Itens do módulo Estoque (Movimentação e MRP são sub-grupos)
+const ESTOQUE_ITEMS: NavItem[] = [
+  { href: "/estoque", label: "Início" },
+  { href: "/solicitacoes", label: "Movimentação", subItems: MOVIMENTACAO_SUB },
   { href: "/itens", label: "Itens" },
   { href: "/mrp", label: "MRP", subItems: MRP_SUB },
   { href: "/cadastros", label: "Cadastros" },
@@ -45,7 +50,13 @@ const ENTREGAS_ITEMS: NavItem[] = [
 
 const APROVADOR_ONLY = new Set(["/usuarios"]);
 const ESTOQUISTA_ALLOWED = new Set(["/estoque", "/recebimento", "/contagem"]);
-const MRP_BLOQUEADOS_PRO = new Set<Role>(["estoquista"]);
+
+// Uma rota (item de topo ou sub-item) é visível pra este papel?
+function podeVerRota(href: string, role: Role): boolean {
+  if (role === "estoquista") return ESTOQUISTA_ALLOWED.has(href);
+  if (role !== "aprovador" && APROVADOR_ONLY.has(href)) return false;
+  return true;
+}
 
 function detectModulo(path: string): "hub" | "estoque" | "entregas" | "motorista" {
   if (path === "/") return "hub";
@@ -65,14 +76,15 @@ function ItemComDropdown({
   role: Role;
 }) {
   const [aberto, setAberto] = useState(false);
-  // Item ativo se a rota atual está dentro dele
-  const ativo = path === item.href || path.startsWith(item.href + "/");
 
-  const subItensVisiveis = (item.subItems ?? []).filter(() => {
-    // Estoquista não vê MRP — mas vai filtrar no nível do item pai também
-    if (MRP_BLOQUEADOS_PRO.has(role)) return false;
-    return true;
-  });
+  // Só os sub-itens que este papel pode ver
+  const subItensVisiveis = (item.subItems ?? []).filter((s) => podeVerRota(s.href, role));
+  // Clicar no topo leva ao 1º sub acessível (ex: estoquista cai em Recebimento)
+  const hrefTopo = subItensVisiveis[0]?.href ?? item.href;
+  // Item ativo se a rota atual está em qualquer sub-item
+  const ativo = subItensVisiveis.some(
+    (s) => path === s.href || path.startsWith(s.href + "/")
+  );
 
   return (
     <div
@@ -81,7 +93,7 @@ function ItemComDropdown({
       onMouseLeave={() => setAberto(false)}
     >
       <Link
-        href={item.href}
+        href={hrefTopo}
         onClick={() => setAberto(false)}
         onFocus={() => setAberto(true)}
         className={cn(
@@ -173,17 +185,11 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
   // Estoque ou Entregas (admin/aprovador navegando)
   const allItems = modulo === "entregas" ? ENTREGAS_ITEMS : ESTOQUE_ITEMS;
 
-  let visible: NavItem[] =
-    role === "estoquista"
-      ? allItems.filter((i) => ESTOQUISTA_ALLOWED.has(i.href))
-      : role === "aprovador"
-        ? allItems
-        : allItems.filter((i) => !APROVADOR_ONLY.has(i.href));
-
-  // Estoquista nunca vê MRP
-  if (role === "estoquista") {
-    visible = visible.filter((i) => i.href !== "/mrp");
-  }
+  // Item de topo aparece se ele próprio é acessível OU tem algum sub acessível
+  const visible: NavItem[] = allItems.filter((i) => {
+    if (podeVerRota(i.href, role)) return true;
+    return (i.subItems ?? []).some((s) => podeVerRota(s.href, role));
+  });
 
   const moduloLabel = modulo === "entregas" ? "🚚 Entregas" : "📦 Estoque";
 
