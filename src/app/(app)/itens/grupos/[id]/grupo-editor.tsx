@@ -292,6 +292,42 @@ function ListaItens({
   const [lista, setLista] = useState(itens);
   useEffect(() => setLista(itens), [itens]);
 
+  // Auto-scroll durante o arraste: o drag nativo não rola a página sozinho.
+  // Quando o cursor chega perto do topo/fundo da janela, rola nessa direção.
+  useEffect(() => {
+    let vel = 0;
+    let raf: number | null = null;
+    const MARGEM = 90; // px da borda que ativa o scroll
+    const step = () => {
+      if (vel !== 0) {
+        window.scrollBy(0, vel);
+        raf = requestAnimationFrame(step);
+      } else {
+        raf = null;
+      }
+    };
+    const onDragOver = (e: DragEvent) => {
+      const vh = window.innerHeight;
+      const y = e.clientY;
+      if (y < MARGEM) vel = -Math.ceil((MARGEM - y) / 5) - 4;
+      else if (y > vh - MARGEM) vel = Math.ceil((y - (vh - MARGEM)) / 5) + 4;
+      else vel = 0;
+      if (vel !== 0 && raf == null) raf = requestAnimationFrame(step);
+    };
+    const stop = () => {
+      vel = 0;
+    };
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", stop);
+    window.addEventListener("dragend", stop);
+    return () => {
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", stop);
+      window.removeEventListener("dragend", stop);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   // Estado do drag: qual item está "armado" (mouse na alça), qual está sendo
   // arrastado e sobre qual linha o cursor está (antes/depois)
   const [armedId, setArmedId] = useState<string | null>(null);
