@@ -79,8 +79,6 @@ function ItemComDropdown({
 
   // Só os sub-itens que este papel pode ver
   const subItensVisiveis = (item.subItems ?? []).filter((s) => podeVerRota(s.href, role));
-  // Clicar no topo leva ao 1º sub acessível (ex: estoquista cai em Recebimento)
-  const hrefTopo = subItensVisiveis[0]?.href ?? item.href;
   // Item ativo se a rota atual está em qualquer sub-item
   const ativo = subItensVisiveis.some(
     (s) => path === s.href || path.startsWith(s.href + "/")
@@ -92,10 +90,10 @@ function ItemComDropdown({
       onMouseEnter={() => setAberto(true)}
       onMouseLeave={() => setAberto(false)}
     >
-      <Link
-        href={hrefTopo}
-        onClick={() => setAberto(false)}
-        onFocus={() => setAberto(true)}
+      {/* Clicar abre/fecha o menu (não navega direto) — mostra as opções */}
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
         className={cn(
           "rounded-md px-3 py-1.5 text-sm font-medium transition-colors inline-flex items-center gap-1",
           ativo ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:bg-zinc-50"
@@ -103,7 +101,7 @@ function ItemComDropdown({
       >
         {item.label}
         <span className="text-[10px] text-zinc-500">▾</span>
-      </Link>
+      </button>
       {aberto && subItensVisiveis.length > 0 && (
         <div className="absolute left-0 top-full z-50 w-56 pt-1">
           <div className="rounded-md border border-zinc-200 bg-white py-1 shadow-lg">
