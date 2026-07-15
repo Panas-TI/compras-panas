@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { roleLabel } from "@/lib/role-label";
 import { logoutAction } from "@/app/login/actions";
@@ -76,6 +76,7 @@ function ItemComDropdown({
   role: Role;
 }) {
   const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   // Só os sub-itens que este papel pode ver
   const subItensVisiveis = (item.subItems ?? []).filter((s) => podeVerRota(s.href, role));
@@ -84,12 +85,18 @@ function ItemComDropdown({
     (s) => path === s.href || path.startsWith(s.href + "/")
   );
 
+  // Fecha ao clicar fora do menu
+  useEffect(() => {
+    if (!aberto) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [aberto]);
+
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setAberto(true)}
-      onMouseLeave={() => setAberto(false)}
-    >
+    <div className="relative" ref={ref}>
       {/* Clicar abre/fecha o menu (não navega direto) — mostra as opções */}
       <button
         type="button"
