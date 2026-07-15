@@ -17,11 +17,12 @@ type Corrida = {
   entregador: string;
   endereco: string;
   km: number | null; // null = não localizado
+  aprox?: boolean; // km aproximado (achou só a rua, sem o número)
 };
 
 type Fase = "idle" | "processando" | "pronto";
 
-type CacheEntry = { km: number } | { falha: true };
+type CacheEntry = { km: number; aprox?: boolean } | { falha: true };
 
 function lerCache(): Record<string, CacheEntry> {
   try {
@@ -45,27 +46,88 @@ function normalizar(end: string): string {
   return end.replace(/\s+/g, " ").trim().toUpperCase();
 }
 
-async function geocodificar(endereco: string): Promise<{ lat: number; lon: number } | null> {
-  // Cascata: endereço completo → só rua+número (corta complemento após o nº)
-  const tentativas = [endereco];
-  const m = endereco.match(/^(.+?\d+)\s+.+$/);
-  if (m) tentativas.push(m[1]);
+// Expande abreviações que o Queóps usa mas o OpenStreetMap não entende
+const ABREV: Array<[RegExp, string]> = [
+  [/^R\.?\s+/i, "Rua "],
+  [/^AV\.?\s+/i, "Avenida "],
+  [/^TRAV\.?\s+/i, "Travessa "],
+  [/\bCEL\.?\s+/gi, "Coronel "],
+  [/\bALM\.?\s+/gi, "Almirante "],
+  [/\bDR\.?\s+/gi, "Doutor "],
+  [/\bDRA\.?\s+/gi, "Doutora "],
+  [/\bPROF\.?\s+/gi, "Professor "],
+  [/\bMAL\.?\s+/gi, "Marechal "],
+  [/\bSEN\.?\s+/gi, "Senador "],
+  [/\bPRES\.?\s+/gi, "Presidente "],
+  [/\bGEN\.?\s+/gi, "General "],
+  [/\bCAP\.?\s+/gi, "Capitão "],
+  [/\bENG\.?\s+/gi, "Engenheiro "],
+];
+// Palavras que poluem o nome da rua (vieram do cadastro do pedido)
+const RUIDO = /\b(GALERIA|EDIF[IÍ]CIO|PR[EÉ]DIO|CONDOM[IÍ]NIO|COND|ESQUINA|ESQ|FUNDOS|LOJA|SALA|BLOCO)\b\.?/gi;
+
+function expandir(end: string): string {
+  let s = end.replace(/\s+/g, " ").trim();
+  for (const [re, sub] of ABREV) s = s.replace(re, sub);
+  s = s.replace(RUIDO, " ").replace(/\s+/g, " ").trim();
+  // "AVENIDA AV. BENJAMIN" → remove duplicação
+  s = s.replace(/\b(Rua|Avenida|Travessa)\s+(Rua|Avenida|Travessa)\b/gi, "$1");
+  return s;
+}
+
+// "Attílio" → "Atílio": colapsa consoantes dobradas que não existem em PT
+// (preserva RR e SS, que são legítimas)
+function colapsarDobradas(s: string): string {
+  return s.replace(/([bcdfghjklmnpqtvwxz])\1/gi, "$1");
+}
+
+async function buscaNominatim(q: string): Promise<{ lat: number; lon: number } | null> {
+  const url =
+    "https://nominatim.openstreetmap.org/search?" +
+    new URLSearchParams({
+      q: `${q}, Porto Alegre, RS, Brazil`,
+      format: "json",
+      limit: "1",
+      countrycodes: "br",
+    });
+  try {
+    const resp = await fetch(url);
+    const d = (await resp.json()) as Array<{ lat: string; lon: string }>;
+    if (d.length > 0) return { lat: Number(d[0].lat), lon: Number(d[0].lon) };
+  } catch {
+    // falha de rede — trata como não encontrado
+  }
+  return null;
+}
+
+async function geocodificar(
+  endereco: string
+): Promise<{ lat: number; lon: number; aprox: boolean } | null> {
+  const limpo = expandir(endereco);
+  const m = limpo.match(/^(.+?)\s+(\d+)/);
+  const rua = m ? m[1] : null;
+  const num = m && m[2] !== "0" ? m[2] : null; // nº 0 não existe — vira busca só por rua
+
+  // Cascata: mais preciso → mais aproximado
+  const tentativas: Array<{ q: string; aprox: boolean }> = [];
+  if (rua && num) {
+    tentativas.push({ q: `${rua} ${num}`, aprox: false });
+    tentativas.push({ q: `${colapsarDobradas(rua)} ${num}`, aprox: false });
+  }
+  if (rua) {
+    tentativas.push({ q: rua, aprox: true });
+    tentativas.push({ q: colapsarDobradas(rua), aprox: true });
+  }
+  if (!rua) tentativas.push({ q: limpo, aprox: false });
+
+  // dedup mantendo a ordem
+  const vistas = new Set<string>();
   for (const t of tentativas) {
-    const url =
-      "https://nominatim.openstreetmap.org/search?" +
-      new URLSearchParams({
-        q: `${t}, Porto Alegre, RS, Brazil`,
-        format: "json",
-        limit: "1",
-        countrycodes: "br",
-      });
-    try {
-      const resp = await fetch(url);
-      const d = (await resp.json()) as Array<{ lat: string; lon: string }>;
-      if (d.length > 0) return { lat: Number(d[0].lat), lon: Number(d[0].lon) };
-    } catch {
-      // tenta a próxima
-    }
+    const k = t.q.toUpperCase();
+    if (vistas.has(k)) continue;
+    vistas.add(k);
+    const r = await buscaNominatim(t.q);
+    if (r) return { ...r, aprox: t.aprox };
     await dorme(1100); // rate limit Nominatim: 1 req/s
   }
   return null;
@@ -133,6 +195,10 @@ export function MotoboyClient() {
 
       // 3. Km por endereço único (cache no navegador acelera as próximas semanas)
       const cache = lerCache();
+      // Falhas antigas tentam de novo (a busca melhora com o tempo)
+      for (const k of Object.keys(cache)) {
+        if ("falha" in cache[k]) delete cache[k];
+      }
       const unicos = Array.from(new Set(brutas.map((b) => normalizar(b.endereco))));
       const novos = unicos.filter((e) => !cache[e]);
       setProgresso({ feito: 0, total: novos.length });
@@ -143,7 +209,7 @@ export function MotoboyClient() {
         const coords = await geocodificar(end);
         if (coords) {
           const km = await rotaKm(coords);
-          cache[end] = km != null ? { km } : { falha: true };
+          cache[end] = km != null ? { km, aprox: coords.aprox || undefined } : { falha: true };
         } else {
           cache[end] = { falha: true };
         }
@@ -156,7 +222,11 @@ export function MotoboyClient() {
       // 4. Monta o resultado
       const resultado: Corrida[] = brutas.map((b) => {
         const entry = cache[normalizar(b.endereco)];
-        return { ...b, km: entry && "km" in entry ? entry.km : null };
+        return {
+          ...b,
+          km: entry && "km" in entry ? entry.km : null,
+          aprox: entry && "km" in entry ? entry.aprox : undefined,
+        };
       });
       setCorridas(resultado);
       setFase("pronto");
@@ -189,7 +259,9 @@ export function MotoboyClient() {
           c.pedido,
           c.dataHora,
           `"${c.endereco.replace(/"/g, "'")}"`,
-          c.km != null ? c.km.toFixed(2).replace(".", ",") : "NÃO LOCALIZADO",
+          c.km != null
+            ? (c.aprox ? "≈" : "") + c.km.toFixed(2).replace(".", ",")
+            : "NÃO LOCALIZADO",
         ].join(";")
       ),
     ];
@@ -312,7 +384,10 @@ export function MotoboyClient() {
                         <td className="px-3 py-1.5">{c.endereco}</td>
                         <td className="px-3 py-1.5 text-right tabular-nums">
                           {c.km != null ? (
-                            c.km.toFixed(2)
+                            <span title={c.aprox ? "Aproximado: achou a rua mas não o número exato" : undefined}>
+                              {c.aprox ? "≈ " : ""}
+                              {c.km.toFixed(2)}
+                            </span>
                           ) : (
                             <span className="text-amber-600" title="Endereço não localizado no mapa">
                               —
