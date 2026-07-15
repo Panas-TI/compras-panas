@@ -45,6 +45,7 @@ const ENTREGAS_ITEMS: NavItem[] = [
   { href: "/entregas/dia", label: "Dia" },
   { href: "/entregas/novo", label: "Novo" },
   { href: "/entregas/mapa", label: "Mapa" },
+  { href: "/entregas/motoboy", label: "Motoboy" },
   { href: "/entregas/relatorios", label: "Relatórios" },
 ];
 

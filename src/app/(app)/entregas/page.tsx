@@ -54,6 +54,18 @@ export default function EntregasHomePage() {
             </Card>
           </Link>
 
+          <Link href="/entregas/motoboy" className="group">
+            <Card className="h-full transition-shadow group-hover:shadow-md">
+              <CardHeader>
+                <CardTitle className="text-base">🏍 Motoboy</CardTitle>
+                <CardDescription>
+                  Anexa o relatório do Queóps e calcula o km real de cada corrida (auditoria da
+                  cobrança da Beloli).
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
           <Link href="/entregas/relatorios" className="group">
             <Card className="h-full transition-shadow group-hover:shadow-md">
               <CardHeader>
