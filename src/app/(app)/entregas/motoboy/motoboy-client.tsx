@@ -9,7 +9,7 @@ const SEDE = { lat: -30.0071306, lon: -51.1894901 };
 // Grupos do relatório que NÃO são corrida de motoboy
 const GRUPOS_IGNORADOS = new Set(["BALCÃO", "BALCAO", "CONSUMO INTERNO"]);
 // Cache de geocodificação+rota no navegador (endereços repetem toda semana)
-const CACHE_KEY = "motoboy-km-cache-v1";
+const CACHE_KEY = "motoboy-km-cache-v2"; // v2: geocode com abreviações/aprox
 
 type Corrida = {
   pedido: string;
@@ -26,7 +26,14 @@ type CacheEntry = { km: number; aprox?: boolean } | { falha: true };
 
 function lerCache(): Record<string, CacheEntry> {
   try {
-    return JSON.parse(localStorage.getItem(CACHE_KEY) ?? "{}");
+    const raw = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "{}");
+    if (!raw || typeof raw !== "object") return {};
+    // Descarta entries corrompidos (null, não-objeto) pra não quebrar depois
+    const limpo: Record<string, CacheEntry> = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (v && typeof v === "object") limpo[k] = v as CacheEntry;
+    }
+    return limpo;
   } catch {
     return {};
   }
@@ -156,7 +163,8 @@ export function MotoboyClient() {
   const processar = async (file: File) => {
     setErro(null);
     setFase("processando");
-    setCorridas([]);
+    // NÃO limpa os resultados atuais — só substitui quando o novo terminar
+    // (evita a tela "sumir" durante o processamento).
     try {
       // 1. Parse do .xls no navegador
       setStatus("Lendo o arquivo...");
@@ -195,10 +203,6 @@ export function MotoboyClient() {
 
       // 3. Km por endereço único (cache no navegador acelera as próximas semanas)
       const cache = lerCache();
-      // Falhas antigas tentam de novo (a busca melhora com o tempo)
-      for (const k of Object.keys(cache)) {
-        if ("falha" in cache[k]) delete cache[k];
-      }
       const unicos = Array.from(new Set(brutas.map((b) => normalizar(b.endereco))));
       const novos = unicos.filter((e) => !cache[e]);
       setProgresso({ feito: 0, total: novos.length });
@@ -232,8 +236,14 @@ export function MotoboyClient() {
       setFase("pronto");
       setStatus("");
     } catch (e) {
-      setErro(e instanceof Error ? e.message : String(e));
-      setFase("idle");
+      console.error("Motoboy: falha ao processar", e);
+      setErro(
+        "Não consegui processar esse arquivo: " +
+          (e instanceof Error ? e.message : String(e)) +
+          ". Confere se é o Relatório de Entregas do Queóps (.xls)."
+      );
+      // Mantém os resultados anteriores na tela se já havia algum
+      setFase((f) => (corridas.length > 0 ? "pronto" : "idle"));
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
