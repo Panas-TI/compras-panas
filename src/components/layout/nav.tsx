@@ -204,7 +204,9 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
         <Link href="/" className="text-sm font-semibold" title="Voltar ao hub">
           {moduloLabel}
         </Link>
-        <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
+        {/* SEM overflow-x-auto: ele cortava os dropdowns (Movimentação/MRP),
+            que abrem pra fora da barra. Com o menu agrupado, cabe na tela. */}
+        <nav className="flex flex-1 flex-wrap items-center gap-1">
           {visible.map((item) => {
             if (item.subItems && item.subItems.length > 0) {
               return (
