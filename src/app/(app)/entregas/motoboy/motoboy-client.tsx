@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -10,6 +10,7 @@ const SEDE = { lat: -30.0071306, lon: -51.1894901 };
 const GRUPOS_IGNORADOS = new Set(["BALCÃO", "BALCAO", "CONSUMO INTERNO"]);
 // Cache de geocodificação+rota no navegador (endereços repetem toda semana)
 const CACHE_KEY = "motoboy-km-cache-v2"; // v2: geocode com abreviações/aprox
+const RESULTADO_KEY = "motoboy-ultimo-resultado-v1"; // último resultado processado
 
 type Corrida = {
   pedido: string;
@@ -159,6 +160,24 @@ export function MotoboyClient() {
   const [progresso, setProgresso] = useState({ feito: 0, total: 0 });
   const [corridas, setCorridas] = useState<Corrida[]>([]);
   const [erro, setErro] = useState<string | null>(null);
+  const [importadoEm, setImportadoEm] = useState<string | null>(null);
+
+  // Ao abrir a página, recupera o último resultado processado (persiste
+  // entre navegações — não precisa reanexar toda vez que voltar aqui).
+  useEffect(() => {
+    try {
+      const salvo = localStorage.getItem(RESULTADO_KEY);
+      if (!salvo) return;
+      const d = JSON.parse(salvo) as { corridas: Corrida[]; em: string };
+      if (Array.isArray(d.corridas) && d.corridas.length > 0) {
+        setCorridas(d.corridas);
+        setImportadoEm(d.em);
+        setFase("pronto");
+      }
+    } catch {
+      // resultado salvo corrompido — ignora
+    }
+  }, []);
 
   const processar = async (file: File) => {
     setErro(null);
@@ -233,8 +252,16 @@ export function MotoboyClient() {
         };
       });
       setCorridas(resultado);
+      const agora = new Date().toLocaleString("pt-BR");
+      setImportadoEm(agora);
       setFase("pronto");
       setStatus("");
+      // Persiste o resultado pra continuar disponível ao voltar na página
+      try {
+        localStorage.setItem(RESULTADO_KEY, JSON.stringify({ corridas: resultado, em: agora }));
+      } catch {
+        // storage cheio — segue sem persistir
+      }
     } catch (e) {
       console.error("Motoboy: falha ao processar", e);
       setErro(
@@ -315,9 +342,26 @@ export function MotoboyClient() {
             </div>
           )}
           {fase === "pronto" && (
-            <Button variant="outline" onClick={exportCsv}>
-              ⬇ Exportar CSV
-            </Button>
+            <>
+              <Button variant="outline" onClick={exportCsv}>
+                ⬇ Exportar CSV
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (!confirm("Limpar o resultado atual?")) return;
+                  localStorage.removeItem(RESULTADO_KEY);
+                  setCorridas([]);
+                  setImportadoEm(null);
+                  setFase("idle");
+                }}
+              >
+                Limpar
+              </Button>
+              {importadoEm && (
+                <span className="text-xs text-zinc-400">Importado em {importadoEm}</span>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
