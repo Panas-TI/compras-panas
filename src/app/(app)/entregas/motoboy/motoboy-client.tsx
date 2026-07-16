@@ -241,15 +241,20 @@ async function ruaCanonica(ruaBusca: string): Promise<RuaCanonica | null> {
 // ---------- FASE B: números prediais das ruas (Overpass em lote) ----------
 type NumPredial = [numero: number, lat: number, lon: number];
 
-async function numerosDasRuas(nomes: string[]): Promise<Record<string, NumPredial[]>> {
+async function numerosDasRuas(
+  nomes: string[],
+  onLote?: (feito: number, total: number) => void
+): Promise<Record<string, NumPredial[]>> {
   const out: Record<string, NumPredial[]> = {};
   for (const n of nomes) out[n] = [];
+  const totalLotes = Math.ceil(nomes.length / 20);
   for (let i = 0; i < nomes.length; i += 20) {
+    onLote?.(i / 20, totalLotes);
     const lote = nomes.slice(i, i + 20);
     const uniao = lote
       .map((n) => n.replace(/[\\"]/g, "").replace(/[.*+?^${}()|[\]]/g, "\\$&"))
       .join("|");
-    const q = `[out:json][timeout:50];
+    const q = `[out:json][timeout:25];
 (node["addr:housenumber"]["addr:street"~"^(${uniao})$"](-30.32,-51.35,-29.90,-51.00);
  way["addr:housenumber"]["addr:street"~"^(${uniao})$"](-30.32,-51.35,-29.90,-51.00););
 out center 4000;`;
@@ -266,18 +271,22 @@ out center 4000;`;
       "https://overpass.kumi.systems/api/interpreter",
     ]) {
       try {
+        // Timeout de 20s por servidor — se engasgar, não trava a fase inteira
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 20000);
         const resp = await fetch(host, {
           method: "POST",
           body: new URLSearchParams({ data: q }),
+          signal: ctrl.signal,
         });
+        clearTimeout(t);
         if (resp.ok) {
           d = await resp.json();
           break;
         }
       } catch {
-        // tenta o espelho
+        // timeout ou rede — tenta o espelho, depois segue (rua fica ≈)
       }
-      await dorme(3000);
     }
     for (const el of d?.elements ?? []) {
       const rua = el.tags?.["addr:street"] ?? "";
@@ -286,7 +295,7 @@ out center 4000;`;
       const lon = el.lon ?? el.center?.lon;
       if (rua in out && num > 0 && lat != null && lon != null) out[rua].push([num, lat, lon]);
     }
-    await dorme(2000);
+    await dorme(1000);
   }
   return out;
 }
@@ -485,9 +494,13 @@ export function MotoboyClient() {
               .map((a) => canonPorBusca[a.rua]!.nome)
           )
         );
-        setStatus(`Fase 2/3 — números prediais de ${nomesCanon.length} ruas (em lotes)...`);
-        setProgresso({ feito: 0, total: 0 });
-        const numsPorRua = nomesCanon.length ? await numerosDasRuas(nomesCanon) : {};
+        setProgresso({ feito: 0, total: Math.ceil(nomesCanon.length / 20) });
+        const numsPorRua = nomesCanon.length
+          ? await numerosDasRuas(nomesCanon, (feito, total) => {
+              setStatus(`Fase 2/3 — números prediais (lote ${feito + 1}/${total})...`);
+              setProgresso({ feito, total });
+            })
+          : {};
 
         // FASE C: posição do número + rota
         let fc = 0;
