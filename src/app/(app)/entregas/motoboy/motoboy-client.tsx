@@ -446,7 +446,7 @@ export function MotoboyClient() {
               }
             }
           }
-          if (g && g !== "sem_chave_valida") {
+          if (g) {
             const km = await rotaKm({ lat: g.lat, lon: g.lon });
             cache[end] =
               km != null
