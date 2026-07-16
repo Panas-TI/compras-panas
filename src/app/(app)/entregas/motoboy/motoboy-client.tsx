@@ -3,13 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { geocodificarCnefe } from "./cnefe";
 
-// Sede: Av. Benjamin Constant, 1235 - São João, Porto Alegre
-const SEDE = { lat: -30.0071306, lon: -51.1894901 };
+// Sede: Av. Benjamin Constant, 1235 - São João, Porto Alegre.
+// Coordenada oficial do IBGE (CNEFE) desse endereço exato — mesma fonte dos
+// destinos, pra o km ficar internamente consistente.
+const SEDE = { lat: -30.012387, lon: -51.194219 };
 // Grupos do relatório que NÃO são corrida de motoboy
 const GRUPOS_IGNORADOS = new Set(["BALCÃO", "BALCAO", "CONSUMO INTERNO"]);
 // Cache de geocodificação+rota no navegador (endereços repetem toda semana)
-const CACHE_KEY = "motoboy-km-cache-v4"; // v4: Google primário + OSM reserva
+const CACHE_KEY = "motoboy-km-cache-v5"; // v5: CNEFE/IBGE primário
 const RESULTADO_KEY = "motoboy-ultimo-resultado-v1"; // último resultado processado
 const GOOGLE_KEY_LS = "motoboy-google-key"; // chave da API Google (opcional)
 
@@ -86,7 +89,7 @@ const ABREV: Record<string, string> = {
   VISC: "VISCONDE",
 };
 const TYPOS: Record<string, string> = {
-  BEIJAMIN: "BENJAMIN", BENJAMIM: "BENJAMIN", ADDA: "ADA", CAIRÚ: "CAIRU",
+  BEIJAMIN: "BENJAMIN", BENJAMIM: "BENJAMIN", CAIRÚ: "CAIRU",
 };
 const POLUICAO = new Set([
   "GALERIA", "COND", "CONDOMINIO", "CONDOMÍNIO", "EDIF", "ED", "PREDIO", "PRÉDIO",
@@ -469,7 +472,35 @@ export function MotoboyClient() {
         }
       }
 
-      // ===== CAMINHO 2: OpenStreetMap (gratuito) — o que sobrou =====
+      // ===== CAMINHO 2: CNEFE / IBGE (base oficial, precisão de porta) =====
+      // Fonte principal quando não há chave Google. Instantâneo e gratuito.
+      const paraCnefe = unicos.filter((e) => !cache[e]);
+      if (paraCnefe.length > 0) {
+        let fc0 = 0;
+        for (const end of paraCnefe) {
+          fc0++;
+          setStatus(`Calculando pela base do IBGE (${fc0}/${paraCnefe.length})...`);
+          setProgresso({ feito: fc0, total: paraCnefe.length });
+          const { rua, numero } = extrair(end);
+          let geo = null;
+          try {
+            geo = await geocodificarCnefe(rua, numero);
+          } catch {
+            geo = null; // erro na base → deixa o OSM tentar depois
+          }
+          if (geo) {
+            const km = await rotaKm({ lat: geo.lat, lon: geo.lon });
+            if (km != null) {
+              cache[end] = { km, aprox: geo.aprox || undefined, resolvido: geo.resolvido };
+              salvarCache(cache);
+            }
+            await dorme(200); // gentileza com o OSRM
+          }
+          // sem geo → não grava nada; cai pro OSM (Caminho 3)
+        }
+      }
+
+      // ===== CAMINHO 3: OpenStreetMap (gratuito) — o que o IBGE não achou =====
       const restantes = unicos.filter((e) => !cache[e]);
       if (restantes.length > 0) {
         const alvosPend = restantes.map((end) => ({ end, ...extrair(end) }));
