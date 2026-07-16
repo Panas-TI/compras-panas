@@ -9,8 +9,19 @@ const SEDE = { lat: -30.0071306, lon: -51.1894901 };
 // Grupos do relatório que NÃO são corrida de motoboy
 const GRUPOS_IGNORADOS = new Set(["BALCÃO", "BALCAO", "CONSUMO INTERNO"]);
 // Cache de geocodificação+rota no navegador (endereços repetem toda semana)
-const CACHE_KEY = "motoboy-km-cache-v3"; // v3: Photon fuzzy + validação de rua
+const CACHE_KEY = "motoboy-km-cache-v4"; // v4: Google primário + OSM reserva
 const RESULTADO_KEY = "motoboy-ultimo-resultado-v1"; // último resultado processado
+const GOOGLE_KEY_LS = "motoboy-google-key"; // chave da API Google (opcional)
+
+function chaveGoogle(): string | null {
+  const env = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+  if (env) return env;
+  try {
+    return localStorage.getItem(GOOGLE_KEY_LS) || null;
+  } catch {
+    return null;
+  }
+}
 
 type Corrida = {
   pedido: string;
@@ -148,6 +159,48 @@ function dentroPoa(lat: number, lon: number): boolean {
 function ruaSemTipo(rua: string): string {
   const toks = rua.split(" ");
   return TIPOS_VIA.has(toks[0]) ? toks.slice(1).join(" ") : rua;
+}
+
+// ---------- GOOGLE (precisão de porta) — usado quando há chave ----------
+type GeoGoogle = { lat: number; lon: number; aprox: boolean; resolvido: string };
+
+async function geocodeGoogle(endereco: string, key: string): Promise<GeoGoogle | null | "sem_chave_valida"> {
+  const url =
+    "https://maps.googleapis.com/maps/api/geocode/json?" +
+    new URLSearchParams({
+      address: `${endereco}, Porto Alegre, RS, Brasil`,
+      components: "locality:Porto Alegre|country:BR",
+      key,
+    });
+  try {
+    const resp = await fetch(url);
+    const d = (await resp.json()) as {
+      status: string;
+      results?: Array<{
+        geometry: { location: { lat: number; lng: number }; location_type: string };
+        formatted_address: string;
+        partial_match?: boolean;
+      }>;
+    };
+    if (d.status === "REQUEST_DENIED" || d.status === "OVER_QUERY_LIMIT") return "sem_chave_valida";
+    const r = d.results?.[0];
+    if (d.status !== "OK" || !r) return null;
+    const { lat, lng } = r.geometry.location;
+    if (!dentroPoa(lat, lng)) return null;
+    // ROOFTOP = porta exata; RANGE_INTERPOLATED = interpolado na quadra (ótimo)
+    const tipo = r.geometry.location_type;
+    const exato = tipo === "ROOFTOP" || tipo === "RANGE_INTERPOLATED";
+    return {
+      lat,
+      lon: lng,
+      aprox: !exato,
+      resolvido:
+        r.formatted_address.split(" - ").slice(0, 2).join(" - ") +
+        ` — Google (${tipo === "ROOFTOP" ? "porta exata" : tipo === "RANGE_INTERPOLATED" ? "interpolado na quadra" : "aproximado"})`,
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ---------- FASE A: rua canônica (Photon, aceita erro de grafia) ----------
@@ -298,10 +351,13 @@ export function MotoboyClient() {
   const [corridas, setCorridas] = useState<Corrida[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [importadoEm, setImportadoEm] = useState<string | null>(null);
+  const [temChave, setTemChave] = useState(false);
+  const [keyDraft, setKeyDraft] = useState("");
 
   // Ao abrir a página, recupera o último resultado processado (persiste
   // entre navegações — não precisa reanexar toda vez que voltar aqui).
   useEffect(() => {
+    setTemChave(!!chaveGoogle());
     try {
       const salvo = localStorage.getItem(RESULTADO_KEY);
       if (!salvo) return;
@@ -362,8 +418,48 @@ export function MotoboyClient() {
       const unicos = Array.from(new Set(brutas.map((b) => normalizar(b.endereco))));
       const pendentes = unicos.filter((e) => !cache[e]);
 
-      if (pendentes.length > 0) {
-        const alvosPend = pendentes.map((end) => ({ end, ...extrair(end) }));
+      // ===== CAMINHO 1: Google (precisão de porta) — quando há chave =====
+      const key = chaveGoogle();
+      if (pendentes.length > 0 && key) {
+        let fg = 0;
+        for (const end of pendentes) {
+          fg++;
+          setStatus(`Calculando com Google (${fg}/${pendentes.length})...`);
+          setProgresso({ feito: fg, total: pendentes.length });
+          let g = await geocodeGoogle(end, key);
+          if (g === "sem_chave_valida") {
+            setErro(
+              "Chave do Google inválida ou sem cota — seguindo no modo gratuito (OpenStreetMap)."
+            );
+            break;
+          }
+          if (!g) {
+            // 2ª tentativa: endereço limpo (abreviações expandidas, sem complemento)
+            const ex = extrair(end);
+            if (ex.rua) {
+              const g2 = await geocodeGoogle(`${ex.rua}${ex.numero ? " " + ex.numero : ""}`, key);
+              if (g2 === "sem_chave_valida") break;
+              g = g2;
+            }
+          }
+          if (g && g !== "sem_chave_valida") {
+            const km = await rotaKm({ lat: g.lat, lon: g.lon });
+            cache[end] =
+              km != null
+                ? { km, aprox: g.aprox || undefined, resolvido: g.resolvido }
+                : { falha: true };
+          } else {
+            cache[end] = { falha: true };
+          }
+          salvarCache(cache);
+          await dorme(120);
+        }
+      }
+
+      // ===== CAMINHO 2: OpenStreetMap (gratuito) — o que sobrou =====
+      const restantes = unicos.filter((e) => !cache[e]);
+      if (restantes.length > 0) {
+        const alvosPend = restantes.map((end) => ({ end, ...extrair(end) }));
 
         // FASE A: localizar as ruas (Photon fuzzy, 1/s)
         const ruasBusca = Array.from(new Set(alvosPend.map((a) => a.rua).filter(Boolean)));
@@ -546,13 +642,54 @@ export function MotoboyClient() {
         </CardContent>
       </Card>
 
+      {/* Configuração da chave Google (precisão de porta) */}
+      <details className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600">
+        <summary className="cursor-pointer select-none font-medium">
+          ⚙ Precisão máxima {temChave ? "— chave Google configurada ✓" : "(configurar chave Google — opcional)"}
+        </summary>
+        <div className="mt-2 flex flex-col gap-2">
+          <p>
+            Com uma chave da API do Google Maps, o km é calculado com <strong>precisão de porta</strong>{" "}
+            em praticamente todos os endereços (e o processamento cai pra ~2 min). Sem chave, usa o
+            OpenStreetMap gratuito (precisão de rua/quadra). A chave fica salva só neste navegador.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="password"
+              value={keyDraft}
+              onChange={(e) => setKeyDraft(e.target.value)}
+              placeholder="Cole a chave da API aqui (AIza...)"
+              className="h-8 w-72 rounded border border-zinc-300 px-2"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const k = keyDraft.trim();
+                try {
+                  if (k) localStorage.setItem(GOOGLE_KEY_LS, k);
+                  else localStorage.removeItem(GOOGLE_KEY_LS);
+                } catch {
+                  // storage indisponível
+                }
+                setTemChave(!!chaveGoogle());
+                setKeyDraft("");
+                localStorage.removeItem(CACHE_KEY); // recalcula com a fonte nova
+              }}
+            >
+              {keyDraft.trim() ? "Salvar chave" : temChave ? "Remover chave" : "Salvar"}
+            </Button>
+          </div>
+        </div>
+      </details>
+
       {erro && (
         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {erro}
         </div>
       )}
 
-      {fase === "processando" && progresso.total > 20 && (
+      {fase === "processando" && progresso.total > 20 && !temChave && (
         <p className="text-xs text-zinc-500">
           Endereços novos levam ~1s cada (limite do serviço gratuito de mapas). Endereços já
           vistos em relatórios anteriores ficam guardados e saem na hora.
