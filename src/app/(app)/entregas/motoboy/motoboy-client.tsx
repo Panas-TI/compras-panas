@@ -426,7 +426,7 @@ export function MotoboyClient() {
           fg++;
           setStatus(`Calculando com Google (${fg}/${pendentes.length})...`);
           setProgresso({ feito: fg, total: pendentes.length });
-          let g = await geocodeGoogle(end, key);
+          let g: GeoGoogle | null | "sem_chave_valida" = await geocodeGoogle(end, key);
           if (g === "sem_chave_valida") {
             setErro(
               "Chave do Google inválida ou sem cota — seguindo no modo gratuito (OpenStreetMap)."
@@ -437,9 +437,13 @@ export function MotoboyClient() {
             // 2ª tentativa: endereço limpo (abreviações expandidas, sem complemento)
             const ex = extrair(end);
             if (ex.rua) {
-              const g2 = await geocodeGoogle(`${ex.rua}${ex.numero ? " " + ex.numero : ""}`, key);
-              if (g2 === "sem_chave_valida") break;
-              g = g2;
+              g = await geocodeGoogle(`${ex.rua}${ex.numero ? " " + ex.numero : ""}`, key);
+              if (g === "sem_chave_valida") {
+                setErro(
+                  "Chave do Google inválida ou sem cota — seguindo no modo gratuito (OpenStreetMap)."
+                );
+                break;
+              }
             }
           }
           if (g && g !== "sem_chave_valida") {
