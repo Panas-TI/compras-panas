@@ -41,7 +41,7 @@ export default async function MotoboyPage() {
           interno são ignorados automaticamente.
         </p>
       </div>
-      <MotoboyClient inicial={inicial} />
+      <MotoboyClient inicial={inicial} usuario={user.email ?? null} />
     </div>
   );
 }

@@ -4,9 +4,31 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { geocodificarCnefe } from "./cnefe";
-import { salvarRelatorioMotoboy } from "./actions";
+import { createClient } from "@/lib/supabase/client";
 
 type Inicial = { corridas: Corrida[]; em: string; por: string | null } | null;
+
+// Salva o resultado no banco pra qualquer pessoa/computador ver (via cliente
+// do navegador — a sessão do usuário autentica o INSERT na RLS).
+async function salvarRelatorio(
+  corridas: Corrida[],
+  usuario: string | null
+): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    const sb = createClient();
+    const kmTotal = corridas.reduce((s, c) => s + (c.km ?? 0), 0);
+    const { error } = await sb.from("motoboy_relatorios").insert({
+      importado_por: usuario,
+      n_corridas: corridas.length,
+      km_total: Number(kmTotal.toFixed(2)),
+      corridas,
+    });
+    if (error) return { ok: false, erro: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : String(e) };
+  }
+}
 
 // Sede: Av. Benjamin Constant, 1235 - São João, Porto Alegre.
 // Coordenada oficial do IBGE (CNEFE) desse endereço exato — mesma fonte dos
@@ -281,7 +303,7 @@ async function rotaKm(dest: { lat: number; lon: number }): Promise<number | null
   return null; // falhou de verdade → NÃO é "endereço inexistente", é rota pendente
 }
 
-export function MotoboyClient({ inicial }: { inicial: Inicial }) {
+export function MotoboyClient({ inicial, usuario }: { inicial: Inicial; usuario: string | null }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [fase, setFase] = useState<Fase>(inicial ? "pronto" : "idle");
   const [status, setStatus] = useState("");
@@ -446,10 +468,10 @@ export function MotoboyClient({ inicial }: { inicial: Inicial }) {
       setStatus("");
       // Salva no banco pra QUALQUER pessoa/computador ver a última importação
       setStatus("Salvando pra todos...");
-      const r = await salvarRelatorioMotoboy(resultado);
+      const r = await salvarRelatorio(resultado, usuario);
       setStatus("");
       if (r.ok) {
-        setImportadoPor("você");
+        setImportadoPor(usuario ?? "você");
       } else {
         setErro(
           "O resultado apareceu aqui, mas não consegui salvar pra outras pessoas verem: " +
