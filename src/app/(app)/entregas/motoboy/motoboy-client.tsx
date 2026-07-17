@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { geocodificarCnefe } from "./cnefe";
+import { salvarRelatorioMotoboy } from "./actions";
+
+type Inicial = { corridas: Corrida[]; em: string; por: string | null } | null;
 
 // Sede: Av. Benjamin Constant, 1235 - São João, Porto Alegre.
 // Coordenada oficial do IBGE (CNEFE) desse endereço exato — mesma fonte dos
@@ -13,7 +16,6 @@ const SEDE = { lat: -30.012387, lon: -51.194219 };
 const GRUPOS_IGNORADOS = new Set(["BALCÃO", "BALCAO", "CONSUMO INTERNO"]);
 // Cache de geocodificação+rota no navegador (endereços repetem toda semana)
 const CACHE_KEY = "motoboy-km-cache-v6"; // v6: localizar e rotear separados
-const RESULTADO_KEY = "motoboy-ultimo-resultado-v1"; // último resultado processado
 const GOOGLE_KEY_LS = "motoboy-google-key"; // chave da API Google (opcional)
 
 function chaveGoogle(): string | null {
@@ -26,7 +28,7 @@ function chaveGoogle(): string | null {
   }
 }
 
-type Corrida = {
+export type Corrida = {
   pedido: string;
   dataHora: string;
   entregador: string;
@@ -279,33 +281,20 @@ async function rotaKm(dest: { lat: number; lon: number }): Promise<number | null
   return null; // falhou de verdade → NÃO é "endereço inexistente", é rota pendente
 }
 
-export function MotoboyClient() {
+export function MotoboyClient({ inicial }: { inicial: Inicial }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [fase, setFase] = useState<Fase>("idle");
+  const [fase, setFase] = useState<Fase>(inicial ? "pronto" : "idle");
   const [status, setStatus] = useState("");
   const [progresso, setProgresso] = useState({ feito: 0, total: 0 });
-  const [corridas, setCorridas] = useState<Corrida[]>([]);
+  const [corridas, setCorridas] = useState<Corrida[]>(inicial?.corridas ?? []);
   const [erro, setErro] = useState<string | null>(null);
-  const [importadoEm, setImportadoEm] = useState<string | null>(null);
+  const [importadoEm, setImportadoEm] = useState<string | null>(inicial?.em ?? null);
+  const [importadoPor, setImportadoPor] = useState<string | null>(inicial?.por ?? null);
   const [temChave, setTemChave] = useState(false);
   const [keyDraft, setKeyDraft] = useState("");
 
-  // Ao abrir a página, recupera o último resultado processado (persiste
-  // entre navegações — não precisa reanexar toda vez que voltar aqui).
   useEffect(() => {
     setTemChave(!!chaveGoogle());
-    try {
-      const salvo = localStorage.getItem(RESULTADO_KEY);
-      if (!salvo) return;
-      const d = JSON.parse(salvo) as { corridas: Corrida[]; em: string };
-      if (Array.isArray(d.corridas) && d.corridas.length > 0) {
-        setCorridas(d.corridas);
-        setImportadoEm(d.em);
-        setFase("pronto");
-      }
-    } catch {
-      // resultado salvo corrompido — ignora
-    }
   }, []);
 
   const processar = async (file: File) => {
@@ -455,11 +444,18 @@ export function MotoboyClient() {
       setImportadoEm(agora);
       setFase("pronto");
       setStatus("");
-      // Persiste o resultado pra continuar disponível ao voltar na página
-      try {
-        localStorage.setItem(RESULTADO_KEY, JSON.stringify({ corridas: resultado, em: agora }));
-      } catch {
-        // storage cheio — segue sem persistir
+      // Salva no banco pra QUALQUER pessoa/computador ver a última importação
+      setStatus("Salvando pra todos...");
+      const r = await salvarRelatorioMotoboy(resultado);
+      setStatus("");
+      if (r.ok) {
+        setImportadoPor("você");
+      } else {
+        setErro(
+          "O resultado apareceu aqui, mas não consegui salvar pra outras pessoas verem: " +
+            r.erro +
+            ". Tente anexar de novo."
+        );
       }
     } catch (e) {
       console.error("Motoboy: falha ao processar", e);
@@ -549,20 +545,11 @@ export function MotoboyClient() {
               <Button variant="outline" onClick={exportCsv}>
                 ⬇ Exportar CSV
               </Button>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  if (!confirm("Limpar o resultado atual?")) return;
-                  localStorage.removeItem(RESULTADO_KEY);
-                  setCorridas([]);
-                  setImportadoEm(null);
-                  setFase("idle");
-                }}
-              >
-                Limpar
-              </Button>
               {importadoEm && (
-                <span className="text-xs text-zinc-400">Importado em {importadoEm}</span>
+                <span className="text-xs text-zinc-400">
+                  Importado {importadoPor ? `por ${importadoPor} ` : ""}em {importadoEm} · visível
+                  pra todos
+                </span>
               )}
             </>
           )}

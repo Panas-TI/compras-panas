@@ -190,6 +190,27 @@ export type Database = {
           },
         ]
       }
+      enderecos_poa: {
+        Row: {
+          lat: number
+          lon: number
+          numero: number
+          rua: string
+        }
+        Insert: {
+          lat: number
+          lon: number
+          numero: number
+          rua: string
+        }
+        Update: {
+          lat?: number
+          lon?: number
+          numero?: number
+          rua?: string
+        }
+        Relationships: []
+      }
       entrega_log: {
         Row: {
           acao: string
@@ -607,6 +628,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      motoboy_relatorios: {
+        Row: {
+          corridas: Json
+          id: string
+          importado_em: string
+          importado_por: string | null
+          km_total: number | null
+          n_corridas: number | null
+        }
+        Insert: {
+          corridas: Json
+          id?: string
+          importado_em?: string
+          importado_por?: string | null
+          km_total?: number | null
+          n_corridas?: number | null
+        }
+        Update: {
+          corridas?: Json
+          id?: string
+          importado_em?: string
+          importado_por?: string | null
+          km_total?: number | null
+          n_corridas?: number | null
+        }
+        Relationships: []
       }
       produto: {
         Row: {
@@ -1326,3 +1374,4 @@ export const Constants = {
     },
   },
 } as const
+

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { MotoboyClient } from "./motoboy-client";
+import { MotoboyClient, type Corrida } from "./motoboy-client";
 
 export default async function MotoboyPage() {
   const supabase = await createClient();
@@ -15,6 +15,21 @@ export default async function MotoboyPage() {
     .maybeSingle();
   if (!profile?.role || !["aprovador", "comprador"].includes(profile.role)) redirect("/");
 
+  // Última importação salva no banco — assim qualquer pessoa/computador vê
+  const { data: ultimo } = await supabase
+    .from("motoboy_relatorios")
+    .select("corridas, importado_em, importado_por")
+    .order("importado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const inicial = ultimo
+    ? {
+        corridas: (ultimo.corridas as unknown as Corrida[]) ?? [],
+        em: new Date(ultimo.importado_em).toLocaleString("pt-BR"),
+        por: ultimo.importado_por ?? null,
+      }
+    : null;
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -26,7 +41,7 @@ export default async function MotoboyPage() {
           interno são ignorados automaticamente.
         </p>
       </div>
-      <MotoboyClient />
+      <MotoboyClient inicial={inicial} />
     </div>
   );
 }
