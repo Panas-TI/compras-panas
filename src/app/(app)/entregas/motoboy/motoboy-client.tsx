@@ -12,7 +12,7 @@ const SEDE = { lat: -30.012387, lon: -51.194219 };
 // Grupos do relatório que NÃO são corrida de motoboy
 const GRUPOS_IGNORADOS = new Set(["BALCÃO", "BALCAO", "CONSUMO INTERNO"]);
 // Cache de geocodificação+rota no navegador (endereços repetem toda semana)
-const CACHE_KEY = "motoboy-km-cache-v5"; // v5: CNEFE/IBGE primário
+const CACHE_KEY = "motoboy-km-cache-v6"; // v6: localizar e rotear separados
 const RESULTADO_KEY = "motoboy-ultimo-resultado-v1"; // último resultado processado
 const GOOGLE_KEY_LS = "motoboy-google-key"; // chave da API Google (opcional)
 
@@ -31,14 +31,23 @@ type Corrida = {
   dataHora: string;
   entregador: string;
   endereco: string;
-  km: number | null; // null = endereço não existe no mapa
+  km: number | null; // null = sem km (ver motivo)
   aprox?: boolean; // km aproximado (achou só a rua, sem o número)
   resolvido?: string; // endereço que o mapa efetivamente usou (auditoria)
+  motivo?: "semrua" | "semrota"; // por que ficou sem km
 };
 
 type Fase = "idle" | "processando" | "pronto";
 
-type CacheEntry = { km: number; aprox?: boolean; resolvido?: string } | { falha: true };
+// Estados no cache:
+//  - {km}        rota calculada (completo)
+//  - {lat,lon}   endereço localizado, mas a rota ainda não foi calculada
+//                (falha temporária do OSRM) — será tentado de novo
+//  - {semRua}    a rua não foi encontrada em nenhuma fonte (erro de digitação)
+type CacheEntry =
+  | { km: number; aprox?: boolean; resolvido?: string }
+  | { lat: number; lon: number; aprox?: boolean; resolvido?: string }
+  | { semRua: true };
 
 function lerCache(): Record<string, CacheEntry> {
   try {
@@ -241,118 +250,33 @@ async function ruaCanonica(ruaBusca: string): Promise<RuaCanonica | null> {
   return null;
 }
 
-// ---------- FASE B: números prediais das ruas (Overpass em lote) ----------
-type NumPredial = [numero: number, lat: number, lon: number];
-
-async function numerosDasRuas(
-  nomes: string[],
-  onLote?: (feito: number, total: number) => void
-): Promise<Record<string, NumPredial[]>> {
-  const out: Record<string, NumPredial[]> = {};
-  for (const n of nomes) out[n] = [];
-  const totalLotes = Math.ceil(nomes.length / 20);
-  for (let i = 0; i < nomes.length; i += 20) {
-    onLote?.(i / 20, totalLotes);
-    const lote = nomes.slice(i, i + 20);
-    const uniao = lote
-      .map((n) => n.replace(/[\\"]/g, "").replace(/[.*+?^${}()|[\]]/g, "\\$&"))
-      .join("|");
-    const q = `[out:json][timeout:25];
-(node["addr:housenumber"]["addr:street"~"^(${uniao})$"](-30.32,-51.35,-29.90,-51.00);
- way["addr:housenumber"]["addr:street"~"^(${uniao})$"](-30.32,-51.35,-29.90,-51.00););
-out center 4000;`;
-    let d: {
-      elements?: Array<{
-        tags?: Record<string, string>;
-        lat?: number;
-        lon?: number;
-        center?: { lat: number; lon: number };
-      }>;
-    } | null = null;
-    for (const host of [
-      "https://overpass-api.de/api/interpreter",
-      "https://overpass.kumi.systems/api/interpreter",
-    ]) {
-      try {
-        // Timeout de 20s por servidor — se engasgar, não trava a fase inteira
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 20000);
-        const resp = await fetch(host, {
-          method: "POST",
-          body: new URLSearchParams({ data: q }),
-          signal: ctrl.signal,
-        });
-        clearTimeout(t);
-        if (resp.ok) {
-          d = await resp.json();
-          break;
-        }
-      } catch {
-        // timeout ou rede — tenta o espelho, depois segue (rua fica ≈)
-      }
-    }
-    for (const el of d?.elements ?? []) {
-      const rua = el.tags?.["addr:street"] ?? "";
-      const num = parseInt((el.tags?.["addr:housenumber"] ?? "").replace(/\D/g, ""), 10);
-      const lat = el.lat ?? el.center?.lat;
-      const lon = el.lon ?? el.center?.lon;
-      if (rua in out && num > 0 && lat != null && lon != null) out[rua].push([num, lat, lon]);
-    }
-    await dorme(1000);
-  }
-  return out;
-}
-
-// ---------- FASE C: posição do número (exato → interpolado → vizinho) ----------
-function distM(aLat: number, aLon: number, bLat: number, bLon: number): number {
-  const dLat = (aLat - bLat) * 111320;
-  const dLon = (aLon - bLon) * 111320 * Math.cos((aLat * Math.PI) / 180);
-  return Math.hypot(dLat, dLon);
-}
-
-type Posicao = { lat: number; lon: number; modo: string; aprox: boolean };
-
-function posicaoDoNumero(nums: NumPredial[], ancora: RuaCanonica, alvo: number): Posicao | null {
-  // Só números da MESMA rua física (perto do eixo) — mata homônimos de outras cidades
-  const perto = nums
-    .filter(([, la, lo]) => distM(la, lo, ancora.lat, ancora.lon) < 2500)
-    .sort((a, b) => a[0] - b[0]);
-  if (perto.length === 0) return null;
-  const exato = perto.find(([n]) => n === alvo);
-  if (exato) return { lat: exato[1], lon: exato[2], modo: "nº exato", aprox: false };
-  const menores = perto.filter(([n]) => n < alvo);
-  const maiores = perto.filter(([n]) => n > alvo);
-  if (menores.length && maiores.length) {
-    const a = menores[menores.length - 1];
-    const b = maiores[0];
-    const gap = b[0] - a[0];
-    if (gap <= 150 && distM(a[1], a[2], b[1], b[2]) <= 900) {
-      const f = (alvo - a[0]) / gap;
-      return {
-        lat: a[1] + f * (b[1] - a[1]),
-        lon: a[2] + f * (b[2] - a[2]),
-        modo: `interpolado entre nº ${a[0]} e ${b[0]}`,
-        aprox: true,
-      };
-    }
-  }
-  const viz = perto.reduce((m, p) => (Math.abs(p[0] - alvo) < Math.abs(m[0] - alvo) ? p : m));
-  if (Math.abs(viz[0] - alvo) <= 400) {
-    return { lat: viz[1], lon: viz[2], modo: `próximo ao nº ${viz[0]}`, aprox: true };
-  }
-  return null;
-}
+// ---------- Rota (OSRM) — km real de carro da sede até o destino ----------
+// O servidor gratuito do OSRM limita rajadas: várias tentativas + servidor
+// reserva, pra uma falha temporária NÃO virar "endereço não existe".
+const OSRM_HOSTS = [
+  "https://router.project-osrm.org",
+  "https://routing.openstreetmap.de/routed-car",
+];
 
 async function rotaKm(dest: { lat: number; lon: number }): Promise<number | null> {
-  const url = `https://router.project-osrm.org/route/v1/driving/${SEDE.lon},${SEDE.lat};${dest.lon},${dest.lat}?overview=false`;
-  try {
-    const resp = await fetch(url);
-    const d = await resp.json();
-    if (d.routes?.[0]?.distance != null) return d.routes[0].distance / 1000;
-  } catch {
-    // falha de rede
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    const host = OSRM_HOSTS[tentativa % OSRM_HOSTS.length];
+    const url = `${host}/route/v1/driving/${SEDE.lon},${SEDE.lat};${dest.lon},${dest.lat}?overview=false`;
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 12000);
+      const resp = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(t);
+      if (resp.ok) {
+        const d = await resp.json();
+        if (d.routes?.[0]?.distance != null) return d.routes[0].distance / 1000;
+      }
+    } catch {
+      // timeout/rede — tenta de novo (servidor alterna)
+    }
+    await dorme(600 * (tentativa + 1)); // recuo progressivo
   }
-  return null;
+  return null; // falhou de verdade → NÃO é "endereço inexistente", é rota pendente
 }
 
 export function MotoboyClient() {
@@ -428,151 +352,103 @@ export function MotoboyClient() {
       // 3. Km por endereço único (cache no navegador acelera as próximas semanas)
       const cache = lerCache();
       const unicos = Array.from(new Set(brutas.map((b) => normalizar(b.endereco))));
-      const pendentes = unicos.filter((e) => !cache[e]);
 
-      // ===== CAMINHO 1: Google (precisão de porta) — quando há chave =====
+      // ===== FASE 1 — LOCALIZAR o endereço (Google → IBGE → OpenStreetMap) =====
+      // Só descobre a coordenada. A rota fica pra Fase 2. Assim, uma falha de
+      // rota NUNCA vira "endereço não existe".
       const key = chaveGoogle();
-      if (pendentes.length > 0 && key) {
-        let fg = 0;
-        for (const end of pendentes) {
-          fg++;
-          setStatus(`Calculando com Google (${fg}/${pendentes.length})...`);
-          setProgresso({ feito: fg, total: pendentes.length });
-          let g: GeoGoogle | null | "sem_chave_valida" = await geocodeGoogle(end, key);
-          if (g === "sem_chave_valida") {
-            setErro(
-              "Chave do Google inválida ou sem cota — seguindo no modo gratuito (OpenStreetMap)."
-            );
-            break;
-          }
-          if (!g) {
-            // 2ª tentativa: endereço limpo (abreviações expandidas, sem complemento)
-            const ex = extrair(end);
-            if (ex.rua) {
-              g = await geocodeGoogle(`${ex.rua}${ex.numero ? " " + ex.numero : ""}`, key);
-              if (g === "sem_chave_valida") {
-                setErro(
-                  "Chave do Google inválida ou sem cota — seguindo no modo gratuito (OpenStreetMap)."
-                );
-                break;
-              }
-            }
-          }
-          if (g) {
-            const km = await rotaKm({ lat: g.lat, lon: g.lon });
-            cache[end] =
-              km != null
-                ? { km, aprox: g.aprox || undefined, resolvido: g.resolvido }
-                : { falha: true };
-          } else {
-            cache[end] = { falha: true };
-          }
-          salvarCache(cache);
-          await dorme(120);
-        }
-      }
+      let googleInvalido = false;
+      const paraLocalizar = unicos.filter((e) => !cache[e]);
+      let fl = 0;
+      for (const end of paraLocalizar) {
+        fl++;
+        setStatus(`Localizando endereços (${fl}/${paraLocalizar.length})...`);
+        setProgresso({ feito: fl, total: paraLocalizar.length });
+        const { rua, numero } = extrair(end);
+        let geo: { lat: number; lon: number; aprox: boolean; resolvido: string } | null = null;
 
-      // ===== CAMINHO 2: CNEFE / IBGE (base oficial, precisão de porta) =====
-      // Fonte principal quando não há chave Google. Instantâneo e gratuito.
-      const paraCnefe = unicos.filter((e) => !cache[e]);
-      if (paraCnefe.length > 0) {
-        let fc0 = 0;
-        for (const end of paraCnefe) {
-          fc0++;
-          setStatus(`Calculando pela base do IBGE (${fc0}/${paraCnefe.length})...`);
-          setProgresso({ feito: fc0, total: paraCnefe.length });
-          const { rua, numero } = extrair(end);
-          let geo = null;
+        // 1) Google (precisão de porta) — só se houver chave válida
+        if (key && !googleInvalido) {
+          let g = await geocodeGoogle(end, key);
+          if (g === "sem_chave_valida") {
+            googleInvalido = true;
+            setErro("Chave do Google inválida ou sem cota — seguindo pela base do IBGE.");
+          } else if (!g && rua) {
+            const g2 = await geocodeGoogle(`${rua}${numero ? " " + numero : ""}`, key);
+            if (g2 === "sem_chave_valida") googleInvalido = true;
+            else g = g2;
+          }
+          if (g && g !== "sem_chave_valida") geo = g;
+        }
+
+        // 2) IBGE / CNEFE (base oficial) — fonte principal
+        if (!geo) {
           try {
             geo = await geocodificarCnefe(rua, numero);
           } catch {
-            geo = null; // erro na base → deixa o OSM tentar depois
+            geo = null;
           }
-          if (geo) {
-            const km = await rotaKm({ lat: geo.lat, lon: geo.lon });
-            if (km != null) {
-              cache[end] = { km, aprox: geo.aprox || undefined, resolvido: geo.resolvido };
-              salvarCache(cache);
-            }
-            await dorme(200); // gentileza com o OSRM
-          }
-          // sem geo → não grava nada; cai pro OSM (Caminho 3)
         }
+
+        // 3) OpenStreetMap (reserva) — só a rua (≈), pros poucos que o IBGE não tem
+        if (!geo && rua) {
+          const canon = await ruaCanonica(rua);
+          if (canon) {
+            geo = {
+              lat: canon.lat,
+              lon: canon.lon,
+              aprox: true,
+              resolvido: `${canon.nome}${numero ? " " + numero : ""} — OpenStreetMap (rua)`,
+            };
+          }
+          await dorme(300);
+        }
+
+        cache[end] = geo
+          ? { lat: geo.lat, lon: geo.lon, aprox: geo.aprox || undefined, resolvido: geo.resolvido }
+          : { semRua: true };
+        salvarCache(cache);
       }
 
-      // ===== CAMINHO 3: OpenStreetMap (gratuito) — o que o IBGE não achou =====
-      const restantes = unicos.filter((e) => !cache[e]);
-      if (restantes.length > 0) {
-        const alvosPend = restantes.map((end) => ({ end, ...extrair(end) }));
-
-        // FASE A: localizar as ruas (Photon fuzzy, 1/s)
-        const ruasBusca = Array.from(new Set(alvosPend.map((a) => a.rua).filter(Boolean)));
-        const canonPorBusca: Record<string, RuaCanonica | null> = {};
-        let fa = 0;
-        for (const rb of ruasBusca) {
-          fa++;
-          setStatus(`Fase 1/3 — localizando ruas (${fa}/${ruasBusca.length})...`);
-          setProgresso({ feito: fa, total: ruasBusca.length });
-          canonPorBusca[rb] = await ruaCanonica(rb);
-          await dorme(1100);
-        }
-
-        // FASE B: números prediais das ruas (Overpass em lotes de 20)
-        const nomesCanon = Array.from(
-          new Set(
-            alvosPend
-              .filter((a) => a.numero && canonPorBusca[a.rua])
-              .map((a) => canonPorBusca[a.rua]!.nome)
-          )
-        );
-        setProgresso({ feito: 0, total: Math.ceil(nomesCanon.length / 20) });
-        const numsPorRua = nomesCanon.length
-          ? await numerosDasRuas(nomesCanon, (feito, total) => {
-              setStatus(`Fase 2/3 — números prediais (lote ${feito + 1}/${total})...`);
-              setProgresso({ feito, total });
-            })
-          : {};
-
-        // FASE C: posição do número + rota
-        let fc = 0;
-        for (const a of alvosPend) {
-          fc++;
-          setStatus(`Fase 3/3 — calculando rotas (${fc}/${alvosPend.length})...`);
-          setProgresso({ feito: fc, total: alvosPend.length });
-          const canon = a.rua ? canonPorBusca[a.rua] : null;
-          if (!canon) {
-            cache[a.end] = { falha: true };
-            salvarCache(cache);
-            continue;
-          }
-          let pos: Posicao | null = null;
-          if (a.numero) {
-            pos = posicaoDoNumero(numsPorRua[canon.nome] ?? [], canon, parseInt(a.numero, 10));
-          }
-          if (!pos) pos = { lat: canon.lat, lon: canon.lon, modo: "meio da rua", aprox: true };
-          const km = await rotaKm({ lat: pos.lat, lon: pos.lon });
-          cache[a.end] =
-            km != null
-              ? {
-                  km,
-                  aprox: pos.aprox || undefined,
-                  resolvido: `${canon.nome}${a.numero ? " " + a.numero : ""} — ${pos.modo}`,
-                }
-              : { falha: true };
+      // ===== FASE 2 — CALCULAR A ROTA (km real) dos que foram localizados =====
+      // Inclui os que ficaram pendentes de uma tentativa anterior (OSRM instável).
+      const paraRotear = unicos.filter((e) => {
+        const c = cache[e];
+        return !!c && "lat" in c; // tem coordenada, ainda sem km
+      });
+      let fr = 0;
+      for (const end of paraRotear) {
+        fr++;
+        setStatus(`Calculando rotas (${fr}/${paraRotear.length})...`);
+        setProgresso({ feito: fr, total: paraRotear.length });
+        const c = cache[end];
+        if (!c || !("lat" in c)) continue;
+        const km = await rotaKm({ lat: c.lat, lon: c.lon });
+        if (km != null) {
+          cache[end] = { km, aprox: c.aprox, resolvido: c.resolvido };
           salvarCache(cache);
-          await dorme(250); // gentileza com o OSRM
         }
+        // km == null → mantém {lat,lon}; será tentado de novo ao reprocessar
+        await dorme(350);
       }
 
       // 4. Monta o resultado
       const resultado: Corrida[] = brutas.map((b) => {
         const entry = cache[normalizar(b.endereco)];
-        return {
-          ...b,
-          km: entry && "km" in entry ? entry.km : null,
-          aprox: entry && "km" in entry ? entry.aprox : undefined,
-          resolvido: entry && "km" in entry ? entry.resolvido : undefined,
-        };
+        if (entry && "km" in entry) {
+          return { ...b, km: entry.km, aprox: entry.aprox, resolvido: entry.resolvido };
+        }
+        if (entry && "lat" in entry) {
+          // localizado, mas a rota não fechou (servidor instável) — reprocessar
+          return {
+            ...b,
+            km: null,
+            aprox: entry.aprox,
+            resolvido: entry.resolvido,
+            motivo: "semrota" as const,
+          };
+        }
+        return { ...b, km: null, motivo: "semrua" as const };
       });
       setCorridas(resultado);
       const agora = new Date().toLocaleString("pt-BR");
@@ -608,7 +484,8 @@ export function MotoboyClient() {
   }
   const grupos = Array.from(porEntregador.entries()).sort((a, b) => b[1].length - a[1].length);
   const kmTotal = corridas.reduce((s, c) => s + (c.km ?? 0), 0);
-  const falhas = corridas.filter((c) => c.km == null);
+  const semRua = corridas.filter((c) => c.motivo === "semrua"); // rua não existe
+  const semRota = corridas.filter((c) => c.motivo === "semrota"); // localizado, falta rota
 
   const exportCsv = () => {
     const linhas = [
@@ -619,10 +496,12 @@ export function MotoboyClient() {
           c.pedido,
           c.dataHora,
           `"${c.endereco.replace(/"/g, "'")}"`,
-          `"${(c.resolvido ?? (c.km == null ? "ENDEREÇO NÃO EXISTE NO MAPA" : "")).replace(/"/g, "'")}"`,
+          `"${(c.resolvido ?? (c.motivo === "semrua" ? "ENDEREÇO NÃO EXISTE NO MAPA" : "")).replace(/"/g, "'")}"`,
           c.km != null
             ? (c.aprox ? "≈" : "") + c.km.toFixed(2).replace(".", ",")
-            : "NÃO LOCALIZADO",
+            : c.motivo === "semrota"
+              ? "ROTA NÃO CALCULADA (REPROCESSAR)"
+              : "ENDEREÇO NÃO EXISTE",
         ].join(";")
       ),
     ];
@@ -697,9 +576,10 @@ export function MotoboyClient() {
         </summary>
         <div className="mt-2 flex flex-col gap-2">
           <p>
-            Com uma chave da API do Google Maps, o km é calculado com <strong>precisão de porta</strong>{" "}
-            em praticamente todos os endereços (e o processamento cai pra ~2 min). Sem chave, usa o
-            OpenStreetMap gratuito (precisão de rua/quadra). A chave fica salva só neste navegador.
+            Sem chave, o sistema usa a <strong>base oficial do IBGE</strong> (precisão de porta na
+            maioria dos endereços) — não precisa configurar nada. Uma chave do Google Maps só é útil
+            se quiser cobrir os poucos endereços que o IBGE não tem. A chave fica salva só neste
+            navegador.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -737,10 +617,10 @@ export function MotoboyClient() {
         </div>
       )}
 
-      {fase === "processando" && progresso.total > 20 && !temChave && (
+      {fase === "processando" && progresso.total > 20 && (
         <p className="text-xs text-zinc-500">
-          Endereços novos levam ~1s cada (limite do serviço gratuito de mapas). Endereços já
-          vistos em relatórios anteriores ficam guardados e saem na hora.
+          Primeiro localizo os endereços (base do IBGE, rápido), depois calculo as rotas.
+          Endereços já vistos em relatórios anteriores ficam guardados e saem na hora.
         </p>
       )}
 
@@ -768,9 +648,19 @@ export function MotoboyClient() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-xs text-zinc-500">Não localizados</div>
-                <div className={`text-2xl font-semibold ${falhas.length ? "text-amber-600" : ""}`}>
-                  {falhas.length}
+                <div className="text-xs text-zinc-500">
+                  {semRota.length > 0 ? "Rotas pendentes" : "Não localizados"}
+                </div>
+                <div
+                  className={`text-2xl font-semibold ${
+                    semRota.length > 0
+                      ? "text-amber-600"
+                      : semRua.length
+                        ? "text-red-600"
+                        : ""
+                  }`}
+                >
+                  {semRota.length > 0 ? semRota.length : semRua.length}
                 </div>
               </CardContent>
             </Card>
@@ -802,10 +692,19 @@ export function MotoboyClient() {
                         <td className="px-3 py-1.5 text-zinc-600">{c.dataHora}</td>
                         <td className="px-3 py-1.5">
                           {c.endereco}
-                          {/* AVISO só quando o endereço realmente não existe no mapa */}
-                          {c.km == null && (
+                          {/* AVISO vermelho só quando a RUA não existe mesmo */}
+                          {c.motivo === "semrua" && (
                             <span className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-800">
                               ⚠ endereço não existe no mapa
+                            </span>
+                          )}
+                          {/* Localizado, mas a rota não fechou — reprocessar (não é erro do endereço) */}
+                          {c.motivo === "semrota" && (
+                            <span
+                              className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800"
+                              title={c.resolvido ? `Localizado em: ${c.resolvido}` : undefined}
+                            >
+                              ↻ rota pendente — reprocessar
                             </span>
                           )}
                         </td>
@@ -820,6 +719,8 @@ export function MotoboyClient() {
                               {c.aprox ? "≈ " : ""}
                               {c.km.toFixed(2)}
                             </span>
+                          ) : c.motivo === "semrota" ? (
+                            <span className="text-amber-600 font-medium">↻</span>
                           ) : (
                             <span className="text-red-600 font-medium">—</span>
                           )}
@@ -832,9 +733,17 @@ export function MotoboyClient() {
             );
           })}
 
-          {falhas.length > 0 && (
+          {semRota.length > 0 && (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              ↻ {semRota.length} corrida(s) foram <strong>localizadas</strong>, mas o servidor
+              gratuito de rotas engasgou e o km não fechou. <strong>Clique em “Anexar
+              relatório” de novo</strong> — só essas serão recalculadas (as demais já estão
+              prontas), e devem completar.
+            </p>
+          )}
+          {semRua.length > 0 && (
             <p className="text-xs text-red-600">
-              ⚠ {falhas.length} corrida(s) com endereço que não existe no mapa (erro de digitação
+              ⚠ {semRua.length} corrida(s) com endereço que não existe no mapa (erro de digitação
               no Queóps) — marcadas na tabela e fora do km total. O CSV traz o texto original pra
               conferência.
             </p>
