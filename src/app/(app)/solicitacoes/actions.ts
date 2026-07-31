@@ -212,14 +212,25 @@ export async function atualizarDatasSolicitacaoAction(
 ): Promise<{ error?: string }> {
   if (!data_inicio || !data_fim) return { error: "Datas inválidas." };
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado." };
   const { data: solic } = await supabase
     .from("solicitacoes_semanais")
     .select("enviada_em")
     .eq("id", solicitacao_id)
     .maybeSingle();
   if (!solic) return { error: "Solicitação não encontrada." };
-  if (solic.enviada_em !== null) {
-    return { error: "Solicitação já lançada — a data não pode mais ser alterada." };
+  // Rascunho: qualquer um autorizado. Já lançada: só o admin (aprovador) ajusta a data.
+  const { data: perfil } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  const isAdmin = perfil?.role === "aprovador";
+  if (solic.enviada_em !== null && !isAdmin) {
+    return { error: "Solicitação já lançada — só um administrador pode alterar a data." };
   }
   const { error } = await supabase
     .from("solicitacoes_semanais")

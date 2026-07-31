@@ -116,6 +116,9 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
   // Editar/Lançar um rascunho: o próprio comprador OU um aprovador (admin).
   // O admin tem controle total — pode lançar a solicitação de qualquer comprador.
   const canEdit = isDraft && (isMine || isAprovador);
+  // A DATA (cabeçalho) pode ser editada pelo admin a qualquer momento, mesmo
+  // depois de lançada — sem liberar a edição das linhas (que segue só em rascunho).
+  const canEditDatas = isAprovador || canEdit;
 
   const status = computeSolicStatus(
     solic.enviada_em,
@@ -133,7 +136,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
             solicitacaoId={solic.id}
             dataInicio={solic.data_inicio}
             dataFim={solic.data_fim}
-            canEdit={canEdit}
+            canEdit={canEditDatas}
           />
           <p className="text-sm text-zinc-600">
             Comprador: {solic.comprador?.nome ?? "—"} · Status: <strong>{status}</strong>
