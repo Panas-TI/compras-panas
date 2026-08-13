@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { GastoSemanaChart, GastoBarChart, PrecoEvolucaoChart } from "./charts";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
+import { buscarTodas } from "@/lib/supabase/buscar-todas";
 
 const APROVED_STATUSES = ["Aprovada", "Aprovada & Recebida", "Volumes ou Preço Alterados"] as const;
 
@@ -55,18 +56,23 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: S
     fornecedor: { nome: string } | null;
   }> = [];
   if (solicIdsInRange.length) {
-    const { data } = await supabase
-      .from("solicitacao_linhas")
-      .select(
-        `
+    // Paginado: acima de 1000 linhas o PostgREST truncava em silêncio e os
+    // totais do relatório saíam menores que a realidade.
+    const data = await buscarTodas((de, ate) =>
+      supabase
+        .from("solicitacao_linhas")
+        .select(
+          `
         solicitacao_id, item_id, fornecedor_id, valor, preco, volume_solicitado, data_compra,
         item:itens(nome, classificacao_id, classificacao:classificacoes(nome)),
         fornecedor:fornecedores(nome)
       `
-      )
-      .in("solicitacao_id", solicIdsInRange)
-      .in("status", APROVED_STATUSES);
-    linhasAprovadas = (data ?? []) as typeof linhasAprovadas;
+        )
+        .in("solicitacao_id", solicIdsInRange)
+        .in("status", APROVED_STATUSES)
+        .range(de, ate)
+    );
+    linhasAprovadas = data as typeof linhasAprovadas;
   }
 
   // ====== Gasto por semana (últimas 12 semanas, ignorando filtro) ======
@@ -78,11 +84,14 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: S
   const ids12 = (solics12 ?? []).map((s) => s.id);
   let semanaTotals: Record<string, number> = {};
   if (ids12.length) {
-    const { data: linhas12 } = await supabase
-      .from("solicitacao_linhas")
-      .select("solicitacao_id, valor")
-      .in("solicitacao_id", ids12)
-      .in("status", APROVED_STATUSES);
+    const linhas12 = await buscarTodas((de, ate) =>
+      supabase
+        .from("solicitacao_linhas")
+        .select("solicitacao_id, valor")
+        .in("solicitacao_id", ids12)
+        .in("status", APROVED_STATUSES)
+        .range(de, ate)
+    );
     const startById = new Map<string, string>();
     for (const s of solics12 ?? []) startById.set(s.id, s.data_inicio);
     for (const l of linhas12 ?? []) {

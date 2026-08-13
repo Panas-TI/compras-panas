@@ -4,6 +4,22 @@ export type SolicStatusDisplay =
   | "Em recebimento"
   | "Finalizada";
 
+/**
+ * Mesma regra de computeSolicStatus, a partir das contagens já agregadas no
+ * banco (view solicitacoes_resumo). Evita trazer todas as linhas só pra contar
+ * — o que estourava o limite de 1000 linhas do PostgREST em listas grandes.
+ */
+export function solicStatusFromCounts(
+  enviada_em: string | null,
+  pendentesAprovacao: number,
+  pendentesRecebimento: number
+): SolicStatusDisplay {
+  if (!enviada_em) return "Rascunho";
+  if (pendentesAprovacao > 0) return "Em aprovação";
+  if (pendentesRecebimento > 0) return "Em recebimento";
+  return "Finalizada";
+}
+
 export function computeSolicStatus(
   enviada_em: string | null,
   linhas: Array<{ status: string; alteracao_confirmada: boolean }>

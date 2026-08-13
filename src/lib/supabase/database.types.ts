@@ -1514,7 +1514,40 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      contagens_resumo: {
+        Row: {
+          contagem_id: string | null
+          preenchidas: number | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contagem_linhas_contagem_id_fkey"
+            columns: ["contagem_id"]
+            isOneToOne: false
+            referencedRelation: "contagens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solicitacoes_resumo: {
+        Row: {
+          linhas: number | null
+          pendentes_aprovacao: number | null
+          pendentes_recebimento: number | null
+          solicitacao_id: string | null
+          valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacao_linhas_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacoes_semanais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       bulk_aprovar: {

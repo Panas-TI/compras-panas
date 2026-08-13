@@ -16,19 +16,16 @@ export default async function ContagemIndexPage() {
     .order("data_contagem", { ascending: false })
     .order("criado_em", { ascending: false });
 
-  // Conta linhas por contagem
-  const ids = (contagens ?? []).map((c) => c.id);
+  // Contagem feita no banco (view contagens_resumo): 1 linha por contagem.
+  // Buscar as linhas cruas aqui estourava o limite de 1000 do PostgREST e
+  // zerava os contadores das contagens mais recentes.
   const counts = new Map<string, { total: number; preenchidas: number }>();
-  if (ids.length) {
-    const { data: linhas } = await supabase
-      .from("contagem_linhas")
-      .select("contagem_id, quantidade")
-      .in("contagem_id", ids);
-    for (const l of linhas ?? []) {
-      const cur = counts.get(l.contagem_id) ?? { total: 0, preenchidas: 0 };
-      cur.total += 1;
-      if (l.quantidade != null) cur.preenchidas += 1;
-      counts.set(l.contagem_id, cur);
+  const { data: resumos } = await supabase
+    .from("contagens_resumo")
+    .select("contagem_id, total, preenchidas");
+  for (const r of resumos ?? []) {
+    if (r.contagem_id) {
+      counts.set(r.contagem_id, { total: r.total ?? 0, preenchidas: r.preenchidas ?? 0 });
     }
   }
 

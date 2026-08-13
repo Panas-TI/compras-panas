@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { buscarTodas } from "@/lib/supabase/buscar-todas";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function isoMesAtras(n: number): string {
@@ -101,15 +102,17 @@ export default async function RelatoriosMrpPage() {
   let topItens: Array<{ item_id: string; nome: string; codigo: string | null; valor: number; qtd: number }> = [];
   if ((solicMrp?.length ?? 0) > 0) {
     const solicIds = (solicMrp ?? []).map((s) => s.id);
-    const { data: linhasAll } = await supabase
-      .from("solicitacao_linhas")
-      .select(
-        `volume_solicitado, preco, item_id, item:itens(nome, codigo_queops)`
-      )
-      .in("solicitacao_id", solicIds);
+    // Paginado: sem isso o gasto por item ficava truncado nas 1000 primeiras linhas
+    const linhasAll = await buscarTodas((de, ate) =>
+      supabase
+        .from("solicitacao_linhas")
+        .select(`volume_solicitado, preco, item_id, item:itens(nome, codigo_queops)`)
+        .in("solicitacao_id", solicIds)
+        .range(de, ate)
+    );
 
     const acc = new Map<string, { nome: string; codigo: string | null; valor: number; qtd: number }>();
-    for (const l of (linhasAll ?? []) as LinhaComItem[]) {
+    for (const l of linhasAll as LinhaComItem[]) {
       const valor = Number(l.volume_solicitado) * Number(l.preco);
       const cur = acc.get(l.item_id) ?? {
         nome: l.item?.nome ?? "—",

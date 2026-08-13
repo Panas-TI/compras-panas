@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
-import { computeSolicStatus, statusColorClass } from "./status";
+import { solicStatusFromCounts, statusColorClass } from "./status";
 
 export default async function SolicitacoesPage() {
   const supabase = await createClient();
@@ -18,24 +18,24 @@ export default async function SolicitacoesPage() {
     )
     .order("data_inicio", { ascending: false });
 
-  // Per-solicitation totals + line statuses for computing display status
-  const ids = (solics ?? []).map((s) => s.id);
-  let totalsBy = new Map<string, { linhas: number; valor: number }>();
-  let lineStatusesBy = new Map<string, Array<{ status: string; alteracao_confirmada: boolean }>>();
-  if (ids.length) {
-    const { data: linhas } = await supabase
-      .from("solicitacao_linhas")
-      .select("solicitacao_id, valor, status, alteracao_confirmada")
-      .in("solicitacao_id", ids);
-    for (const l of linhas ?? []) {
-      const cur = totalsBy.get(l.solicitacao_id) ?? { linhas: 0, valor: 0 };
-      cur.linhas += 1;
-      cur.valor += Number(l.valor ?? 0);
-      totalsBy.set(l.solicitacao_id, cur);
-
-      const arr = lineStatusesBy.get(l.solicitacao_id) ?? [];
-      arr.push({ status: l.status, alteracao_confirmada: l.alteracao_confirmada });
-      lineStatusesBy.set(l.solicitacao_id, arr);
+  // Totais e pendências agregados no banco (view solicitacoes_resumo).
+  // Trazer as linhas cruas pra contar aqui estourava o limite de 1000 do
+  // PostgREST conforme a base cresce — zerando totais e errando o status.
+  const totalsBy = new Map<
+    string,
+    { linhas: number; valor: number; pendAprov: number; pendReceb: number }
+  >();
+  const { data: resumos } = await supabase
+    .from("solicitacoes_resumo")
+    .select("solicitacao_id, linhas, valor, pendentes_aprovacao, pendentes_recebimento");
+  for (const r of resumos ?? []) {
+    if (r.solicitacao_id) {
+      totalsBy.set(r.solicitacao_id, {
+        linhas: r.linhas ?? 0,
+        valor: Number(r.valor ?? 0),
+        pendAprov: r.pendentes_aprovacao ?? 0,
+        pendReceb: r.pendentes_recebimento ?? 0,
+      });
     }
   }
 
@@ -67,9 +67,17 @@ export default async function SolicitacoesPage() {
               </thead>
               <tbody>
                 {(solics ?? []).map((s) => {
-                  const totals = totalsBy.get(s.id) ?? { linhas: 0, valor: 0 };
-                  const lineStatuses = lineStatusesBy.get(s.id) ?? [];
-                  const status = computeSolicStatus(s.enviada_em, lineStatuses);
+                  const totals = totalsBy.get(s.id) ?? {
+                    linhas: 0,
+                    valor: 0,
+                    pendAprov: 0,
+                    pendReceb: 0,
+                  };
+                  const status = solicStatusFromCounts(
+                    s.enviada_em,
+                    totals.pendAprov,
+                    totals.pendReceb
+                  );
                   const statusClass = statusColorClass(status);
                   return (
                     <tr key={s.id} className="border-b border-zinc-100 last:border-0">
