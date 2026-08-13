@@ -26,11 +26,19 @@ export type LinhaC = {
   enviado_em: string | null;
   enviado_solicitacao_id: string | null;
   medida: string | null;
-  // Congelados no momento da solicitação; nulos quando o papel não pode ver
+  // Preço/fornecedor: congelados se já enviada, senão os atuais do catálogo
+  // (permite simular o custo enquanto se digita a quantidade).
   preco?: number | null;
-  valor?: number | null;
+  valor?: number | null; // só existe quando já enviada
   fornecedor?: string | null;
+  congelado?: boolean;
 };
+
+/** Valor da linha: congelado quando já enviada, senão qtd × preço atual. */
+export function valorLinha(l: LinhaC): number {
+  if (l.congelado) return Number(l.valor ?? 0);
+  return Number(l.solicitacao_qtd ?? 0) * Number(l.preco ?? 0);
+}
 
 export type TemplateOpt = { id: string; nome: string; descricao: string | null };
 
@@ -174,9 +182,10 @@ export function ContagemTable({
   }
 
   const totalPreenchidas = linhas.filter((l) => l.quantidade != null).length;
-  // Soma dos valores congelados das linhas já enviadas (só pra quem vê preços)
+  // Soma o que já foi enviado (valor congelado) + o que está sendo simulado
+  // agora. Recalcula sozinho a cada tecla, porque depende de `linhas`.
   const totalSolicitado = mostrarPrecos
-    ? linhas.reduce((s, l) => s + Number(l.valor ?? 0), 0)
+    ? linhas.reduce((s, l) => s + valorLinha(l), 0)
     : 0;
 
   return (
@@ -269,7 +278,8 @@ export function ContagemTable({
                 <th className="w-24 px-2 py-1">Medida</th>
                 <th className="w-28 px-2 py-1">Quantidade</th>
                 {mostrarSolic && <th className="w-28 px-2 py-1">Solicitação</th>}
-                {mostrarPrecos && <th className="w-28 px-2 py-1 text-right">Preço</th>}
+                {mostrarPrecos && <th className="w-24 px-2 py-1 text-right">Preço</th>}
+                {mostrarPrecos && <th className="w-28 px-2 py-1 text-right">Valor</th>}
                 {mostrarPrecos && <th className="w-36 px-2 py-1">Fornecedor</th>}
                 <th className="px-2 py-1">Observação</th>
                 {!finalizada && <th className="w-20 px-2 py-1"></th>}
@@ -303,6 +313,14 @@ export function ContagemTable({
 function formatNumberBR(n: number | null | undefined): string {
   if (n === null || n === undefined) return "";
   return n.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+}
+
+/** "1.234,5" (pt-BR) → 1234.5. Devolve null quando não é número. */
+function parseQtd(s: string): number | null {
+  const normalized = s.trim().replace(/\./g, "").replace(",", ".");
+  if (!normalized) return null;
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : null;
 }
 
 // Move foco para o input seguinte da mesma coluna (mesma `data-col`) com ordem maior
@@ -359,6 +377,15 @@ function LinhaRow({
   const [solicStr, setSolicStr] = useState(formatNumberBR(linha.solicitacao_qtd));
   const jaEnviado = !!linha.enviado_em;
 
+  // Enviada → valor congelado. Ainda não enviada → simula com o preço atual,
+  // acompanhando o que está sendo digitado. Enviada mas sem vínculo (linha
+  // apagada da solicitação depois) → não há valor a mostrar.
+  const valorAtual = linha.congelado
+    ? Number(linha.valor ?? 0)
+    : jaEnviado
+      ? 0
+      : (parseQtd(solicStr) ?? 0) * Number(linha.preco ?? 0);
+
   return (
     <tr className={`border-b border-zinc-100 last:border-0 ${jaEnviado ? "bg-emerald-50/40" : ""}`}>
       <td className="px-2 py-1.5 text-right text-xs text-zinc-400 tabular-nums">{linha.ordem}</td>
@@ -404,12 +431,14 @@ function LinhaRow({
               data-col="solic"
               data-ord={linha.ordem}
               value={solicStr}
-              onChange={(e) => setSolicStr(e.target.value)}
+              onChange={(e) => {
+                setSolicStr(e.target.value);
+                // Atualiza o estado do pai já na digitação pra o Valor e o
+                // Total acompanharem em tempo real. Só o salvamento espera o blur.
+                onUpdateSolicLocal(parseQtd(e.target.value));
+              }}
               onBlur={() => {
-                const normalized = solicStr.trim().replace(/\./g, "").replace(",", ".");
-                const n = normalized ? Number(normalized) : null;
-                const final = n !== null && Number.isFinite(n) ? n : null;
-                onUpdateSolicLocal(final);
+                onUpdateSolicLocal(parseQtd(solicStr));
                 onPersistSolic(solicStr);
               }}
               onKeyDown={handleEnterKey}
@@ -420,13 +449,31 @@ function LinhaRow({
           )}
         </td>
       )}
-      {/* Preço congelado no momento da solicitação + fornecedor daquele pedido */}
+      {/* Preço unitário: congelado se já enviada, senão o atual do catálogo */}
       {mostrarPrecos && (
-        <td className="px-2 py-1.5 text-right tabular-nums">
+        <td className="px-2 py-1.5 text-right tabular-nums text-zinc-600">
           {linha.preco != null ? (
-            <span title={linha.valor != null ? `Total da linha: ${formatCurrencyBRL(Number(linha.valor))}` : undefined}>
+            <span
+              title={
+                linha.congelado
+                  ? "Preço congelado no envio da solicitação"
+                  : "Preço atual do catálogo (simulação)"
+              }
+            >
               {formatCurrencyBRL(Number(linha.preco))}
             </span>
+          ) : (
+            <span className="text-zinc-300" title="Item sem preço cadastrado">—</span>
+          )}
+        </td>
+      )}
+      {/* Valor da linha — recalcula enquanto a quantidade é digitada */}
+      {mostrarPrecos && (
+        <td className="px-2 py-1.5 text-right tabular-nums">
+          {valorAtual > 0 ? (
+            <strong className={linha.congelado ? "" : "text-zinc-900"}>
+              {formatCurrencyBRL(valorAtual)}
+            </strong>
           ) : (
             <span className="text-zinc-300">—</span>
           )}

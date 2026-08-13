@@ -40,7 +40,11 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
       .select(
         `id, ordem, secao, texto, quantidade, observacao, solicitacao_qtd, enviado_em,
          enviado_solicitacao_id, enviado_linha_id,
-         item:itens(unidade:unidades_medida(nome)),
+         item:itens(
+           unidade:unidades_medida(nome),
+           preco_referencia,
+           fornecedor_padrao:fornecedores(nome)
+         ),
          linha_solicitada:solicitacao_linhas!contagem_linhas_enviado_linha_id_fkey(
            preco, valor, fornecedor:fornecedores(nome)
          )`
@@ -61,10 +65,17 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     enviado_em: l.enviado_em,
     enviado_solicitacao_id: l.enviado_solicitacao_id,
     medida: l.item?.unidade?.nome ?? null,
-    // Preço congelado no momento da solicitação + fornecedor daquele pedido
-    preco: podeVerPrecos ? (l.linha_solicitada?.preco ?? null) : null,
+    // Já enviada: preço/fornecedor CONGELADOS no momento da solicitação.
+    // Ainda não enviada: preço/fornecedor ATUAIS do catálogo, pra simular o
+    // custo enquanto se digita a quantidade.
+    preco: podeVerPrecos
+      ? (l.linha_solicitada?.preco ?? l.item?.preco_referencia ?? null)
+      : null,
     valor: podeVerPrecos ? (l.linha_solicitada?.valor ?? null) : null,
-    fornecedor: podeVerPrecos ? (l.linha_solicitada?.fornecedor?.nome ?? null) : null,
+    fornecedor: podeVerPrecos
+      ? (l.linha_solicitada?.fornecedor?.nome ?? l.item?.fornecedor_padrao?.nome ?? null)
+      : null,
+    congelado: !!l.linha_solicitada,
   }));
 
   const opts: TemplateOpt[] = (templates ?? []).map((t) => ({ id: t.id, nome: t.nome, descricao: t.descricao }));
