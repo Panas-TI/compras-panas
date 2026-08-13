@@ -7,6 +7,7 @@ import { LinhasTable, type Linha } from "./linhas-table";
 import { DatasSolicitacao } from "./datas-solicitacao";
 import { DeleteButton } from "./delete-button";
 import { PrintButton } from "./print-button";
+import { ExportarCsvMenu } from "./exportar-csv-menu";
 import { computeSolicStatus } from "../status";
 
 export default async function SolicitacaoDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -125,6 +126,15 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
     linhas.map((l) => ({ status: l.status, alteracao_confirmada: l.alteracao_confirmada }))
   );
 
+  // Mesma regra usada na exportação: aprovada direto, já recebida, ou alterada
+  // com a alteração confirmada.
+  const qtdAprovadas = linhas.filter(
+    (l) =>
+      l.status === "Aprovada" ||
+      l.status === "Aprovada & Recebida" ||
+      (l.status === "Volumes ou Preço Alterados" && l.alteracao_confirmada)
+  ).length;
+
   return (
     <div className="solicitacao-detail flex flex-col gap-4">
       {/* Print: A4 deitado pra caber a planilha com todas as colunas */}
@@ -145,12 +155,11 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
         </div>
         <div className="flex items-center gap-3 print:hidden">
           {!isDraft && (
-            <a
-              href={`/api/solicitacoes/${solic.id}/csv`}
-              className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
-            >
-              Exportar CSV
-            </a>
+            <ExportarCsvMenu
+              solicitacaoId={solic.id}
+              totalLinhas={linhas.length}
+              linhasAprovadas={qtdAprovadas}
+            />
           )}
           {!isDraft && <PrintButton />}
           {!solic.finalizada && (isMine || isAprovador) && (

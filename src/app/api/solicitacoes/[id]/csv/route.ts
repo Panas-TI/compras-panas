@@ -27,8 +27,20 @@ function formatDateBR(d: string | null | undefined): string {
   return `${day}/${mo}/${dt.getUTCFullYear()}`;
 }
 
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+/**
+ * Uma linha conta como aprovada quando foi aprovada direto, já foi recebida,
+ * ou teve volume/preço alterados E a alteração foi confirmada. "Para Aprovar",
+ * "Recusada" e alteração ainda não confirmada ficam de fora.
+ */
+function ehAprovada(status: string | null, alteracaoConfirmada: boolean | null): boolean {
+  if (status === "Aprovada" || status === "Aprovada & Recebida") return true;
+  if (status === "Volumes ou Preço Alterados") return !!alteracaoConfirmada;
+  return false;
+}
+
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  const somenteAprovadas = req.nextUrl.searchParams.get("filtro") === "aprovadas";
   const supabase = await createClient();
 
   const { data: solic, error: solicErr } = await supabase
@@ -46,6 +58,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       `
       codigo_queops_congelado, nome_item_congelado, classificacao_congelada, unidade_congelada,
       volume_solicitado, preco, valor, prazo, vencimento, data_compra, data_recebimento, status,
+      alteracao_confirmada,
       item:itens(nome, codigo_queops, unidade:unidades_medida(nome), classificacao:classificacoes(nome)),
       fornecedor:fornecedores(nome),
       forma_pagto:formas_pagamento(nome)
@@ -75,7 +88,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     "Status",
   ];
 
-  const rows = (linhas ?? []).map((l) => [
+  const linhasFiltradas = somenteAprovadas
+    ? (linhas ?? []).filter((l) => ehAprovada(l.status, l.alteracao_confirmada))
+    : (linhas ?? []);
+
+  const rows = linhasFiltradas.map((l) => [
     l.codigo_queops_congelado ?? l.item?.codigo_queops ?? "",
     l.nome_item_congelado ?? l.item?.nome ?? "",
     l.classificacao_congelada ?? l.item?.classificacao?.nome ?? "",
@@ -97,7 +114,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   // BOM pro Excel reconhecer UTF-8
   const body = "﻿" + csv;
 
-  const filename = `compras_${solic.data_inicio}_a_${solic.data_fim}.csv`;
+  const sufixo = somenteAprovadas ? "_aprovadas" : "";
+  const filename = `compras_${solic.data_inicio}_a_${solic.data_fim}${sufixo}.csv`;
   return new NextResponse(body, {
     status: 200,
     headers: {
