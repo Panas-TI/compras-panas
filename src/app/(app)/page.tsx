@@ -18,6 +18,7 @@ export default async function HubPage() {
     // Perfis com módulo único caem direto onde devem trabalhar
     if (profile?.role === "estoquista") redirect("/recebimento");
     if (profile?.role === "motorista") redirect("/motorista");
+    if (profile?.role === "vendas") redirect("/vendas");
   }
 
   return (
@@ -52,6 +53,24 @@ export default async function HubPage() {
               <CardTitle className="text-xl">Entregas</CardTitle>
               <CardDescription>
                 Pedidos do Queóps, rota do motorista, comprovantes com assinatura e mapa.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <span className="text-sm font-medium text-zinc-700 group-hover:underline">
+                Entrar →
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/vendas" className="group">
+          <Card className="h-full transition-shadow group-hover:shadow-lg">
+            <CardHeader>
+              <div className="mb-2 text-4xl">💬</div>
+              <CardTitle className="text-xl">Vendas</CardTitle>
+              <CardDescription>
+                Carteira de clientes, quem contatar hoje, reativação de inativos e histórico de
+                atendimento.
               </CardDescription>
             </CardHeader>
             <CardContent>

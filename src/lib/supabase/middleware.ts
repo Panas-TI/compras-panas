@@ -72,6 +72,16 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
       }
     }
+    // Atendimento (vendas): só o módulo Vendas e o hub
+    if (profile?.role === "vendas" && profile.ativo) {
+      const vendasAllowed =
+        path === "/" || path === "/vendas" || path.startsWith("/vendas/");
+      if (!vendasAllowed) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/vendas";
+        return NextResponse.redirect(url);
+      }
+    }
     // MRP só pra aprovador/comprador
     if ((path === "/mrp" || path.startsWith("/mrp/")) &&
         profile?.role !== "aprovador" && profile?.role !== "comprador") {

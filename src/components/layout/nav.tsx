@@ -8,7 +8,7 @@ import { roleLabel } from "@/lib/role-label";
 import { logoutAction } from "@/app/login/actions";
 
 type NavItem = { href: string; label: string; subItems?: NavItem[] };
-type Role = "comprador" | "aprovador" | "estoquista" | "motorista";
+type Role = "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas";
 
 // Sub-rotas do MRP (dropdown ao passar o mouse no item "MRP")
 const MRP_SUB: NavItem[] = [
@@ -49,20 +49,30 @@ const ENTREGAS_ITEMS: NavItem[] = [
   { href: "/entregas/relatorios", label: "Relatórios" },
 ];
 
+// Itens do módulo Vendas (atendimento)
+const VENDAS_ITEMS: NavItem[] = [
+  { href: "/vendas", label: "Hoje" },
+  { href: "/vendas/clientes", label: "Clientes" },
+  { href: "/vendas/inativos", label: "Reativação" },
+];
+
 const APROVADOR_ONLY = new Set(["/usuarios"]);
 const ESTOQUISTA_ALLOWED = new Set(["/estoque", "/recebimento", "/contagem"]);
 
 // Uma rota (item de topo ou sub-item) é visível pra este papel?
 function podeVerRota(href: string, role: Role): boolean {
+  // Atendimento vive dentro de Vendas — nada de Estoque/Entregas
+  if (role === "vendas") return href === "/" || href.startsWith("/vendas");
   if (role === "estoquista") return ESTOQUISTA_ALLOWED.has(href);
   if (role !== "aprovador" && APROVADOR_ONLY.has(href)) return false;
   return true;
 }
 
-function detectModulo(path: string): "hub" | "estoque" | "entregas" | "motorista" {
+function detectModulo(path: string): "hub" | "estoque" | "entregas" | "motorista" | "vendas" {
   if (path === "/") return "hub";
   if (path === "/motorista" || path.startsWith("/motorista/")) return "motorista";
   if (path === "/entregas" || path.startsWith("/entregas/")) return "entregas";
+  if (path === "/vendas" || path.startsWith("/vendas/")) return "vendas";
   // /mrp/* agora faz parte do módulo Estoque
   return "estoque";
 }
@@ -188,8 +198,9 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
     );
   }
 
-  // Estoque ou Entregas (admin/aprovador navegando)
-  const allItems = modulo === "entregas" ? ENTREGAS_ITEMS : ESTOQUE_ITEMS;
+  // Estoque, Entregas ou Vendas
+  const allItems =
+    modulo === "entregas" ? ENTREGAS_ITEMS : modulo === "vendas" ? VENDAS_ITEMS : ESTOQUE_ITEMS;
 
   // Item de topo aparece se ele próprio é acessível OU tem algum sub acessível
   const visible: NavItem[] = allItems.filter((i) => {
@@ -197,7 +208,8 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
     return (i.subItems ?? []).some((s) => podeVerRota(s.href, role));
   });
 
-  const moduloLabel = modulo === "entregas" ? "🚚 Entregas" : "📦 Estoque";
+  const moduloLabel =
+    modulo === "entregas" ? "🚚 Entregas" : modulo === "vendas" ? "💬 Vendas" : "📦 Estoque";
 
   return (
     <header className="border-b border-zinc-200 bg-white">
@@ -214,12 +226,11 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
                 <ItemComDropdown key={item.href} item={item} path={path} role={role} />
               );
             }
-            const active =
-              item.href === "/estoque"
-                ? path === "/estoque"
-                : item.href === "/entregas"
-                  ? path === "/entregas"
-                  : path.startsWith(item.href);
+            // Raiz de módulo casa exato; o resto casa por prefixo
+            const RAIZES = ["/estoque", "/entregas", "/vendas"];
+            const active = RAIZES.includes(item.href)
+              ? path === item.href
+              : path.startsWith(item.href);
             return (
               <Link
                 key={item.href}

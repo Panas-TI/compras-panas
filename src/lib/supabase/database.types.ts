@@ -1215,6 +1215,303 @@ export type Database = {
         }
         Relationships: []
       }
+      vendas_cliente_apelidos: {
+        Row: {
+          cadastro_original: string
+          cliente_id: string
+          codigo_queops: string | null
+          criado_em: string
+          endereco: string | null
+          id: string
+          reconhecido: boolean
+          telefone: string | null
+        }
+        Insert: {
+          cadastro_original: string
+          cliente_id: string
+          codigo_queops?: string | null
+          criado_em?: string
+          endereco?: string | null
+          id?: string
+          reconhecido?: boolean
+          telefone?: string | null
+        }
+        Update: {
+          cadastro_original?: string
+          cliente_id?: string
+          codigo_queops?: string | null
+          criado_em?: string
+          endereco?: string | null
+          id?: string
+          reconhecido?: boolean
+          telefone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_cliente_apelidos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vendas_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendas_clientes: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          canal_preferido: string | null
+          codigo_cliente: string
+          contatar_3dias: boolean
+          criado_em: string
+          data_prevista_compra: string | null
+          endereco: string | null
+          frequencia_compras: number
+          id: string
+          intervalo_mediano_dias: number | null
+          itens_habituais: Json | null
+          motivo_contato: string | null
+          motivo_verificar: string | null
+          nome: string
+          observacoes: string | null
+          primeira_compra: string | null
+          receita_anual_risco: number | null
+          status: string
+          telefone_e164: string | null
+          telefone_presumido: boolean
+          telefone_raw: string | null
+          ticket_medio: number
+          tipo_telefone: string | null
+          total_vendas: number
+          ultima_compra: string | null
+          verificar: boolean
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          canal_preferido?: string | null
+          codigo_cliente: string
+          contatar_3dias?: boolean
+          criado_em?: string
+          data_prevista_compra?: string | null
+          endereco?: string | null
+          frequencia_compras?: number
+          id?: string
+          intervalo_mediano_dias?: number | null
+          itens_habituais?: Json | null
+          motivo_contato?: string | null
+          motivo_verificar?: string | null
+          nome: string
+          observacoes?: string | null
+          primeira_compra?: string | null
+          receita_anual_risco?: number | null
+          status?: string
+          telefone_e164?: string | null
+          telefone_presumido?: boolean
+          telefone_raw?: string | null
+          ticket_medio?: number
+          tipo_telefone?: string | null
+          total_vendas?: number
+          ultima_compra?: string | null
+          verificar?: boolean
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          canal_preferido?: string | null
+          codigo_cliente?: string
+          contatar_3dias?: boolean
+          criado_em?: string
+          data_prevista_compra?: string | null
+          endereco?: string | null
+          frequencia_compras?: number
+          id?: string
+          intervalo_mediano_dias?: number | null
+          itens_habituais?: Json | null
+          motivo_contato?: string | null
+          motivo_verificar?: string | null
+          nome?: string
+          observacoes?: string | null
+          primeira_compra?: string | null
+          receita_anual_risco?: number | null
+          status?: string
+          telefone_e164?: string | null
+          telefone_presumido?: boolean
+          telefone_raw?: string | null
+          ticket_medio?: number
+          tipo_telefone?: string | null
+          total_vendas?: number
+          ultima_compra?: string | null
+          verificar?: boolean
+        }
+        Relationships: []
+      }
+      vendas_contatos: {
+        Row: {
+          adiar_ate: string | null
+          canal: string | null
+          cliente_id: string
+          criado_em: string
+          id: string
+          observacao: string | null
+          resultado: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          adiar_ate?: string | null
+          canal?: string | null
+          cliente_id: string
+          criado_em?: string
+          id?: string
+          observacao?: string | null
+          resultado?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          adiar_ate?: string | null
+          canal?: string | null
+          cliente_id?: string
+          criado_em?: string
+          id?: string
+          observacao?: string | null
+          resultado?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_contatos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vendas_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_contatos_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendas_importacoes: {
+        Row: {
+          arquivo_nome: string | null
+          avisos: Json | null
+          cadastros_a_verificar: number
+          clientes_novos: number
+          id: string
+          importado_em: string
+          importado_por: string | null
+          pedidos_ignorados: number
+          pedidos_novos: number
+          periodo_fim: string | null
+          periodo_inicio: string | null
+        }
+        Insert: {
+          arquivo_nome?: string | null
+          avisos?: Json | null
+          cadastros_a_verificar?: number
+          clientes_novos?: number
+          id?: string
+          importado_em?: string
+          importado_por?: string | null
+          pedidos_ignorados?: number
+          pedidos_novos?: number
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+        }
+        Update: {
+          arquivo_nome?: string | null
+          avisos?: Json | null
+          cadastros_a_verificar?: number
+          clientes_novos?: number
+          id?: string
+          importado_em?: string
+          importado_por?: string | null
+          pedidos_ignorados?: number
+          pedidos_novos?: number
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+        }
+        Relationships: []
+      }
+      vendas_itens: {
+        Row: {
+          eh_produto: boolean
+          id: number
+          pedido: string
+          produto: string
+          qtd: number | null
+          valor: number | null
+        }
+        Insert: {
+          eh_produto?: boolean
+          id?: number
+          pedido: string
+          produto: string
+          qtd?: number | null
+          valor?: number | null
+        }
+        Update: {
+          eh_produto?: boolean
+          id?: number
+          pedido?: string
+          produto?: string
+          qtd?: number | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_itens_pedido_fkey"
+            columns: ["pedido"]
+            isOneToOne: false
+            referencedRelation: "vendas_pedidos"
+            referencedColumns: ["pedido"]
+          },
+        ]
+      }
+      vendas_pedidos: {
+        Row: {
+          cliente_id: string | null
+          criado_em: string
+          data: string
+          eh_valido: boolean | null
+          forma_pag: string | null
+          importacao_id: string | null
+          pedido: string
+          total: number
+        }
+        Insert: {
+          cliente_id?: string | null
+          criado_em?: string
+          data: string
+          eh_valido?: boolean | null
+          forma_pag?: string | null
+          importacao_id?: string | null
+          pedido: string
+          total?: number
+        }
+        Update: {
+          cliente_id?: string | null
+          criado_em?: string
+          data?: string
+          eh_valido?: boolean | null
+          forma_pag?: string | null
+          importacao_id?: string | null
+          pedido?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_pedidos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vendas_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1229,6 +1526,9 @@ export type Database = {
         }[]
       }
       current_user_role: { Args: never; Returns: string }
+      recalcular_itens_habituais: { Args: never; Returns: number }
+      recalcular_metricas_vendas: { Args: never; Returns: number }
+      tem_papel_vendas: { Args: { papeis: string[] }; Returns: boolean }
     }
     Enums: {
       status_linha:
