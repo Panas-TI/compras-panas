@@ -8,7 +8,7 @@ import { roleLabel } from "@/lib/role-label";
 import { logoutAction } from "@/app/login/actions";
 
 type NavItem = { href: string; label: string; subItems?: NavItem[] };
-type Role = "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas";
+type Role = "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro";
 
 // Sub-rotas do MRP (dropdown ao passar o mouse no item "MRP")
 const MRP_SUB: NavItem[] = [
@@ -63,6 +63,8 @@ const ESTOQUISTA_ALLOWED = new Set(["/estoque", "/recebimento", "/contagem"]);
 function podeVerRota(href: string, role: Role): boolean {
   // Atendimento vive dentro de Vendas — nada de Estoque/Entregas
   if (role === "vendas") return href === "/" || href.startsWith("/vendas");
+  // Financeiro: só consulta contagens finalizadas (preço e fornecedor)
+  if (role === "financeiro") return href === "/" || href === "/contagem";
   if (role === "estoquista") return ESTOQUISTA_ALLOWED.has(href);
   if (role !== "aprovador" && APROVADOR_ONLY.has(href)) return false;
   return true;

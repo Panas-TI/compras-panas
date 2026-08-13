@@ -85,6 +85,7 @@ export type Database = {
           contagem_id: string
           criado_em: string
           enviado_em: string | null
+          enviado_linha_id: string | null
           enviado_solicitacao_id: string | null
           id: string
           item_id: string | null
@@ -100,6 +101,7 @@ export type Database = {
           contagem_id: string
           criado_em?: string
           enviado_em?: string | null
+          enviado_linha_id?: string | null
           enviado_solicitacao_id?: string | null
           id?: string
           item_id?: string | null
@@ -115,6 +117,7 @@ export type Database = {
           contagem_id?: string
           criado_em?: string
           enviado_em?: string | null
+          enviado_linha_id?: string | null
           enviado_solicitacao_id?: string | null
           id?: string
           item_id?: string | null
@@ -131,6 +134,13 @@ export type Database = {
             columns: ["contagem_id"]
             isOneToOne: false
             referencedRelation: "contagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contagem_linhas_enviado_linha_id_fkey"
+            columns: ["enviado_linha_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacao_linhas"
             referencedColumns: ["id"]
           },
           {

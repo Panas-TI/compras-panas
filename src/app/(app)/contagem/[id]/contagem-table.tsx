@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { formatCurrencyBRL } from "@/lib/utils";
 import {
   importarTemplateAction,
   updateLinhaContagemAction,
@@ -25,6 +26,10 @@ export type LinhaC = {
   enviado_em: string | null;
   enviado_solicitacao_id: string | null;
   medida: string | null;
+  // Congelados no momento da solicitação; nulos quando o papel não pode ver
+  preco?: number | null;
+  valor?: number | null;
+  fornecedor?: string | null;
 };
 
 export type TemplateOpt = { id: string; nome: string; descricao: string | null };
@@ -35,12 +40,14 @@ export function ContagemTable({
   initialLinhas,
   templates,
   canRequestPurchase,
+  mostrarPrecos = false,
 }: {
   contagemId: string;
   finalizada: boolean;
   initialLinhas: LinhaC[];
   templates: TemplateOpt[];
   canRequestPurchase: boolean;
+  mostrarPrecos?: boolean;
 }) {
   const router = useRouter();
   const [linhas, setLinhas] = useState(initialLinhas);
@@ -167,6 +174,10 @@ export function ContagemTable({
   }
 
   const totalPreenchidas = linhas.filter((l) => l.quantidade != null).length;
+  // Soma dos valores congelados das linhas já enviadas (só pra quem vê preços)
+  const totalSolicitado = mostrarPrecos
+    ? linhas.reduce((s, l) => s + Number(l.valor ?? 0), 0)
+    : 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -199,6 +210,14 @@ export function ContagemTable({
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="text-zinc-600">{totalPreenchidas} de {linhas.length} preenchidas</span>
+          {mostrarPrecos && totalSolicitado > 0 && (
+            <span className="text-zinc-600">
+              · Total solicitado:{" "}
+              <strong className="tabular-nums text-zinc-900">
+                {formatCurrencyBRL(totalSolicitado)}
+              </strong>
+            </span>
+          )}
           {mostrarSolic && linhas.some((l) => (l.solicitacao_qtd ?? 0) > 0 && !l.enviado_em) && (
             <Button onClick={handleEnviar} disabled={isPending}>
               Enviar para solicitações
@@ -250,6 +269,8 @@ export function ContagemTable({
                 <th className="w-24 px-2 py-1">Medida</th>
                 <th className="w-28 px-2 py-1">Quantidade</th>
                 {mostrarSolic && <th className="w-28 px-2 py-1">Solicitação</th>}
+                {mostrarPrecos && <th className="w-28 px-2 py-1 text-right">Preço</th>}
+                {mostrarPrecos && <th className="w-36 px-2 py-1">Fornecedor</th>}
                 <th className="px-2 py-1">Observação</th>
                 {!finalizada && <th className="w-20 px-2 py-1"></th>}
               </tr>
@@ -261,6 +282,7 @@ export function ContagemTable({
                   linha={l}
                   finalizada={finalizada}
                   canRequestPurchase={mostrarSolic}
+                  mostrarPrecos={mostrarPrecos}
                   onUpdateQtdLocal={(q) => updateQtdLocal(l.id, q)}
                   onUpdateObsLocal={(o) => updateObsLocal(l.id, o)}
                   onUpdateSolicLocal={(q) => updateSolicLocal(l.id, q)}
@@ -311,6 +333,7 @@ function LinhaRow({
   linha,
   finalizada,
   canRequestPurchase,
+  mostrarPrecos,
   onUpdateQtdLocal,
   onUpdateObsLocal,
   onUpdateSolicLocal,
@@ -322,6 +345,7 @@ function LinhaRow({
   linha: LinhaC;
   finalizada: boolean;
   canRequestPurchase: boolean;
+  mostrarPrecos: boolean;
   onUpdateQtdLocal: (q: number | null) => void;
   onUpdateObsLocal: (o: string | null) => void;
   onUpdateSolicLocal: (q: number | null) => void;
@@ -394,6 +418,23 @@ function LinhaRow({
               className="h-8 max-w-[90px] text-right tabular-nums"
             />
           )}
+        </td>
+      )}
+      {/* Preço congelado no momento da solicitação + fornecedor daquele pedido */}
+      {mostrarPrecos && (
+        <td className="px-2 py-1.5 text-right tabular-nums">
+          {linha.preco != null ? (
+            <span title={linha.valor != null ? `Total da linha: ${formatCurrencyBRL(Number(linha.valor))}` : undefined}>
+              {formatCurrencyBRL(Number(linha.preco))}
+            </span>
+          ) : (
+            <span className="text-zinc-300">—</span>
+          )}
+        </td>
+      )}
+      {mostrarPrecos && (
+        <td className="px-2 py-1.5 text-zinc-600">
+          {linha.fornecedor ?? <span className="text-zinc-300">—</span>}
         </td>
       )}
       <td className="px-2 py-1.5">

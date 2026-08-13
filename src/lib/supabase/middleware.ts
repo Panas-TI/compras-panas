@@ -82,6 +82,16 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
       }
     }
+    // Financeiro: só a área de contagem (consulta de preço/fornecedor)
+    if (profile?.role === "financeiro" && profile.ativo) {
+      const finAllowed =
+        path === "/" || path === "/contagem" || path.startsWith("/contagem/");
+      if (!finAllowed) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/contagem";
+        return NextResponse.redirect(url);
+      }
+    }
     // MRP só pra aprovador/comprador
     if ((path === "/mrp" || path.startsWith("/mrp/")) &&
         profile?.role !== "aprovador" && profile?.role !== "comprador") {

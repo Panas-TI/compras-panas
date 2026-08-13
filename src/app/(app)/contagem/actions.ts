@@ -259,16 +259,23 @@ export async function enviarParaSolicitacaoAction(
       .eq("id", item_id)
       .maybeSingle();
 
-    const { error: linErr } = await supabase.from("solicitacao_linhas").insert({
-      solicitacao_id: solic_id,
-      item_id,
-      volume_estoque: l.quantidade,
-      volume_solicitado: l.solicitacao_qtd ?? 0,
-      preco: itemRow?.preco_referencia ?? 0,
-      fornecedor_id: itemRow?.fornecedor_padrao_id ?? null,
-      forma_pagto_id: itemRow?.forma_pagto_padrao_id ?? null,
-      prazo: itemRow?.prazo_padrao ?? null,
-    });
+    // Guarda o id da linha criada: é o vínculo exato que permite ao financeiro
+    // ver preço e fornecedor por item sem ambiguidade quando o mesmo item
+    // aparece mais de uma vez na contagem.
+    const { data: linhaCriada, error: linErr } = await supabase
+      .from("solicitacao_linhas")
+      .insert({
+        solicitacao_id: solic_id,
+        item_id,
+        volume_estoque: l.quantidade,
+        volume_solicitado: l.solicitacao_qtd ?? 0,
+        preco: itemRow?.preco_referencia ?? 0,
+        fornecedor_id: itemRow?.fornecedor_padrao_id ?? null,
+        forma_pagto_id: itemRow?.forma_pagto_padrao_id ?? null,
+        prazo: itemRow?.prazo_padrao ?? null,
+      })
+      .select("id")
+      .single();
     if (linErr) {
       console.error("Falha linha:", linErr);
       continue;
@@ -276,7 +283,11 @@ export async function enviarParaSolicitacaoAction(
 
     await supabase
       .from("contagem_linhas")
-      .update({ enviado_em: agora, enviado_solicitacao_id: solic_id })
+      .update({
+        enviado_em: agora,
+        enviado_solicitacao_id: solic_id,
+        enviado_linha_id: linhaCriada?.id ?? null,
+      })
       .eq("id", l.id);
     enviadas++;
   }

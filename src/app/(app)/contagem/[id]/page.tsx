@@ -23,13 +23,28 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
   const { data: meProfile } = user
     ? await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
     : { data: null };
-  const role = meProfile?.role as "comprador" | "aprovador" | "estoquista" | undefined;
+  const role = meProfile?.role as
+    | "comprador"
+    | "aprovador"
+    | "estoquista"
+    | "financeiro"
+    | undefined;
   const canRequestPurchase = role === "comprador" || role === "aprovador";
+  // Quem conta estoque não vê valores — regra já vigente no sistema.
+  const podeVerPrecos =
+    role === "aprovador" || role === "comprador" || role === "financeiro";
 
   const [{ data: linhasRaw }, { data: templates }] = await Promise.all([
     supabase
       .from("contagem_linhas")
-      .select("id, ordem, secao, texto, quantidade, observacao, solicitacao_qtd, enviado_em, enviado_solicitacao_id, item:itens(unidade:unidades_medida(nome))")
+      .select(
+        `id, ordem, secao, texto, quantidade, observacao, solicitacao_qtd, enviado_em,
+         enviado_solicitacao_id, enviado_linha_id,
+         item:itens(unidade:unidades_medida(nome)),
+         linha_solicitada:solicitacao_linhas!contagem_linhas_enviado_linha_id_fkey(
+           preco, valor, fornecedor:fornecedores(nome)
+         )`
+      )
       .eq("contagem_id", id)
       .order("ordem"),
     supabase.from("templates_contagem").select("id, nome, descricao").eq("ativo", true).order("nome"),
@@ -46,6 +61,10 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     enviado_em: l.enviado_em,
     enviado_solicitacao_id: l.enviado_solicitacao_id,
     medida: l.item?.unidade?.nome ?? null,
+    // Preço congelado no momento da solicitação + fornecedor daquele pedido
+    preco: podeVerPrecos ? (l.linha_solicitada?.preco ?? null) : null,
+    valor: podeVerPrecos ? (l.linha_solicitada?.valor ?? null) : null,
+    fornecedor: podeVerPrecos ? (l.linha_solicitada?.fornecedor?.nome ?? null) : null,
   }));
 
   const opts: TemplateOpt[] = (templates ?? []).map((t) => ({ id: t.id, nome: t.nome, descricao: t.descricao }));
@@ -73,6 +92,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
         initialLinhas={linhas}
         templates={opts}
         canRequestPurchase={canRequestPurchase}
+        mostrarPrecos={podeVerPrecos}
       />
     </div>
   );
