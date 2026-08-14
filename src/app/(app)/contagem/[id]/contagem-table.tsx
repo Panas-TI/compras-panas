@@ -22,6 +22,8 @@ export type LinhaC = {
   texto: string;
   quantidade: number | null;
   observacao: string | null;
+  /** Justificativa da compra — de quem solicita, não do estoquista. */
+  observacao_solicitacao: string | null;
   solicitacao_qtd: number | null;
   enviado_em: string | null;
   enviado_solicitacao_id: string | null;
@@ -96,6 +98,9 @@ export function ContagemTable({
   const updateObsLocal = (id: string, o: string | null) => {
     setLinhas((p) => p.map((l) => (l.id === id ? { ...l, observacao: o } : l)));
   };
+  const updateJustLocal = (id: string, o: string | null) => {
+    setLinhas((p) => p.map((l) => (l.id === id ? { ...l, observacao_solicitacao: o } : l)));
+  };
   const updateSolicLocal = (id: string, q: number | null) => {
     setLinhas((p) => p.map((l) => (l.id === id ? { ...l, solicitacao_qtd: q } : l)));
   };
@@ -109,6 +114,12 @@ export function ContagemTable({
   const persistObs = (id: string, str: string) => {
     startTransition(async () => {
       const res = await updateLinhaContagemAction(id, { observacao: str });
+      if (res.error) setError(res.error);
+    });
+  };
+  const persistJust = (id: string, str: string) => {
+    startTransition(async () => {
+      const res = await updateLinhaContagemAction(id, { observacao_solicitacao: str });
       if (res.error) setError(res.error);
     });
   };
@@ -282,6 +293,14 @@ export function ContagemTable({
                 {mostrarPrecos && <th className="w-28 px-2 py-1 text-right">Valor</th>}
                 {mostrarPrecos && <th className="w-36 px-2 py-1">Fornecedor</th>}
                 <th className="px-2 py-1">Observação</th>
+                {mostrarSolic && (
+                  <th
+                    className="w-48 px-2 py-1"
+                    title="Justificativa da compra — vai junto pra solicitação e fica visível ao aprovador"
+                  >
+                    Justificativa
+                  </th>
+                )}
                 {!finalizada && <th className="w-20 px-2 py-1"></th>}
               </tr>
             </thead>
@@ -295,9 +314,11 @@ export function ContagemTable({
                   mostrarPrecos={mostrarPrecos}
                   onUpdateQtdLocal={(q) => updateQtdLocal(l.id, q)}
                   onUpdateObsLocal={(o) => updateObsLocal(l.id, o)}
+                  onUpdateJustLocal={(o) => updateJustLocal(l.id, o)}
                   onUpdateSolicLocal={(q) => updateSolicLocal(l.id, q)}
                   onPersistQtd={(s) => persistQtd(l.id, s)}
                   onPersistObs={(s) => persistObs(l.id, s)}
+                  onPersistJust={(s) => persistJust(l.id, s)}
                   onPersistSolic={(s) => persistSolic(l.id, s)}
                   onRemove={() => handleRemove(l.id)}
                 />
@@ -354,9 +375,11 @@ function LinhaRow({
   mostrarPrecos,
   onUpdateQtdLocal,
   onUpdateObsLocal,
+  onUpdateJustLocal,
   onUpdateSolicLocal,
   onPersistQtd,
   onPersistObs,
+  onPersistJust,
   onPersistSolic,
   onRemove,
 }: {
@@ -366,14 +389,17 @@ function LinhaRow({
   mostrarPrecos: boolean;
   onUpdateQtdLocal: (q: number | null) => void;
   onUpdateObsLocal: (o: string | null) => void;
+  onUpdateJustLocal: (o: string | null) => void;
   onUpdateSolicLocal: (q: number | null) => void;
   onPersistQtd: (s: string) => void;
   onPersistObs: (s: string) => void;
+  onPersistJust: (s: string) => void;
   onPersistSolic: (s: string) => void;
   onRemove: () => void;
 }) {
   const [qtdStr, setQtdStr] = useState(formatNumberBR(linha.quantidade));
   const [obs, setObs] = useState(linha.observacao ?? "");
+  const [just, setJust] = useState(linha.observacao_solicitacao ?? "");
   const [solicStr, setSolicStr] = useState(formatNumberBR(linha.solicitacao_qtd));
   const jaEnviado = !!linha.enviado_em;
 
@@ -503,6 +529,31 @@ function LinhaRow({
           />
         )}
       </td>
+      {/* Justificativa da compra — some junto com a coluna Solicitação.
+          Congela no envio, igual preço e valor. */}
+      {canRequestPurchase && (
+        <td className="px-2 py-1.5">
+          {jaEnviado ? (
+            <span className="text-xs text-zinc-600">{just || "—"}</span>
+          ) : (
+            <Input
+              data-col="just"
+              data-ord={linha.ordem}
+              value={just}
+              onChange={(e) => setJust(e.target.value)}
+              onBlur={() => {
+                const t = just.trim();
+                onUpdateJustLocal(t || null);
+                onPersistJust(t);
+              }}
+              onKeyDown={handleEnterKey}
+              maxLength={500}
+              placeholder="Justificativa (opcional)"
+              className="h-8"
+            />
+          )}
+        </td>
+      )}
       {!finalizada && (
         <td className="px-2 py-1.5 text-right">
           <button onClick={onRemove} className="text-xs text-red-600 hover:underline">Remover</button>

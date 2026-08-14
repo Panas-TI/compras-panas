@@ -25,6 +25,17 @@ function parseNumberBR(value: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// Mesmo teto usado nas observações da solicitação (solicitacoes/nova).
+// Não exportar: num módulo "use server" todo export precisa ser função async.
+const MAX_OBS_LEN = 500;
+
+/** Texto livre → trim, corta no limite, vazio vira null (nunca ""). */
+function sanitizeTexto(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const t = value.trim();
+  return t ? t.slice(0, MAX_OBS_LEN) : null;
+}
+
 export async function criarContagemAction(): Promise<void> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -109,7 +120,12 @@ export async function importarTemplateAction(
 
 export async function updateLinhaContagemAction(
   linha_id: string,
-  patch: { quantidade?: string | null; observacao?: string | null; solicitacao_qtd?: string | null }
+  patch: {
+    quantidade?: string | null;
+    observacao?: string | null;
+    observacao_solicitacao?: string | null;
+    solicitacao_qtd?: string | null;
+  }
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
   const sanitized: LinhaUpdate = {};
@@ -118,6 +134,21 @@ export async function updateLinhaContagemAction(
   }
   if (patch.observacao !== undefined) {
     sanitized.observacao = patch.observacao || null;
+  }
+  if (patch.observacao_solicitacao !== undefined) {
+    // A justificativa é da compra, não da contagem: só quem pode solicitar
+    // escreve nela. A UI já esconde o campo, mas a action é chamável direto.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Não autenticado." };
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.role !== "comprador" && profile?.role !== "aprovador") {
+      return { error: "Apenas comprador ou aprovador podem preencher a justificativa." };
+    }
+    sanitized.observacao_solicitacao = sanitizeTexto(patch.observacao_solicitacao);
   }
   if (patch.solicitacao_qtd !== undefined) {
     sanitized.solicitacao_qtd = patch.solicitacao_qtd === null ? null : parseNumberBR(patch.solicitacao_qtd);
@@ -180,7 +211,7 @@ export async function enviarParaSolicitacaoAction(
   // Linhas com solicitação preenchida e ainda não enviadas
   const { data: linhas, error: lerr } = await supabase
     .from("contagem_linhas")
-    .select("id, texto, quantidade, solicitacao_qtd, item_id")
+    .select("id, texto, quantidade, solicitacao_qtd, item_id, observacao_solicitacao")
     .eq("contagem_id", contagem_id)
     .gt("solicitacao_qtd", 0)
     .is("enviado_em", null)
@@ -273,6 +304,8 @@ export async function enviarParaSolicitacaoAction(
         fornecedor_id: itemRow?.fornecedor_padrao_id ?? null,
         forma_pagto_id: itemRow?.forma_pagto_padrao_id ?? null,
         prazo: itemRow?.prazo_padrao ?? null,
+        // Leva a justificativa junto: é aqui que o aprovador vai lê-la.
+        observacoes: l.observacao_solicitacao ?? null,
       })
       .select("id")
       .single();

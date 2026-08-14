@@ -38,8 +38,8 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     supabase
       .from("contagem_linhas")
       .select(
-        `id, ordem, secao, texto, quantidade, observacao, solicitacao_qtd, enviado_em,
-         enviado_solicitacao_id, enviado_linha_id,
+        `id, ordem, secao, texto, quantidade, observacao, observacao_solicitacao,
+         solicitacao_qtd, enviado_em, enviado_solicitacao_id, enviado_linha_id,
          item:itens(
            unidade:unidades_medida(nome),
            preco_referencia,
@@ -61,6 +61,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     texto: l.texto,
     quantidade: l.quantidade,
     observacao: l.observacao,
+    observacao_solicitacao: l.observacao_solicitacao,
     solicitacao_qtd: l.solicitacao_qtd,
     enviado_em: l.enviado_em,
     enviado_solicitacao_id: l.enviado_solicitacao_id,

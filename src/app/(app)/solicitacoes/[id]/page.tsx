@@ -40,7 +40,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
     .select(
       `
       id, item_id, volume_estoque, volume_solicitado, preco, valor,
-      fornecedor_id, forma_pagto_id, prazo, status, alteracao_confirmada,
+      fornecedor_id, forma_pagto_id, prazo, status, alteracao_confirmada, observacoes,
       item:itens(nome, codigo_queops, preco_referencia, embalagem_compra_nome, qtd_por_embalagem,
         classificacao:classificacoes(nome),
         unidade:unidades_medida(nome)
@@ -99,6 +99,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
       prazo: l.prazo,
       status: l.status,
       alteracao_confirmada: l.alteracao_confirmada,
+      observacoes: l.observacoes,
     };
   });
 

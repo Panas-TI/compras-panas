@@ -39,6 +39,8 @@ export type Linha = {
   prazo: string | null;
   status: string;
   alteracao_confirmada: boolean;
+  /** Justificativa da compra, escrita na contagem por quem solicitou. */
+  observacoes: string | null;
 };
 
 function formatNumberBR(n: number | null | undefined, fraction = 2): string {
@@ -403,6 +405,16 @@ function LinhaTr({
             )}
             {linha.classificacao_nome && <span>· {linha.classificacao_nome}</span>}
           </span>
+          {/* Justificativa da compra — vem da contagem, é o que o aprovador
+              precisa ler antes de decidir. */}
+          {linha.observacoes && (
+            <span
+              className="mt-0.5 text-xs italic text-zinc-600"
+              title={linha.observacoes}
+            >
+              💬 {linha.observacoes}
+            </span>
+          )}
         </div>
       </td>
       <td className="px-1 py-1.5">

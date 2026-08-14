@@ -90,6 +90,7 @@ export type Database = {
           id: string
           item_id: string | null
           observacao: string | null
+          observacao_solicitacao: string | null
           ordem: number
           quantidade: number | null
           secao: string | null
@@ -106,6 +107,7 @@ export type Database = {
           id?: string
           item_id?: string | null
           observacao?: string | null
+          observacao_solicitacao?: string | null
           ordem: number
           quantidade?: number | null
           secao?: string | null
@@ -122,6 +124,7 @@ export type Database = {
           id?: string
           item_id?: string | null
           observacao?: string | null
+          observacao_solicitacao?: string | null
           ordem?: number
           quantidade?: number | null
           secao?: string | null

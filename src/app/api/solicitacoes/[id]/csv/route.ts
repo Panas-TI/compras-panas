@@ -58,7 +58,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       `
       codigo_queops_congelado, nome_item_congelado, classificacao_congelada, unidade_congelada,
       volume_solicitado, preco, valor, prazo, vencimento, data_compra, data_recebimento, status,
-      alteracao_confirmada,
+      alteracao_confirmada, observacoes,
       item:itens(nome, codigo_queops, unidade:unidades_medida(nome), classificacao:classificacoes(nome)),
       fornecedor:fornecedores(nome),
       forma_pagto:formas_pagamento(nome)
@@ -86,6 +86,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     "Data Compra",
     "Data Recebimento",
     "Status",
+    "Justificativa",
   ];
 
   const linhasFiltradas = somenteAprovadas
@@ -107,6 +108,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     formatDateBR(l.data_compra),
     formatDateBR(l.data_recebimento),
     l.status,
+    l.observacoes ?? "",
   ]);
 
   const sep = ";";
