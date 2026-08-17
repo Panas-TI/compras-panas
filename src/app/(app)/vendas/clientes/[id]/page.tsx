@@ -175,7 +175,13 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
         <CardContent className="flex flex-col gap-3 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Histórico de contato</h2>
-            {podeEscrever && <RegistrarContato clienteId={cliente.id} nome={cliente.nome} />}
+            {podeEscrever && (
+              <RegistrarContato
+                clienteId={cliente.id}
+                nome={cliente.nome}
+                intervaloDias={cliente.intervalo_mediano_dias}
+              />
+            )}
           </div>
           {(contatos ?? []).length === 0 ? (
             <p className="text-sm text-zinc-500">Nenhum contato registrado ainda.</p>

@@ -135,7 +135,13 @@ export default async function VendasHojePage() {
                     presumido={c.telefone_presumido}
                     canal={c.canal_preferido}
                   />
-                  {podeEscrever && <RegistrarContato clienteId={c.id} nome={c.nome} />}
+                  {podeEscrever && (
+                    <RegistrarContato
+                      clienteId={c.id}
+                      nome={c.nome}
+                      intervaloDias={c.intervalo_mediano_dias}
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>

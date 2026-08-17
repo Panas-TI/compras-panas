@@ -15,7 +15,42 @@ const RESULTADOS = [
 
 const CANAIS = ["whatsapp", "telefone", "presencial", "email"] as const;
 
-export function RegistrarContato({ clienteId, nome }: { clienteId: string; nome: string }) {
+/** Dias de antecedência: o vendedor precisa falar antes do estoque acabar. */
+const ANTECEDENCIA = 3;
+/** Sem histórico suficiente não dá pra prever o ritmo — espera uma semana. */
+const PADRAO_SEM_CICLO = 7;
+
+function hojeMais(dias: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+function ddmm(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
+/**
+ * Quando o cliente compra na hora, quem decide o retorno é o sistema, não o
+ * vendedor: volta 3 dias antes da próxima compra prevista pelo ciclo dele.
+ * Piso de 1 dia porque há cliente de ciclo curto (2 dias) em que o cálculo
+ * cairia no passado.
+ */
+function diasAteVoltar(intervalo: number | null): number {
+  if (!intervalo) return PADRAO_SEM_CICLO;
+  return Math.max(1, intervalo - ANTECEDENCIA);
+}
+
+export function RegistrarContato({
+  clienteId,
+  nome,
+  intervaloDias = null,
+}: {
+  clienteId: string;
+  nome: string;
+  /** Ciclo típico de recompra do cliente (vendas_clientes.intervalo_mediano_dias). */
+  intervaloDias?: number | null;
+}) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [canal, setCanal] = useState<string>("whatsapp");
@@ -24,6 +59,9 @@ export function RegistrarContato({ clienteId, nome }: { clienteId: string; nome:
   const [adiar, setAdiar] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  const comprou = resultado === "comprou";
+  const retornoPrevisto = hojeMais(diasAteVoltar(intervaloDias));
 
   const salvar = async () => {
     setSalvando(true);
@@ -34,14 +72,18 @@ export function RegistrarContato({ clienteId, nome }: { clienteId: string; nome:
         data: { user },
       } = await sb.auth.getUser();
 
-      // Sem data escolhida, usa o padrão do resultado — evita ligar de novo amanhã
-      let adiarAte = adiar || null;
-      if (!adiarAte) {
-        const dias = RESULTADOS.find((r) => r.v === resultado)?.adiaDias ?? 0;
-        if (dias > 0) {
-          const d = new Date();
-          d.setDate(d.getDate() + dias);
-          adiarAte = d.toISOString().slice(0, 10);
+      let adiarAte: string | null;
+      if (comprou) {
+        // Comprou agora: o sistema decide, ignorando qualquer data digitada.
+        // Sem isso o cliente voltaria pra fila amanhã, porque a venda só entra
+        // no sistema na importação semanal seguinte.
+        adiarAte = hojeMais(diasAteVoltar(intervaloDias));
+      } else {
+        // Sem data escolhida, usa o padrão do resultado — evita ligar de novo amanhã
+        adiarAte = adiar || null;
+        if (!adiarAte) {
+          const dias = RESULTADOS.find((r) => r.v === resultado)?.adiaDias ?? 0;
+          if (dias > 0) adiarAte = hojeMais(dias);
         }
       }
 
@@ -103,15 +145,28 @@ export function RegistrarContato({ clienteId, nome }: { clienteId: string; nome:
           ))}
         </select>
 
-        <label className="flex items-center gap-1.5 text-xs text-zinc-500">
-          voltar em
-          <input
-            type="date"
-            value={adiar}
-            onChange={(e) => setAdiar(e.target.value)}
-            className="h-8 rounded border border-zinc-300 bg-white px-2 text-sm"
-          />
-        </label>
+        {/* Comprou agora → quem calcula o retorno é o sistema. O vendedor não
+            tem como saber quando o cliente vai precisar de novo; o ciclo sabe. */}
+        {comprou ? (
+          <span className="text-xs text-zinc-600">
+            volta em <strong>{ddmm(retornoPrevisto)}</strong>{" "}
+            <span className="text-zinc-400">
+              {intervaloDias
+                ? `(${diasAteVoltar(intervaloDias)} dias — 3 antes do ciclo de ${intervaloDias})`
+                : "(sem ciclo definido ainda)"}
+            </span>
+          </span>
+        ) : (
+          <label className="flex items-center gap-1.5 text-xs text-zinc-500">
+            voltar em
+            <input
+              type="date"
+              value={adiar}
+              onChange={(e) => setAdiar(e.target.value)}
+              className="h-8 rounded border border-zinc-300 bg-white px-2 text-sm"
+            />
+          </label>
+        )}
       </div>
 
       <input
