@@ -18,8 +18,12 @@ const CANAIS = ["whatsapp", "telefone", "presencial", "email"] as const;
 
 /** Dias de antecedência: o vendedor precisa falar antes do estoque acabar. */
 const ANTECEDENCIA = 3;
-/** Sem histórico suficiente não dá pra prever o ritmo — espera uma semana. */
-const PADRAO_SEM_CICLO = 7;
+/**
+ * Sem histórico suficiente não dá pra prever o ritmo. Presume 10 dias — mesmo
+ * número usado em recalcular_metricas_vendas() pra fila do cliente novo; se
+ * divergissem, o cliente voltaria pra fila em data diferente da prometida aqui.
+ */
+const PADRAO_SEM_CICLO = 10;
 
 function hojeMais(dias: number): string {
   const d = new Date();
