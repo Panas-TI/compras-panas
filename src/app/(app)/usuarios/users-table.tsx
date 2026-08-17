@@ -13,12 +13,12 @@ import {
   type CreateUserState,
 } from "./actions";
 
-type Role = "comprador" | "aprovador" | "estoquista" | "motorista";
+type Role = "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas";
 
 export type UserRow = {
   id: string;
   nome: string;
-  role: "comprador" | "aprovador" | "estoquista" | "motorista";
+  role: "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas";
   ativo: boolean;
 };
 
@@ -49,6 +49,7 @@ export function UsersTable({ currentUserId, users }: { currentUserId: string; us
               <option value="aprovador">Administrador (acesso total)</option>
               <option value="estoquista">Estoquista (recebimento + contagem)</option>
               <option value="motorista">Motorista (só entregas)</option>
+              <option value="vendas">Atendente / Vendedor (só o módulo Vendas)</option>
             </Select>
           </div>
         </div>
@@ -131,6 +132,7 @@ function UserTr({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
             <option value="aprovador">Administrador</option>
             <option value="estoquista">Estoquista</option>
             <option value="motorista">Motorista</option>
+            <option value="vendas">Atendente / Vendedor</option>
           </Select>
         )}
       </td>
