@@ -1,5 +1,13 @@
 import { guardVendas } from "./guard";
-import { EstadoPill, Telefone, ItensHabituais, LinkCliente, diasTexto, recenciaDias } from "./ui";
+import {
+  EstadoPill,
+  Telefone,
+  ItensHabituais,
+  LinkCliente,
+  ResultadoPill,
+  diasTexto,
+  recenciaDias,
+} from "./ui";
 import type { ItemHabitual } from "./ui";
 import { RegistrarContato } from "./registrar-contato";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
@@ -19,15 +27,29 @@ export default async function VendasHojePage() {
       )
       .eq("contatar_3dias", true)
       .eq("ativo", true),
-    supabase.from("vendas_contatos").select("cliente_id, adiar_ate").gte("adiar_ate", hoje),
+    supabase
+      .from("vendas_contatos")
+      .select("cliente_id, adiar_ate, resultado, observacao, criado_em")
+      .gte("adiar_ate", hoje)
+      .order("criado_em", { ascending: false }),
     supabase
       .from("vendas_contatos")
       .select("id", { count: "exact", head: true })
       .gte("criado_em", `${hoje}T00:00:00`),
   ]);
 
-  // Quem já disse quando volta sai da fila até a data combinada
-  const silenciados = new Set((adiados ?? []).map((a) => a.cliente_id));
+  // Quem já disse quando volta sai da fila até a data combinada. Guardamos o
+  // contato mais recente de cada um pra poder explicar a ausência — some sem
+  // dizer por quê é o que fazia o vendedor achar que tinha perdido cliente.
+  const adiadoPor = new Map<string, NonNullable<typeof adiados>[number]>();
+  for (const a of adiados ?? []) {
+    if (a.cliente_id && !adiadoPor.has(a.cliente_id)) adiadoPor.set(a.cliente_id, a);
+  }
+  const silenciados = new Set(adiadoPor.keys());
+  const aguardando = (fila ?? [])
+    .filter((c) => silenciados.has(c.id))
+    .map((c) => ({ cliente: c, contato: adiadoPor.get(c.id)! }))
+    .sort((a, b) => String(a.contato.adiar_ate).localeCompare(String(b.contato.adiar_ate)));
   const lista = (fila ?? [])
     .filter((c) => !silenciados.has(c.id))
     .sort((a, b) => {
@@ -68,7 +90,8 @@ export default async function VendasHojePage() {
       {lista.length === 0 && (
         <Card>
           <CardContent className="p-8 text-center text-sm text-zinc-500">
-            Nenhum cliente na fila de hoje. {silenciados.size > 0 && `${silenciados.size} aguardando data combinada.`}
+            Nenhum cliente na fila de hoje.{" "}
+            {aguardando.length > 0 && `${aguardando.length} aguardando data combinada.`}
           </CardContent>
         </Card>
       )}
@@ -119,6 +142,33 @@ export default async function VendasHojePage() {
           );
         })}
       </div>
+
+      {/* Quem venceu o ciclo mas está fora da fila por combinação anterior.
+          Sem isso o cliente simplesmente sumia, sem explicação. */}
+      {aguardando.length > 0 && (
+        <details className="rounded-md border border-zinc-200 bg-white">
+          <summary className="cursor-pointer px-4 py-3 text-sm text-zinc-600">
+            <strong className="text-zinc-900">{aguardando.length}</strong>{" "}
+            {aguardando.length === 1 ? "cliente fora da fila" : "clientes fora da fila"} por
+            combinação anterior
+            <span className="ml-1 text-xs text-zinc-400">(clique pra ver)</span>
+          </summary>
+          <ul className="flex flex-col gap-2 border-t border-zinc-100 px-4 py-3">
+            {aguardando.map(({ cliente, contato }) => (
+              <li key={cliente.id} className="flex flex-wrap items-center gap-2 text-sm">
+                <ResultadoPill resultado={contato.resultado} />
+                <LinkCliente id={cliente.id} nome={cliente.nome} />
+                <span className="text-zinc-500">
+                  volta em {formatDateBR(String(contato.adiar_ate))}
+                </span>
+                {contato.observacao && (
+                  <span className="text-zinc-500">— “{contato.observacao}”</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }

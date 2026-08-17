@@ -92,6 +92,54 @@ export function LinkCliente({ id, nome }: { id: string; nome: string }) {
   );
 }
 
+// Resultado do contato. Mesma ordem do formulário de registro.
+export const RESULTADO_LABEL: Record<string, string> = {
+  vai_comprar: "Vai comprar",
+  comprou: "Comprou agora",
+  nao_agora: "Não agora",
+  sem_resposta: "Sem resposta",
+  recusou: "Não quer mais",
+};
+
+const RESULTADO_CLASSE: Record<string, string> = {
+  vai_comprar: "bg-blue-50 text-blue-700 border-blue-200",
+  comprou: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  nao_agora: "bg-zinc-50 text-zinc-600 border-zinc-200",
+  sem_resposta: "bg-amber-50 text-amber-800 border-amber-200",
+  recusou: "bg-red-50 text-red-700 border-red-200",
+};
+
+export function ResultadoPill({ resultado }: { resultado: string | null }) {
+  const r = resultado ?? "";
+  return (
+    <span
+      className={cn(
+        "inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium",
+        RESULTADO_CLASSE[r] ?? "bg-zinc-50 text-zinc-500 border-zinc-200"
+      )}
+    >
+      {RESULTADO_LABEL[r] ?? r ?? "—"}
+    </span>
+  );
+}
+
+/**
+ * "Promessa vencida": disse que ia comprar, a data combinada passou e desde o
+ * contato não houve compra. É onde o dinheiro escapa sem ninguém perceber.
+ */
+export function promessaVencida(
+  resultado: string | null,
+  adiarAte: string | null,
+  criadoEm: string,
+  ultimaCompra: string | null,
+  hoje: string
+): boolean {
+  if (resultado !== "vai_comprar" || !adiarAte) return false;
+  if (adiarAte >= hoje) return false;
+  const dia = String(criadoEm).slice(0, 10);
+  return !ultimaCompra || ultimaCompra < dia;
+}
+
 export function diasTexto(dias: number | null): string {
   if (dias == null) return "—";
   if (dias === 0) return "hoje";

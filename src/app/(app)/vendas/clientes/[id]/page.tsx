@@ -1,21 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { guardVendas } from "../../guard";
-import { EstadoPill, Telefone, diasTexto, recenciaDias } from "../../ui";
+import { EstadoPill, Telefone, ResultadoPill, diasTexto, recenciaDias } from "../../ui";
 import type { ItemHabitual } from "../../ui";
 import { RegistrarContato } from "../../registrar-contato";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
-
-const RESULTADO_LABEL: Record<string, string> = {
-  vai_comprar: "vai comprar",
-  comprou: "comprou",
-  nao_agora: "não agora",
-  sem_resposta: "sem resposta",
-  recusou: "não quer mais",
-};
 
 export default async function FichaClientePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -196,7 +188,7 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
                     <span className="text-zinc-500">
                       {formatDateBR(String(c.criado_em).slice(0, 10))} · {quem} · {c.canal}
                     </span>{" "}
-                    · <strong>{RESULTADO_LABEL[c.resultado ?? ""] ?? c.resultado}</strong>
+                    · <ResultadoPill resultado={c.resultado} />
                     {c.observacao && <span className="text-zinc-600"> — “{c.observacao}”</span>}
                     {c.adiar_ate && (
                       <span className="ml-1 text-xs text-zinc-400">

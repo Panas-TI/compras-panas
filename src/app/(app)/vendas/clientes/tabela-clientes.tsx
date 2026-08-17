@@ -1,9 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { EstadoPill, Telefone, LinkCliente, diasTexto, recenciaDias } from "../ui";
+import { EstadoPill, Telefone, LinkCliente, ResultadoPill, diasTexto, recenciaDias } from "../ui";
 import type { ItemHabitual } from "../ui";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
+
+export type UltimoContato = {
+  resultado: string | null;
+  adiar_ate: string | null;
+  criado_em: string;
+};
 
 export type LinhaCliente = {
   id: string;
@@ -37,19 +43,23 @@ export function TabelaClientes({
   clientes,
   estadoInicial = "todos",
   titulo,
+  ultimoContato = {},
 }: {
   clientes: LinhaCliente[];
   estadoInicial?: string;
   titulo?: string;
+  ultimoContato?: Record<string, UltimoContato>;
 }) {
   const [busca, setBusca] = useState("");
   const [estado, setEstado] = useState(estadoInicial);
   const [ordem, setOrdem] = useState<Ordem>(estadoInicial === "inativo" ? "risco" : "total");
+  const [soSemContato, setSoSemContato] = useState(false);
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     const out = clientes.filter((c) => {
       if (estado !== "todos" && c.status !== estado) return false;
+      if (soSemContato && ultimoContato[c.id]) return false;
       if (!q) return true;
       return (
         c.nome.toLowerCase().includes(q) ||
@@ -68,7 +78,9 @@ export function TabelaClientes({
       }
     });
     return out;
-  }, [clientes, busca, estado, ordem]);
+  }, [clientes, busca, estado, ordem, soSemContato, ultimoContato]);
+
+  const semContato = clientes.filter((c) => !ultimoContato[c.id]).length;
 
   const somaRisco = filtrados.reduce((s, c) => s + Number(c.receita_anual_risco ?? 0), 0);
 
@@ -101,6 +113,16 @@ export function TabelaClientes({
             <option key={o.v} value={o.v}>Ordenar: {o.label}</option>
           ))}
         </select>
+        {semContato > 0 && (
+          <label className="flex items-center gap-1.5 whitespace-nowrap text-sm text-zinc-600">
+            <input
+              type="checkbox"
+              checked={soSemContato}
+              onChange={(e) => setSoSemContato(e.target.checked)}
+            />
+            Nunca contatados ({semContato})
+          </label>
+        )}
       </div>
 
       <p className="text-xs text-zinc-500">
@@ -122,7 +144,8 @@ export function TabelaClientes({
               <th className="px-3 py-2 text-right">Ticket</th>
               <th className="px-3 py-2 text-right">Total</th>
               {titulo === "inativos" && <th className="px-3 py-2 text-right">Risco/ano</th>}
-              <th className="px-3 py-2">Contato</th>
+              <th className="px-3 py-2">Último contato</th>
+              <th className="px-3 py-2">Telefone</th>
             </tr>
           </thead>
           <tbody>
@@ -161,6 +184,20 @@ export function TabelaClientes({
                       {c.receita_anual_risco ? formatCurrencyBRL(Number(c.receita_anual_risco)) : "—"}
                     </td>
                   )}
+                  <td className="whitespace-nowrap px-3 py-2">
+                    {(() => {
+                      const uc = ultimoContato[c.id];
+                      if (!uc) return <span className="text-xs text-zinc-300">nunca</span>;
+                      return (
+                        <span className="inline-flex flex-col gap-0.5">
+                          <ResultadoPill resultado={uc.resultado} />
+                          <span className="text-[11px] text-zinc-400">
+                            {formatDateBR(String(uc.criado_em).slice(0, 10))}
+                          </span>
+                        </span>
+                      );
+                    })()}
+                  </td>
                   <td className="px-3 py-2">
                     <Telefone
                       e164={c.telefone_e164}

@@ -53,6 +53,7 @@ const ENTREGAS_ITEMS: NavItem[] = [
 const VENDAS_ITEMS: NavItem[] = [
   { href: "/vendas", label: "Hoje" },
   { href: "/vendas/clientes", label: "Clientes" },
+  { href: "/vendas/contatos", label: "Contatos" },
   { href: "/vendas/inativos", label: "Reativação" },
 ];
 
