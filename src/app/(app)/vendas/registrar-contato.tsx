@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { MOTIVOS_CONTATO, MOTIVO_OUTRO } from "./ui";
 
 const RESULTADOS = [
   { v: "vai_comprar", label: "Vai comprar", adiaDias: 2 },
@@ -55,6 +56,7 @@ export function RegistrarContato({
   const [aberto, setAberto] = useState(false);
   const [canal, setCanal] = useState<string>("whatsapp");
   const [resultado, setResultado] = useState<string>("vai_comprar");
+  const [motivo, setMotivo] = useState<string>("");
   const [observacao, setObservacao] = useState("");
   const [adiar, setAdiar] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -63,7 +65,15 @@ export function RegistrarContato({
   const comprou = resultado === "comprou";
   const retornoPrevisto = hojeMais(diasAteVoltar(intervaloDias));
 
+  const precisaDetalhar = motivo === MOTIVO_OUTRO && !observacao.trim();
+
   const salvar = async () => {
+    // "Outro" sem detalhe não serve pra nada depois — é o caso que a lista
+    // fechada existe justamente pra evitar.
+    if (precisaDetalhar) {
+      setErro("Escolheu “Outro” — escreva o que o cliente disse.");
+      return;
+    }
     setSalvando(true);
     setErro(null);
     try {
@@ -92,12 +102,14 @@ export function RegistrarContato({
         usuario_id: user?.id ?? null,
         canal,
         resultado,
+        motivo: motivo || null,
         adiar_ate: adiarAte,
         observacao: observacao.trim() || null,
       });
       if (error) throw new Error(error.message);
 
       setAberto(false);
+      setMotivo("");
       setObservacao("");
       setAdiar("");
       router.refresh();
@@ -169,11 +181,32 @@ export function RegistrarContato({
         )}
       </div>
 
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <select
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          className="h-8 min-w-[240px] flex-1 rounded border border-zinc-300 bg-white px-2 text-sm"
+        >
+          <option value="">O que o cliente disse…</option>
+          {MOTIVOS_CONTATO.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <input
         value={observacao}
         onChange={(e) => setObservacao(e.target.value)}
-        placeholder="O que o cliente disse..."
-        className="mt-2 h-8 w-full rounded border border-zinc-300 bg-white px-2 text-sm"
+        placeholder={
+          motivo === MOTIVO_OUTRO
+            ? "Escreva o que o cliente disse (obrigatório)"
+            : "Detalhe, se houver (opcional)"
+        }
+        className={`mt-2 h-8 w-full rounded border bg-white px-2 text-sm ${
+          precisaDetalhar ? "border-amber-400" : "border-zinc-300"
+        }`}
       />
 
       {erro && <p className="mt-2 text-xs text-red-600">{erro}</p>}

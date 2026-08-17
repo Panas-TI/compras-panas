@@ -1366,6 +1366,7 @@ export type Database = {
           cliente_id: string
           criado_em: string
           id: string
+          motivo: string | null
           observacao: string | null
           resultado: string | null
           usuario_id: string | null
@@ -1376,6 +1377,7 @@ export type Database = {
           cliente_id: string
           criado_em?: string
           id?: string
+          motivo?: string | null
           observacao?: string | null
           resultado?: string | null
           usuario_id?: string | null
@@ -1386,6 +1388,7 @@ export type Database = {
           cliente_id?: string
           criado_em?: string
           id?: string
+          motivo?: string | null
           observacao?: string | null
           resultado?: string | null
           usuario_id?: string | null

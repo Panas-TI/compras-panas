@@ -92,6 +92,59 @@ export function LinkCliente({ id, nome }: { id: string; nome: string }) {
   );
 }
 
+/**
+ * "O que o cliente disse" — opção fechada pra dar pra agrupar e analisar.
+ * "Outro" é sempre o último e abre o texto livre.
+ */
+export const MOTIVOS_CONTATO = [
+  "Ainda tem estoque",
+  "Vai fazer o pedido em breve",
+  "Movimento fraco no período",
+  "Aguardando pagamento para repor",
+  "Achou o preço alto",
+  "Quer negociar prazo ou forma de pagamento",
+  "Pediu tabela de preços atualizada",
+  "Reclamou da qualidade do produto",
+  "Reclamou de atraso na entrega",
+  "Faltou item na última entrega",
+  "Está comprando de outro fornecedor",
+  "Mudou o responsável pelas compras",
+  "Estabelecimento fechado ou em reforma",
+  "Período de baixa temporada",
+  "Pediu para retornar outro dia",
+  "Outro",
+] as const;
+
+export const MOTIVO_OUTRO = "Outro";
+
+/** Motivos que apontam problema nosso, não do cliente — valem destaque. */
+const MOTIVOS_ALERTA = new Set<string>([
+  "Reclamou da qualidade do produto",
+  "Reclamou de atraso na entrega",
+  "Faltou item na última entrega",
+  "Está comprando de outro fornecedor",
+  "Achou o preço alto",
+]);
+
+export function MotivoTag({ motivo }: { motivo: string | null }) {
+  if (!motivo) return <span className="text-zinc-300">—</span>;
+  const alerta = MOTIVOS_ALERTA.has(motivo);
+  return (
+    <span
+      className={cn(
+        "inline-flex whitespace-nowrap rounded border px-1.5 py-0.5 text-[11px]",
+        alerta
+          ? "border-red-200 bg-red-50 text-red-800"
+          : "border-zinc-200 bg-zinc-50 text-zinc-600"
+      )}
+      title={alerta ? "Motivo ligado a problema nosso — vale acompanhar" : undefined}
+    >
+      {alerta && "⚠ "}
+      {motivo}
+    </span>
+  );
+}
+
 // Resultado do contato. Mesma ordem do formulário de registro.
 export const RESULTADO_LABEL: Record<string, string> = {
   vai_comprar: "Vai comprar",

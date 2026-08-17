@@ -5,6 +5,7 @@ import {
   ItensHabituais,
   LinkCliente,
   ResultadoPill,
+  MotivoTag,
   diasTexto,
   recenciaDias,
 } from "./ui";
@@ -29,7 +30,7 @@ export default async function VendasHojePage() {
       .eq("ativo", true),
     supabase
       .from("vendas_contatos")
-      .select("cliente_id, adiar_ate, resultado, observacao, criado_em")
+      .select("cliente_id, adiar_ate, resultado, motivo, observacao, criado_em")
       .gte("adiar_ate", hoje)
       .order("criado_em", { ascending: false }),
     supabase
@@ -167,6 +168,7 @@ export default async function VendasHojePage() {
                 <span className="text-zinc-500">
                   volta em {formatDateBR(String(contato.adiar_ate))}
                 </span>
+                <MotivoTag motivo={contato.motivo} />
                 {contato.observacao && (
                   <span className="text-zinc-500">— “{contato.observacao}”</span>
                 )}

@@ -15,7 +15,7 @@ export default async function ContatosPage() {
     supabase
       .from("vendas_contatos")
       .select(
-        `id, canal, resultado, observacao, adiar_ate, criado_em,
+        `id, canal, resultado, motivo, observacao, adiar_ate, criado_em,
          usuario:profiles(nome),
          cliente:vendas_clientes(id, nome, ultima_compra, ticket_medio)`
       )

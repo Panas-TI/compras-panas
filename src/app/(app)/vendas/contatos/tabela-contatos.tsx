@@ -1,13 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LinkCliente, ResultadoPill, RESULTADO_LABEL, promessaVencida } from "../ui";
+import {
+  LinkCliente,
+  ResultadoPill,
+  MotivoTag,
+  MOTIVOS_CONTATO,
+  RESULTADO_LABEL,
+  promessaVencida,
+} from "../ui";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 
 export type LinhaContato = {
   id: string;
   canal: string | null;
   resultado: string | null;
+  motivo: string | null;
   observacao: string | null;
   adiar_ate: string | null;
   criado_em: string;
@@ -44,6 +52,7 @@ export function TabelaContatos({
 }) {
   const [busca, setBusca] = useState("");
   const [resultado, setResultado] = useState("todos");
+  const [motivo, setMotivo] = useState("todos");
   const [vendedor, setVendedor] = useState("todos");
   const [periodo, setPeriodo] = useState<string>("30");
   const [soPendentes, setSoPendentes] = useState(false);
@@ -77,15 +86,24 @@ export function TabelaContatos({
     return contatos.filter((c) => {
       if (soPendentes && !idsVencidas.has(c.id)) return false;
       if (resultado !== "todos" && c.resultado !== resultado) return false;
+      if (motivo !== "todos" && c.motivo !== motivo) return false;
       if (vendedor !== "todos" && (c.usuario?.nome ?? "") !== vendedor) return false;
       if (desde && String(c.criado_em).slice(0, 10) < desde) return false;
       if (!q) return true;
       return (
         (c.cliente?.nome ?? "").toLowerCase().includes(q) ||
-        (c.observacao ?? "").toLowerCase().includes(q)
+        (c.observacao ?? "").toLowerCase().includes(q) ||
+        (c.motivo ?? "").toLowerCase().includes(q)
       );
     });
-  }, [contatos, busca, resultado, vendedor, periodo, soPendentes, idsVencidas]);
+  }, [contatos, busca, resultado, motivo, vendedor, periodo, soPendentes, idsVencidas]);
+
+  // Ranking do que os clientes mais dizem — é pra isso que o motivo é fechado.
+  const topMotivos = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of filtrados) if (c.motivo) m.set(c.motivo, (m.get(c.motivo) ?? 0) + 1);
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+  }, [filtrados]);
 
   // Contadores do recorte atual — úteis pra ler o funil da semana.
   const porResultado = useMemo(() => {
@@ -147,6 +165,18 @@ export function TabelaContatos({
             </option>
           ))}
         </select>
+        <select
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm"
+        >
+          <option value="todos">Todos os motivos</option>
+          {MOTIVOS_CONTATO.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
         {vendedores.length > 1 && (
           <select
             value={vendedor}
@@ -176,6 +206,30 @@ export function TabelaContatos({
         )}
       </p>
 
+      {topMotivos.length > 0 && (
+        <div className="rounded-md border border-zinc-200 bg-white p-3">
+          <p className="mb-2 text-xs font-medium text-zinc-500">
+            O que os clientes mais disseram neste recorte
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {topMotivos.map(([m, n]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMotivo(motivo === m ? "todos" : m)}
+                className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                  motivo === m
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100"
+                }`}
+              >
+                {m} <strong className="tabular-nums">{n}</strong>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-md border border-zinc-200 bg-white">
         <table className="w-full text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs text-zinc-500">
@@ -183,8 +237,9 @@ export function TabelaContatos({
               <th className="px-3 py-2">Quando</th>
               <th className="px-3 py-2">Cliente</th>
               <th className="px-3 py-2">Resultado</th>
+              <th className="px-3 py-2">O que disse</th>
               <th className="px-3 py-2">Volta em</th>
-              <th className="px-3 py-2">Observação</th>
+              <th className="px-3 py-2">Detalhe</th>
               <th className="px-3 py-2">Quem falou</th>
               <th className="px-3 py-2">Canal</th>
             </tr>
@@ -215,6 +270,9 @@ export function TabelaContatos({
                   <td className="px-3 py-2">
                     <ResultadoPill resultado={c.resultado} />
                   </td>
+                  <td className="px-3 py-2">
+                    <MotivoTag motivo={c.motivo} />
+                  </td>
                   <td className="whitespace-nowrap px-3 py-2 text-zinc-600">
                     {c.adiar_ate ? (
                       vencida ? (
@@ -240,7 +298,7 @@ export function TabelaContatos({
             })}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-sm text-zinc-500">
+                <td colSpan={8} className="px-3 py-10 text-center text-sm text-zinc-500">
                   Nenhum contato com esses filtros.
                 </td>
               </tr>

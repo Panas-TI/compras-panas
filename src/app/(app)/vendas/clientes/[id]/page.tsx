@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { guardVendas } from "../../guard";
-import { EstadoPill, Telefone, ResultadoPill, diasTexto, recenciaDias } from "../../ui";
+import { EstadoPill, Telefone, ResultadoPill, MotivoTag, diasTexto, recenciaDias } from "../../ui";
 import type { ItemHabitual } from "../../ui";
 import { RegistrarContato } from "../../registrar-contato";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
@@ -30,7 +30,9 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
       .limit(12),
     supabase
       .from("vendas_contatos")
-      .select("id, canal, resultado, observacao, adiar_ate, criado_em, usuario:profiles(nome)")
+      .select(
+        "id, canal, resultado, motivo, observacao, adiar_ate, criado_em, usuario:profiles(nome)"
+      )
       .eq("cliente_id", id)
       .order("criado_em", { ascending: false })
       .limit(20),
@@ -194,7 +196,8 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
                     <span className="text-zinc-500">
                       {formatDateBR(String(c.criado_em).slice(0, 10))} · {quem} · {c.canal}
                     </span>{" "}
-                    · <ResultadoPill resultado={c.resultado} />
+                    · <ResultadoPill resultado={c.resultado} />{" "}
+                    <MotivoTag motivo={c.motivo} />
                     {c.observacao && <span className="text-zinc-600"> — “{c.observacao}”</span>}
                     {c.adiar_ate && (
                       <span className="ml-1 text-xs text-zinc-400">
