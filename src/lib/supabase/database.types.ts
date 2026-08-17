@@ -1407,6 +1407,41 @@ export type Database = {
           },
         ]
       }
+      vendas_import_mapeamentos: {
+        Row: {
+          atualizado_em: string
+          colunas: Json
+          criado_em: string
+          criado_por: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          atualizado_em?: string
+          colunas: Json
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          atualizado_em?: string
+          colunas?: Json
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_import_mapeamentos_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendas_importacoes: {
         Row: {
           arquivo_nome: string | null

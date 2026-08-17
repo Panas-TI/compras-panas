@@ -55,6 +55,7 @@ const VENDAS_ITEMS: NavItem[] = [
   { href: "/vendas/clientes", label: "Clientes" },
   { href: "/vendas/contatos", label: "Contatos" },
   { href: "/vendas/inativos", label: "Reativação" },
+  { href: "/vendas/relatorio-semanal", label: "Relatório semanal" },
 ];
 
 const APROVADOR_ONLY = new Set(["/usuarios"]);
