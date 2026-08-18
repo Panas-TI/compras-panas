@@ -8,10 +8,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import {
   CAMPOS_IMPORT,
+  conferirSomas,
+  ehRelatorioQueops,
+  normalizarLinhas,
+  parseQueops,
   sugerirMapeamento,
   type ChaveCampo,
   type LinhaBruta,
   type Mapeamento,
+  type PedidoNormalizado,
+  type Rejeitada,
 } from "./lib";
 import {
   analisarImportacaoAction,
@@ -28,6 +34,13 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
   const [cabecalhos, setCabecalhos] = useState<string[]>([]);
   const [linhas, setLinhas] = useState<LinhaBruta[]>([]);
   const [map, setMap] = useState<Mapeamento>({});
+  // Preenchido quando o arquivo é o relatório do Queóps: aí não há de-para,
+  // o leitor dedicado já entrega os pedidos prontos.
+  const [queops, setQueops] = useState<{
+    pedidos: PedidoNormalizado[];
+    rejeitadas: Rejeitada[];
+    conferencia: ReturnType<typeof conferirSomas>;
+  } | null>(null);
   const [res, setRes] = useState<ResultadoImport | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
@@ -41,10 +54,33 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
       const wb = XLSX.read(buf, { cellDates: true });
       const aba = wb.Sheets[wb.SheetNames[0]];
       if (!aba) throw new Error("A planilha está vazia.");
+
+      // Primeiro tenta o relatório do Queóps, que não é tabela: cliente vem em
+      // linha de cabeçalho e os itens em linhas soltas. Nenhum de-para resolve.
+      const matriz = XLSX.utils.sheet_to_json<unknown[]>(aba, {
+        header: 1,
+        defval: "",
+        raw: false,
+      });
+      if (ehRelatorioQueops(matriz)) {
+        const { pedidos, rejeitadas } = parseQueops(matriz);
+        if (pedidos.length === 0) throw new Error("Reconheci o relatório do Queóps, mas não achei nenhum pedido nele.");
+        setArquivoNome(file.name);
+        setQueops({ pedidos, rejeitadas, conferencia: conferirSomas(pedidos) });
+        setLinhas([]);
+        setCabecalhos([]);
+        const r = await analisarImportacaoAction(pedidos, rejeitadas);
+        if (r.error) { setErro(r.error); return; }
+        setRes(r);
+        setEtapa("previa");
+        return;
+      }
+
       const dados = XLSX.utils.sheet_to_json<LinhaBruta>(aba, { defval: "", raw: false });
       if (dados.length === 0) throw new Error("Nenhuma linha de dados encontrada.");
 
       const cols = Object.keys(dados[0]);
+      setQueops(null);
       setCabecalhos(cols);
       setLinhas(dados);
       setArquivoNome(file.name);
@@ -65,7 +101,8 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
   const analisar = () => {
     setErro(null);
     iniciar(async () => {
-      const r = await analisarImportacaoAction(linhas, map);
+      const { pedidos, rejeitadas } = normalizarLinhas(linhas, map);
+      const r = await analisarImportacaoAction(pedidos, rejeitadas);
       if (r.error) return setErro(r.error);
       setRes(r);
       setEtapa("previa");
@@ -79,7 +116,10 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
       return;
     setErro(null);
     iniciar(async () => {
-      const r = await gravarImportacaoAction(linhas, map, arquivoNome);
+      const dados = queops
+        ? { pedidos: queops.pedidos, rejeitadas: queops.rejeitadas }
+        : normalizarLinhas(linhas, map);
+      const r = await gravarImportacaoAction(dados.pedidos, arquivoNome, dados.rejeitadas);
       if (r.error) return setErro(r.error);
       setRes(r);
       setEtapa("pronto");
@@ -91,6 +131,7 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
     setEtapa("arquivo");
     setLinhas([]);
     setCabecalhos([]);
+    setQueops(null);
     setRes(null);
     setErro(null);
     setArquivoNome("");
@@ -197,7 +238,9 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
           previa={res.previa}
           pendente={pendente}
           onConfirmar={gravar}
-          onVoltar={() => setEtapa("mapear")}
+          conferencia={queops?.conferencia ?? null}
+          onVoltar={queops ? recomecar : () => setEtapa("mapear")}
+          rotuloVoltar={queops ? "Trocar arquivo" : "Voltar ao de-para"}
         />
       )}
 
@@ -232,11 +275,15 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
 function PreviaImport({
   previa,
   pendente,
+  conferencia,
+  rotuloVoltar = "Voltar ao de-para",
   onConfirmar,
   onVoltar,
 }: {
   previa: NonNullable<ResultadoImport["previa"]>;
   pendente: boolean;
+  conferencia: ReturnType<typeof conferirSomas> | null;
+  rotuloVoltar?: string;
   onConfirmar: () => void;
   onVoltar: () => void;
 }) {
@@ -253,6 +300,46 @@ function PreviaImport({
             </p>
           )}
         </div>
+
+        {/* Bate a soma dos itens contra o total de cada pedido. É o único teste
+            que pega valor lido da coluna errada — sem ele, um erro de leitura
+            entraria como faturamento sem ninguém perceber. */}
+        {conferencia && (
+          <div
+            className={`rounded-md border px-3 py-2 text-sm ${
+              conferencia.divergem.length === 0
+                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                : "border-red-200 bg-red-50 text-red-800"
+            }`}
+          >
+            {conferencia.divergem.length === 0 ? (
+              <>
+                ✓ <strong>Conferência bateu:</strong> em {conferencia.conferem} pedidos a soma dos
+                itens é exatamente o total do pedido
+                {conferencia.semValor > 0 && (
+                  <> · {conferencia.semValor} sem valor (cortesia, consumo interno, degustação)</>
+                )}
+                .
+              </>
+            ) : (
+              <>
+                <strong>
+                  ⚠ {conferencia.divergem.length}{" "}
+                  {conferencia.divergem.length === 1 ? "pedido não fecha" : "pedidos não fecham"}
+                </strong>{" "}
+                — a soma dos itens não dá o total. Pode ser leitura errada de coluna:
+                <ul className="ml-4 mt-1 list-disc">
+                  {conferencia.divergem.slice(0, 5).map((d) => (
+                    <li key={d.pedido}>
+                      {d.pedido} · {d.cliente} — total {formatCurrencyBRL(d.total)}, itens somam{" "}
+                      {formatCurrencyBRL(d.itens)}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Kpi rotulo="Pedidos novos" valor={String(previa.pedidosNovos)} destaque />
@@ -344,7 +431,7 @@ function PreviaImport({
             {pendente ? "Gravando…" : `Confirmar e importar ${previa.pedidosNovos} pedidos`}
           </Button>
           <Button variant="ghost" onClick={onVoltar}>
-            Voltar ao de-para
+            {rotuloVoltar}
           </Button>
           {nada && (
             <span className="self-center text-sm text-zinc-500">

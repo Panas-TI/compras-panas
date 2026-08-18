@@ -3,13 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { PAPEIS_ESCRITA } from "../guard";
-import {
-  normalizar,
-  normalizarLinhas,
-  type LinhaBruta,
-  type Mapeamento,
-  type PedidoNormalizado,
-} from "./lib";
+import { normalizar, type PedidoNormalizado, type Rejeitada } from "./lib";
 
 // Teto pra não estourar memória nem o payload da server action.
 const MAX_LINHAS = 20000;
@@ -95,8 +89,8 @@ function acharCliente(
 }
 
 export async function analisarImportacaoAction(
-  linhas: LinhaBruta[],
-  mapeamento: Mapeamento
+  pedidos: PedidoNormalizado[],
+  rejeitadas: Rejeitada[] = []
 ): Promise<ResultadoImport> {
   const supabase = await createClient();
   const {
@@ -111,16 +105,14 @@ export async function analisarImportacaoAction(
   if (!(PAPEIS_ESCRITA as readonly string[]).includes(profile?.role ?? "")) {
     return { error: "Só admin ou vendas podem importar." };
   }
-  if (linhas.length > MAX_LINHAS) {
-    return { error: `Arquivo com ${linhas.length} linhas. O limite é ${MAX_LINHAS}.` };
+  if (pedidos.length > MAX_LINHAS) {
+    return { error: `Arquivo com ${pedidos.length} pedidos. O limite é ${MAX_LINHAS}.` };
   }
-
-  const { pedidos, rejeitadas } = normalizarLinhas(linhas, mapeamento);
   if (pedidos.length === 0) {
     return {
       error:
         rejeitadas.length > 0
-          ? `Nenhuma linha aproveitável. Primeiro problema: linha ${rejeitadas[0].linha} — ${rejeitadas[0].motivo}. Confira o de-para das colunas.`
+          ? `Nenhuma linha aproveitável. Primeiro problema: linha ${rejeitadas[0].linha} — ${rejeitadas[0].motivo}.`
           : "Nenhum pedido encontrado no arquivo.",
     };
   }
@@ -161,9 +153,9 @@ export async function analisarImportacaoAction(
 }
 
 export async function gravarImportacaoAction(
-  linhas: LinhaBruta[],
-  mapeamento: Mapeamento,
-  arquivoNome: string
+  pedidos: PedidoNormalizado[],
+  arquivoNome: string,
+  rejeitadas: Rejeitada[] = []
 ): Promise<ResultadoImport> {
   const supabase = await createClient();
   const {
@@ -178,11 +170,9 @@ export async function gravarImportacaoAction(
   if (!(PAPEIS_ESCRITA as readonly string[]).includes(profile?.role ?? "")) {
     return { error: "Só admin ou vendas podem importar." };
   }
-  if (linhas.length > MAX_LINHAS) {
-    return { error: `Arquivo com ${linhas.length} linhas. O limite é ${MAX_LINHAS}.` };
+  if (pedidos.length > MAX_LINHAS) {
+    return { error: `Arquivo com ${pedidos.length} pedidos. O limite é ${MAX_LINHAS}.` };
   }
-
-  const { pedidos, rejeitadas } = normalizarLinhas(linhas, mapeamento);
   if (pedidos.length === 0) return { error: "Nenhum pedido aproveitável no arquivo." };
 
   const existentes = await pedidosExistentes(supabase, pedidos.map((p) => p.pedido));

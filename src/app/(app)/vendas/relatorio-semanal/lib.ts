@@ -174,3 +174,152 @@ export function normalizarLinhas(
 
   return { pedidos: Array.from(porPedido.values()), rejeitadas };
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Relatório "Histórico por cliente" do Queóps
+ *
+ * Não é uma tabela: é um relatório hierárquico. O cliente vem numa linha de
+ * cabeçalho ("Cliente :"), os pedidos abaixo dele, e os itens em linhas soltas
+ * logo após cada pedido. Nenhum de-para de colunas resolveria — por isso este
+ * leitor dedicado, escolhido automaticamente quando o arquivo é reconhecido.
+ *
+ * Layout confirmado contra um export real de 12 a 18/08/26 (88 pedidos):
+ *   col 0  "Cliente :"  → col 2 traz "CÓDIGO NOME" ou só "NOME"
+ *   col 0  nº do pedido → col 1 data/hora, col 4 valor, col 5 forma de pagto
+ *   col 11 produto      → qtd e valor DESLIZAM entre as colunas 12, 13 e 14
+ *                         conforme a largura do número no relatório; a regra
+ *                         é pegar os dois números presentes nessa faixa.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+export type Matriz = unknown[][];
+
+const cel = (l: unknown[], c: number): string => String(l?.[c] ?? "").trim();
+
+/** Reconhece o relatório pelo cabeçalho da primeira página. */
+export function ehRelatorioQueops(m: Matriz): boolean {
+  const inicio = m.slice(0, 6).map((l) => cel(l, 0).toUpperCase());
+  const temSistema = inicio.some((t) => t.includes("QUEÓPS") || t.includes("QUEOPS"));
+  const temHistorico = m
+    .slice(0, 20)
+    .some((l) => cel(l, 0).toUpperCase().startsWith("CLIENTE"));
+  return temSistema && temHistorico;
+}
+
+/** "13/08/26 16:22" → "2026-08-13" */
+function dataQueops(s: string): string | null {
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})/);
+  if (!m) return null;
+  const ano = m[3].length === 2 ? `20${m[3]}` : m[3];
+  return `${ano}-${m[2]}-${m[1]}`;
+}
+
+/** Números do relatório vêm no formato en-US: "1,234.56". */
+function numQueops(s: string): number | null {
+  if (!s) return null;
+  const n = Number(s.replace(/,/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+export function parseQueops(m: Matriz): {
+  pedidos: PedidoNormalizado[];
+  rejeitadas: Rejeitada[];
+} {
+  const pedidos: PedidoNormalizado[] = [];
+  const rejeitadas: Rejeitada[] = [];
+  let cliente: string | null = null;
+  let clienteCodigo: string | null = null;
+  let atual: PedidoNormalizado | null = null;
+
+  m.forEach((linha, i) => {
+    const num = i + 1;
+    const c0 = cel(linha, 0);
+
+    if (c0.toUpperCase().startsWith("CLIENTE")) {
+      // col 2 traz "50.695.322 FULANO DE TAL" ou só "EMPRESA LTDA".
+      // Esse prefixo fiscal É o codigo_cliente do cadastro — confirmado na base
+      // (VINICIUS DA ROSA CORREA está com codigo_cliente "65.510.765").
+      // Exige o formato com pontos: "6 PRO EVENTOS EMPRESARIAIS LTDA" tem
+      // código C17 e o "6" faz parte do nome, não pode ser arrancado.
+      const bruto = cel(linha, 2);
+      const comCodigo = bruto.match(/^(\d{2,3}\.\d{3}\.\d{3})\s+(.+)$/);
+      cliente = comCodigo ? comCodigo[2].trim() : bruto || null;
+      clienteCodigo = comCodigo ? comCodigo[1] : null;
+      atual = null;
+      return;
+    }
+
+    if (/^\d{6,}$/.test(c0)) {
+      const data = dataQueops(cel(linha, 1));
+      const total = numQueops(cel(linha, 4));
+      if (!cliente) {
+        rejeitadas.push({ linha: num, motivo: `pedido ${c0} sem cliente acima` });
+        atual = null;
+        return;
+      }
+      if (!data) {
+        rejeitadas.push({ linha: num, motivo: `pedido ${c0} com data ilegível` });
+        atual = null;
+        return;
+      }
+      atual = {
+        pedido: c0,
+        data,
+        clienteNome: cliente,
+        codigoCliente: clienteCodigo,
+        total: total ?? 0,
+        formaPag: cel(linha, 5) || null,
+        itens: [],
+      };
+      pedidos.push(atual);
+    }
+
+    // Linha de item. "Itens" é o título da coluna, não produto.
+    const produto = cel(linha, 11);
+    if (produto && produto.toLowerCase() !== "itens" && atual) {
+      const nums = [12, 13, 14]
+        .map((c) => numQueops(cel(linha, c)))
+        .filter((v): v is number => v !== null);
+      atual.itens.push({
+        produto,
+        qtd: nums[0] ?? 1,
+        valor: nums.length >= 2 ? nums[1] : null,
+      });
+    }
+  });
+
+  return { pedidos, rejeitadas };
+}
+
+/**
+ * Confere a leitura somando os itens e comparando com o total do pedido.
+ * É a única checagem que pega erro de coluna deslizada — sem ela, um valor
+ * lido da coluna errada entraria como faturamento e ninguém veria.
+ */
+export function conferirSomas(pedidos: PedidoNormalizado[]): {
+  conferem: number;
+  semValor: number;
+  divergem: { pedido: string; cliente: string; total: number; itens: number }[];
+} {
+  let conferem = 0;
+  let semValor = 0;
+  const divergem: { pedido: string; cliente: string; total: number; itens: number }[] = [];
+  for (const p of pedidos) {
+    if (p.itens.length === 0) continue;
+    // Cortesia, consumo interno, degustação e descarte saem com valor zero no
+    // ERP de propósito. Não são erro de leitura — só não entram na conferência.
+    if (p.total === 0) {
+      semValor++;
+      continue;
+    }
+    const soma = p.itens.reduce((s, i) => s + (i.valor ?? 0), 0);
+    if (Math.abs(soma - p.total) < 0.02) conferem++;
+    else
+      divergem.push({
+        pedido: p.pedido,
+        cliente: p.clienteNome,
+        total: p.total,
+        itens: Number(soma.toFixed(2)),
+      });
+  }
+  return { conferem, semValor, divergem };
+}
