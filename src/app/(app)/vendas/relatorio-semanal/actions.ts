@@ -252,13 +252,15 @@ export async function gravarImportacaoAction(
 
   // 3) Pedidos em lote. Depois do passo 1 todo cliente existe; se algum escapou,
   //    para aqui em vez de deixar o banco recusar com erro cru de NOT NULL.
+  // eh_valido NÃO entra aqui: é coluna GERADA
+  // (forma_pag <> 'Cortesia' AND total > 0). O banco marca sozinho que
+  // cortesia e pedido de valor zero não contam pras métricas.
   const linhasPedido: {
     pedido: string;
     cliente_id: string;
     data: string;
     total: number;
     forma_pag: string | null;
-    eh_valido: boolean;
     importacao_id: string;
   }[] = [];
   for (const p of novos) {
@@ -274,7 +276,6 @@ export async function gravarImportacaoAction(
       data: p.data,
       total: p.total,
       forma_pag: p.formaPag,
-      eh_valido: true,
       importacao_id: imp!.id,
     });
   }
