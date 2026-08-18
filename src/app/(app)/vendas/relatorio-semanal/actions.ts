@@ -250,6 +250,17 @@ export async function gravarImportacaoAction(
     .single();
   if (impErr) return { error: `Erro registrando a importação: ${impErr.message}` };
 
+  /**
+   * O registro da importação precisa existir antes dos pedidos (eles guardam
+   * importacao_id). Se a gravação falhar depois disso, o registro fica mentindo
+   * que importou N pedidos — foi o que aconteceu na falha do eh_valido.
+   * Toda saída de erro daqui pra baixo passa por aqui e desfaz o registro.
+   */
+  const abortar = async (msg: string): Promise<ResultadoImport> => {
+    await supabase.from("vendas_importacoes").delete().eq("id", imp!.id);
+    return { error: msg };
+  };
+
   // 3) Pedidos em lote. Depois do passo 1 todo cliente existe; se algum escapou,
   //    para aqui em vez de deixar o banco recusar com erro cru de NOT NULL.
   // eh_valido NÃO entra aqui: é coluna GERADA
@@ -266,9 +277,9 @@ export async function gravarImportacaoAction(
   for (const p of novos) {
     const cliente_id = acharCliente(p, idx);
     if (!cliente_id) {
-      return {
-        error: `Pedido ${p.pedido}: não consegui vincular o cliente “${p.clienteNome}”. Nenhum pedido foi gravado — reveja a coluna de cliente no de-para.`,
-      };
+      return abortar(
+        `Pedido ${p.pedido}: não consegui vincular o cliente “${p.clienteNome}”. Nenhum pedido foi gravado.`
+      );
     }
     linhasPedido.push({
       pedido: p.pedido,
@@ -283,7 +294,7 @@ export async function gravarImportacaoAction(
     const { error } = await supabase
       .from("vendas_pedidos")
       .insert(linhasPedido.slice(i, i + LOTE));
-    if (error) return { error: `Erro gravando pedidos: ${error.message}` };
+    if (error) return abortar(`Erro gravando pedidos: ${error.message}`);
   }
 
   // 4) Itens, quando o arquivo trouxer. eh_produto separa produto de taxa e
@@ -299,7 +310,11 @@ export async function gravarImportacaoAction(
   );
   for (let i = 0; i < linhasItem.length; i += LOTE) {
     const { error } = await supabase.from("vendas_itens").insert(linhasItem.slice(i, i + LOTE));
-    if (error) return { error: `Pedidos gravados, mas falhou nos itens: ${error.message}` };
+    if (error) {
+      // Aqui NÃO desfaz: os pedidos já entraram e são a parte que importa.
+      // Reimportar o mesmo arquivo completa os itens sem duplicar pedido.
+      return { error: `Pedidos gravados, mas falhou nos itens: ${error.message}. Rode a importação de novo — os pedidos repetidos são ignorados.` };
+    }
   }
 
   // 5) Recalcula a carteira. Sem isso os pedidos entram e nada muda na tela.
