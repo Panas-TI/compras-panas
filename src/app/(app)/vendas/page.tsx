@@ -14,6 +14,7 @@ import { RegistrarContato } from "./registrar-contato";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertaImportacao } from "./alerta-importacao";
+import { PlacarMeta } from "./placar-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,7 @@ export default async function VendasHojePage() {
   return (
     <div className="flex flex-col gap-4">
       <AlertaImportacao />
+      <PlacarMeta />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Hoje · {formatDateBR(hoje)}</h1>
