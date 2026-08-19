@@ -953,6 +953,7 @@ export type Database = {
           criado_em: string
           data_compra: string | null
           data_recebimento: string | null
+          duplicata_legada: boolean
           forma_pagto_id: string | null
           fornecedor_id: string | null
           id: string
@@ -983,6 +984,7 @@ export type Database = {
           criado_em?: string
           data_compra?: string | null
           data_recebimento?: string | null
+          duplicata_legada?: boolean
           forma_pagto_id?: string | null
           fornecedor_id?: string | null
           id?: string
@@ -1013,6 +1015,7 @@ export type Database = {
           criado_em?: string
           data_compra?: string | null
           data_recebimento?: string | null
+          duplicata_legada?: boolean
           forma_pagto_id?: string | null
           fornecedor_id?: string | null
           id?: string
@@ -1082,6 +1085,7 @@ export type Database = {
         Row: {
           atualizado_em: string
           comprador_id: string
+          contagem_id: string | null
           criado_em: string
           data_fim: string
           data_inicio: string
@@ -1096,6 +1100,7 @@ export type Database = {
         Insert: {
           atualizado_em?: string
           comprador_id: string
+          contagem_id?: string | null
           criado_em?: string
           data_fim: string
           data_inicio: string
@@ -1110,6 +1115,7 @@ export type Database = {
         Update: {
           atualizado_em?: string
           comprador_id?: string
+          contagem_id?: string | null
           criado_em?: string
           data_fim?: string
           data_inicio?: string
@@ -1127,6 +1133,13 @@ export type Database = {
             columns: ["comprador_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_semanais_contagem_id_fkey"
+            columns: ["contagem_id"]
+            isOneToOne: false
+            referencedRelation: "contagens"
             referencedColumns: ["id"]
           },
           {

@@ -237,36 +237,54 @@ export async function enviarParaSolicitacaoAction(
     };
   }
 
-  // Procura solicitação em aberto (rascunho) — prioriza a do próprio usuário
+  // Destino por IDENTIDADE, não por estado.
+  //
+  // Antes isto procurava "qualquer rascunho com enviada_em IS NULL" e anexava
+  // as linhas nele. Bastava existir um rascunho aberto — de outra contagem, do
+  // MRP, de outro usuário — pra duas contagens se misturarem numa solicitação
+  // só, duplicando todo item presente nas duas. Foi assim que a solicitação de
+  // 17/08 acabou com ACEM e PRESUNTO em dobro.
+  //
+  // Agora só reaproveita a solicitação QUE ESTA CONTAGEM já criou, o que
+  // preserva o reenvio legítimo (o usuário preenche mais linhas e clica de novo)
+  // sem nunca capturar rascunho alheio.
   let solic_id: string | null = null;
   let solicCriada = false;
 
-  const isAprovador = profile.role === "aprovador";
-
-  // Aprovador pode usar qualquer rascunho; comprador só os seus
-  let openQ = supabase
+  const { data: jaExiste } = await supabase
     .from("solicitacoes_semanais")
-    .select("id, comprador_id")
-    .is("enviada_em", null)
-    .order("criado_em", { ascending: false })
-    .limit(10);
-  if (!isAprovador) openQ = openQ.eq("comprador_id", user.id);
-  const { data: drafts } = await openQ;
+    .select("id, enviada_em")
+    .eq("contagem_id", contagem_id)
+    .maybeSingle();
 
-  if (drafts && drafts.length > 0) {
-    // Prefere o próprio rascunho do usuário; se não houver, pega o mais recente
-    const mine = drafts.find((d) => d.comprador_id === user.id);
-    solic_id = (mine ?? drafts[0]).id;
+  if (jaExiste) {
+    if (jaExiste.enviada_em) {
+      return {
+        error:
+          "Esta contagem já gerou uma solicitação, e ela já foi lançada para aprovação. " +
+          "Adicione o item que faltou direto nela, em Solicitações.",
+        solicitacao_id: jaExiste.id,
+      };
+    }
+    solic_id = jaExiste.id;
   } else {
-    // Cria nova solicitação no dia atual (do dia ao dia)
-    const today = new Date().toISOString().slice(0, 10);
+    // Datas vêm da contagem, não de "hoje": o envio costuma acontecer dias
+    // depois, e a solicitação passava a mentir sobre o período que representa.
+    const { data: cont } = await supabase
+      .from("contagens")
+      .select("data_contagem")
+      .eq("id", contagem_id)
+      .maybeSingle();
+    const dataRef = cont?.data_contagem ?? new Date().toISOString().slice(0, 10);
 
     const { data: solic, error: serr } = await supabase
       .from("solicitacoes_semanais")
       .insert({
-        data_inicio: today,
-        data_fim: today,
+        data_inicio: dataRef,
+        data_fim: dataRef,
         comprador_id: user.id,
+        contagem_id,
+        origem: "CONTAGEM",
         observacoes: "Gerada a partir da contagem de estoque",
       })
       .select("id")
@@ -278,56 +296,110 @@ export async function enviarParaSolicitacaoAction(
 
   let enviadas = 0;
   const agora = new Date().toISOString();
-  for (const l of linhas) {
-    const item_id = l.item_id;
-    // Após o bloqueio acima, toda linha tem item_id. Guarda defensivo.
-    if (!item_id) continue;
 
-    // Busca defaults do item (preço, fornecedor, pagamento, prazo)
+  // UMA linha de solicitação por ITEM, não por linha de contagem.
+  //
+  // Duas linhas da pasta podem apontar pro MESMO item do catálogo (o molho de
+  // tomate aparece como sachê e como lata, ambos vinculados ao mesmo cadastro).
+  // O loop antigo inseria uma linha por linha de contagem e o item entrava
+  // duplicado na solicitação mesmo sem mistura de contagens. Havia 21 pares
+  // (contagem, item) repetidos no banco quando isto foi escrito.
+  const porItem = new Map<string, typeof linhas>();
+  for (const l of linhas) {
+    if (!l.item_id) continue; // o bloqueio acima já garante, guarda defensiva
+    const g = porItem.get(l.item_id);
+    if (g) g.push(l);
+    else porItem.set(l.item_id, [l]);
+  }
+
+  // Itens que já estão na solicitação (caso de reenvio): não duplicar.
+  const { data: jaNaSolic } = await supabase
+    .from("solicitacao_linhas")
+    .select("item_id")
+    .eq("solicitacao_id", solic_id);
+  const jaTem = new Set((jaNaSolic ?? []).map((r) => r.item_id));
+
+  const falhas: string[] = [];
+
+  for (const [item_id, grupo] of porItem) {
+    if (jaTem.has(item_id)) {
+      // Já existe linha desse item. Marca as de contagem como enviadas pra não
+      // ficarem penduradas, mas não cria linha nova.
+      await supabase
+        .from("contagem_linhas")
+        .update({ enviado_em: agora, enviado_solicitacao_id: solic_id })
+        .in("id", grupo.map((l) => l.id));
+      continue;
+    }
+
     const { data: itemRow } = await supabase
       .from("itens")
       .select("preco_referencia, fornecedor_padrao_id, forma_pagto_padrao_id, prazo_padrao")
       .eq("id", item_id)
       .maybeSingle();
 
-    // Guarda o id da linha criada: é o vínculo exato que permite ao financeiro
-    // ver preço e fornecedor por item sem ambiguidade quando o mesmo item
-    // aparece mais de uma vez na contagem.
+    // Quantidades somadas; estoque só soma se alguma linha tiver contagem.
+    const volume_solicitado = grupo.reduce((s, l) => s + Number(l.solicitacao_qtd ?? 0), 0);
+    const volume_estoque = grupo.some((l) => l.quantidade != null)
+      ? grupo.reduce((s, l) => s + Number(l.quantidade ?? 0), 0)
+      : null;
+    const observacoes =
+      grupo.map((l) => l.observacao_solicitacao).filter(Boolean).join(" | ") || null;
+
     const { data: linhaCriada, error: linErr } = await supabase
       .from("solicitacao_linhas")
       .insert({
         solicitacao_id: solic_id,
         item_id,
-        volume_estoque: l.quantidade,
-        volume_solicitado: l.solicitacao_qtd ?? 0,
+        volume_estoque,
+        volume_solicitado,
         preco: itemRow?.preco_referencia ?? 0,
         fornecedor_id: itemRow?.fornecedor_padrao_id ?? null,
         forma_pagto_id: itemRow?.forma_pagto_padrao_id ?? null,
         prazo: itemRow?.prazo_padrao ?? null,
-        // Leva a justificativa junto: é aqui que o aprovador vai lê-la.
-        observacoes: l.observacao_solicitacao ?? null,
+        observacoes,
       })
       .select("id")
       .single();
+
     if (linErr) {
-      console.error("Falha linha:", linErr);
+      // Erro engolido vira linha perdida sem ninguém saber. Acumula e reporta.
+      falhas.push(`${grupo[0].texto}: ${linErr.message}`);
       continue;
     }
+    jaTem.add(item_id);
 
-    await supabase
+    // Todas as linhas do grupo apontam pra MESMA linha de solicitação.
+    // A FK é N:1 e o embed da tela de contagem continua resolvendo.
+    const { error: updErr } = await supabase
       .from("contagem_linhas")
       .update({
         enviado_em: agora,
         enviado_solicitacao_id: solic_id,
         enviado_linha_id: linhaCriada?.id ?? null,
       })
-      .eq("id", l.id);
-    enviadas++;
+      .in("id", grupo.map((l) => l.id));
+    if (updErr) {
+      falhas.push(`${grupo[0].texto}: gravou a compra mas não marcou a contagem (${updErr.message})`);
+      continue;
+    }
+    enviadas += grupo.length;
+  }
+
+  if (falhas.length > 0 && enviadas === 0) {
+    return { error: `Nenhuma linha foi enviada. Primeiro erro — ${falhas[0]}` };
   }
 
   revalidatePath(`/contagem/${contagem_id}`);
   revalidatePath("/solicitacoes");
-  return { solicitacao_id: solic_id, enviadas, solic_criada: solicCriada };
+  return {
+    solicitacao_id: solic_id,
+    enviadas,
+    solic_criada: solicCriada,
+    ...(falhas.length > 0
+      ? { error: `${enviadas} enviadas, mas ${falhas.length} falharam. Primeira: ${falhas[0]}` }
+      : {}),
+  };
 }
 
 export async function excluirContagemAction(

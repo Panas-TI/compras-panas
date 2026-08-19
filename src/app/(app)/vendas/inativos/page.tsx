@@ -2,6 +2,7 @@ import { guardVendas } from "../guard";
 import { TabelaClientes, type LinhaCliente } from "../clientes/tabela-clientes";
 import { formatCurrencyBRL } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { AlertaImportacao } from "../alerta-importacao";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function InativosPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <AlertaImportacao />
       <div>
         <h1 className="text-2xl font-semibold">Reativação</h1>
         <p className="text-sm text-zinc-600">

@@ -75,6 +75,25 @@ export async function addLinhaAction(
     .maybeSingle();
   if (itemErr || !item) return { error: "Item não encontrado." };
 
+  // Adicionar item já presente duplicaria a compra. O bloqueio existia só no
+  // React (disabledIds), que é estado local e pode estar velho — e a action é
+  // um endpoint HTTP chamável direto.
+  const { data: jaTem } = await supabase
+    .from("solicitacao_linhas")
+    .select("id")
+    .eq("solicitacao_id", solicitacao_id)
+    .eq("item_id", item_id)
+    .maybeSingle();
+  if (jaTem) return { error: "Esse item já está nesta solicitação." };
+
+  // Solicitação lançada não recebe item novo pela tela de rascunho.
+  const { data: solic } = await supabase
+    .from("solicitacoes_semanais")
+    .select("enviada_em, finalizada")
+    .eq("id", solicitacao_id)
+    .maybeSingle();
+  if (solic?.finalizada) return { error: "Esta solicitação já foi finalizada." };
+
   const { data, error } = await supabase
     .from("solicitacao_linhas")
     .insert({
@@ -89,7 +108,14 @@ export async function addLinhaAction(
     })
     .select("id")
     .single();
-  if (error) return { error: error.message };
+  if (error) {
+    return {
+      error:
+        error.code === "23505"
+          ? "Esse item já está nesta solicitação."
+          : error.message,
+    };
+  }
 
   revalidatePath(`/solicitacoes/${solicitacao_id}`);
   return { linha_id: data!.id };

@@ -1,5 +1,6 @@
 import { guardVendas } from "../guard";
 import { TabelaClientes, type LinhaCliente, type UltimoContato } from "./tabela-clientes";
+import { AlertaImportacao } from "../alerta-importacao";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function ClientesPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <AlertaImportacao />
       <div>
         <h1 className="text-2xl font-semibold">Clientes</h1>
         <p className="text-sm text-zinc-600">

@@ -40,11 +40,11 @@ export async function criarUsuarioAction(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const senha = String(formData.get("senha") ?? "");
   const nome = String(formData.get("nome") ?? "").trim();
-  const role = String(formData.get("role") ?? "comprador") as "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas";
+  const role = String(formData.get("role") ?? "comprador") as "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro";
 
   if (!email || !senha || !nome) return { error: "Email, senha e nome são obrigatórios." };
   if (senha.length < 6) return { error: "Senha precisa ter pelo menos 6 caracteres." };
-  if (!["comprador", "aprovador", "estoquista", "motorista", "vendas"].includes(role)) {
+  if (!["comprador", "aprovador", "estoquista", "motorista", "vendas", "financeiro"].includes(role)) {
     return { error: "Role inválido." };
   }
 
@@ -87,7 +87,7 @@ export async function toggleAtivoAction(profileId: string, novoStatus: boolean):
   return {};
 }
 
-export async function alterarRoleAction(profileId: string, novoRole: "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas"): Promise<{ error?: string }> {
+export async function alterarRoleAction(profileId: string, novoRole: "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro"): Promise<{ error?: string }> {
   const guard = await assertAprovador();
   if (!guard.ok) return { error: guard.error };
 
