@@ -963,6 +963,8 @@ export type Database = {
           observacoes: string | null
           prazo: string | null
           preco: number
+          preco_corrigido_em: string | null
+          preco_corrigido_por: string | null
           recebido_em: string | null
           recebido_por: string | null
           solicitacao_id: string
@@ -994,6 +996,8 @@ export type Database = {
           observacoes?: string | null
           prazo?: string | null
           preco?: number
+          preco_corrigido_em?: string | null
+          preco_corrigido_por?: string | null
           recebido_em?: string | null
           recebido_por?: string | null
           solicitacao_id: string
@@ -1025,6 +1029,8 @@ export type Database = {
           observacoes?: string | null
           prazo?: string | null
           preco?: number
+          preco_corrigido_em?: string | null
+          preco_corrigido_por?: string | null
           recebido_em?: string | null
           recebido_por?: string | null
           solicitacao_id?: string
@@ -1063,6 +1069,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacao_linhas_preco_corrigido_por_fkey"
+            columns: ["preco_corrigido_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1629,6 +1642,15 @@ export type Database = {
       recalcular_itens_habituais: { Args: never; Returns: number }
       recalcular_metricas_vendas: { Args: never; Returns: number }
       tem_papel_vendas: { Args: { papeis: string[] }; Returns: boolean }
+      vendas_oportunidades: {
+        Args: never
+        Returns: {
+          cliente_id: string
+          dias_sem_pedir: number
+          produto: string
+          vezes: number
+        }[]
+      }
     }
     Enums: {
       status_linha:

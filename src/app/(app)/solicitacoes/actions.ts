@@ -127,8 +127,14 @@ export async function updateLinhaAction(
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
 
-  // Sanitização de números BR
+  // Correção manual de preço trava a sincronia automática com o catálogo e
+  // registra quem mexeu — o aprovador precisa saber que o número foi alterado.
   const sanitized: Record<string, unknown> = { ...patch };
+  if ("preco" in patch) {
+    const { data: { user } } = await supabase.auth.getUser();
+    sanitized.preco_corrigido_em = new Date().toISOString();
+    sanitized.preco_corrigido_por = user?.id ?? null;
+  }
   for (const key of ["volume_estoque", "volume_solicitado", "preco"]) {
     if (sanitized[key] != null && typeof sanitized[key] === "string") {
       sanitized[key] = parseNumberBR(sanitized[key] as string);

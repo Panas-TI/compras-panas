@@ -16,7 +16,8 @@ export default async function InativosPage() {
     .from("vendas_clientes")
     .select(CAMPOS)
     .eq("ativo", true)
-    .eq("status", "inativo")
+    .in("status", ["inativo", "sem_padrao"])
+    .not("ultima_compra", "is", null)
     .order("receita_anual_risco", { ascending: false, nullsFirst: false })
     .limit(2000);
 
@@ -30,8 +31,7 @@ export default async function InativosPage() {
       <div>
         <h1 className="text-2xl font-semibold">Reativação</h1>
         <p className="text-sm text-zinc-600">
-          Clientes parados além do próprio ritmo. Ordenados pela receita anual que está deixando de
-          entrar — não pelo que já compraram.
+          Clientes parados além do próprio ritmo, mais os que compraram uma vez só e não voltaram. Ordenados pela receita anual que está deixando de entrar — não pelo que já compraram.
         </p>
       </div>
 

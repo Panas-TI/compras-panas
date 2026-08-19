@@ -41,6 +41,8 @@ export type Linha = {
   alteracao_confirmada: boolean;
   /** Justificativa da compra, escrita na contagem por quem solicitou. */
   observacoes: string | null;
+  /** Quando alguém corrigiu o preço à mão; trava a sincronia com o catálogo. */
+  preco_corrigido_em: string | null;
 };
 
 function formatNumberBR(n: number | null | undefined, fraction = 2): string {
@@ -436,8 +438,27 @@ function LinhaTr({
       </td>
       <td className="px-1 py-1.5 text-zinc-600">{linha.unidade_nome ?? "—"}</td>
       <td className="px-1 py-1.5">
-        {/* Preço vem do cadastro do item — somente leitura na solicitação */}
-        <NumberCell value={linha.preco} editable={false} fraction={4} onCommit={() => {}} />
+        {/* Editável em rascunho: o financeiro corrige antes da aprovação.
+            Corrigido à mão trava a sincronia automática com o catálogo. */}
+        <div className="flex items-center justify-end gap-1">
+          <NumberCell
+            value={linha.preco}
+            editable={editable}
+            fraction={4}
+            onCommit={(v) => {
+              onUpdateLocal({ preco: v, preco_corrigido_em: new Date().toISOString() });
+              onPersist("preco", v);
+            }}
+          />
+          {linha.preco_corrigido_em && (
+            <span
+              className="text-[10px] text-amber-700"
+              title="Preço corrigido à mão — não segue mais o cadastro do item"
+            >
+              ✎
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-1 py-1.5 text-right tabular-nums">{formatCurrencyBRL(linha.valor ?? 0)}</td>
       <td className="px-1 py-1.5">

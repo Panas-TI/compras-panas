@@ -41,6 +41,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
       `
       id, item_id, volume_estoque, volume_solicitado, preco, valor,
       fornecedor_id, forma_pagto_id, prazo, status, alteracao_confirmada, observacoes,
+      preco_corrigido_em, preco_corrigido_por,
       item:itens(nome, codigo_queops, preco_referencia, embalagem_compra_nome, qtd_por_embalagem,
         classificacao:classificacoes(nome),
         unidade:unidades_medida(nome)
@@ -54,9 +55,13 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
   // Se o preço de referência do item mudou depois que a linha foi criada,
   // sincroniza a linha aqui mesmo, antes de renderizar.
   const ehRascunho = solic.enviada_em === null;
+  // Só sincroniza linha que ninguém corrigiu à mão. Sem o filtro de
+  // preco_corrigido_em, a correção do financeiro era desfeita no próximo F5 —
+  // ele veria o número certo, sairia satisfeito, e o valor voltaria sozinho.
   const dessincronizadas = ehRascunho
     ? (linhasRaw ?? []).filter(
         (l) =>
+          l.preco_corrigido_em == null &&
           l.item?.preco_referencia != null &&
           (l.preco == null || Math.abs(Number(l.preco) - Number(l.item.preco_referencia)) >= 0.005)
       )
@@ -100,6 +105,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
       status: l.status,
       alteracao_confirmada: l.alteracao_confirmada,
       observacoes: l.observacoes,
+      preco_corrigido_em: l.preco_corrigido_em,
     };
   });
 
