@@ -301,6 +301,31 @@ function PreviaImport({
           )}
         </div>
 
+        {/* Dia pulado some para sempre e ninguém percebe: o sistema só enxerga o
+            que chegou, nunca o que faltou. Com importação diária isso deixa de
+            ser exceção e vira rotina, então precisa gritar. */}
+        {previa.diasFaltando.length > 0 && (
+          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
+            <strong>
+              ⚠ Faltam {previa.diasFaltando.length}{" "}
+              {previa.diasFaltando.length === 1 ? "dia útil" : "dias úteis"} entre a última venda
+              registrada e este arquivo
+            </strong>
+            <p className="mt-1">
+              Última no sistema: <strong>{formatDateBR(previa.ultimaNoSistema!)}</strong> · este
+              arquivo começa em <strong>{formatDateBR(previa.periodo!.inicio)}</strong>.
+            </p>
+            <p className="mt-1">
+              Sem cobertura: {previa.diasFaltando.map((d) => formatDateBR(d)).join(" · ")}
+            </p>
+            <p className="mt-1 text-xs">
+              Dá pra gravar assim mesmo, mas as vendas desses dias ficam de fora e a fila vai
+              apontar cliente que já comprou. O certo é exportar de novo começando em{" "}
+              {formatDateBR(previa.diasFaltando[0])}.
+            </p>
+          </div>
+        )}
+
         {/* Bate a soma dos itens contra o total de cada pedido. É o único teste
             que pega valor lido da coluna errada — sem ele, um erro de leitura
             entraria como faturamento sem ninguém perceber. */}
@@ -347,6 +372,54 @@ function PreviaImport({
           <Kpi rotulo="Clientes novos" valor={String(previa.clientesNovos.length)} />
           <Kpi rotulo="Valor dos novos" valor={formatCurrencyBRL(previa.valorTotal)} />
         </div>
+
+        {previa.cobertura.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="mb-1 text-xs font-medium text-zinc-500">
+                Dias no arquivo — confira se algum veio com pedidos de menos
+              </p>
+              <div className="overflow-hidden rounded-md border border-zinc-200">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {previa.cobertura.map((d) => (
+                      <tr key={d.data} className="border-b border-zinc-100 last:border-0">
+                        <td className="px-2 py-1">{formatDateBR(d.data)}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{d.pedidos} pedidos</td>
+                        <td className="px-2 py-1 text-right tabular-nums text-zinc-600">
+                          {formatCurrencyBRL(d.valor)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {previa.porAtendente.length > 0 && (
+              <div>
+                <p className="mb-1 text-xs font-medium text-zinc-500">
+                  Vendas por atendente (só o que entra novo)
+                </p>
+                <div className="overflow-hidden rounded-md border border-zinc-200">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {previa.porAtendente.map((a) => (
+                        <tr key={a.atendente} className="border-b border-zinc-100 last:border-0">
+                          <td className="px-2 py-1 font-medium">{a.atendente}</td>
+                          <td className="px-2 py-1 text-right tabular-nums">{a.pedidos} pedidos</td>
+                          <td className="px-2 py-1 text-right tabular-nums text-zinc-600">
+                            {formatCurrencyBRL(a.valor)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {previa.pedidosJaExistiam > 0 && (
           <p className="text-sm text-zinc-600">

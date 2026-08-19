@@ -114,6 +114,8 @@ export type PedidoNormalizado = {
   codigoCliente: string | null;
   total: number;
   formaPag: string | null;
+  /** Quem atendeu, da coluna "Atend." do Queóps. Mede venda por pessoa. */
+  atendente: string | null;
   itens: { produto: string; qtd: number; valor: number | null }[];
 };
 
@@ -153,6 +155,7 @@ export function normalizarLinhas(
           : null,
         total: total ?? 0,
         formaPag: map.forma_pag ? String(linha[map.forma_pag] ?? "").trim() || null : null,
+        atendente: null,
         itens: [],
       };
       porPedido.set(pedido, p);
@@ -268,6 +271,7 @@ export function parseQueops(m: Matriz): {
         codigoCliente: clienteCodigo,
         total: total ?? 0,
         formaPag: cel(linha, 5) || null,
+        atendente: normalizarAtendente(cel(linha, 3)),
         itens: [],
       };
       pedidos.push(atual);
@@ -322,4 +326,51 @@ export function conferirSomas(pedidos: PedidoNormalizado[]): {
       });
   }
   return { conferem, semValor, divergem };
+}
+
+
+/**
+ * O mesmo atendente aparece com grafias diferentes no mesmo arquivo
+ * ("fernando" e "Fernando"). Sem normalizar, viram duas pessoas no relatório.
+ */
+export function normalizarAtendente(s: string): string | null {
+  const limpo = s.trim().toLowerCase();
+  if (!limpo) return null;
+  return limpo.charAt(0).toUpperCase() + limpo.slice(1);
+}
+
+/** Pedidos e valor por dia — pra conferir de bate-pronto se algum dia veio torto. */
+export function coberturaPorDia(
+  pedidos: PedidoNormalizado[]
+): { data: string; pedidos: number; valor: number }[] {
+  const m = new Map<string, { pedidos: number; valor: number }>();
+  for (const p of pedidos) {
+    const d = m.get(p.data) ?? { pedidos: 0, valor: 0 };
+    d.pedidos++;
+    d.valor += p.total;
+    m.set(p.data, d);
+  }
+  return Array.from(m.entries())
+    .map(([data, d]) => ({ data, ...d }))
+    .sort((a, b) => a.data.localeCompare(b.data));
+}
+
+/**
+ * Dias entre a última venda já registrada e o começo do arquivo.
+ * Importação diária torna esquecer um dia rotineiro — e o dia pulado sumiria
+ * em silêncio, porque o sistema só enxerga o que chegou, nunca o que faltou.
+ * Ignora sábado e domingo: não há venda no fim de semana.
+ */
+export function diasFaltando(ultimaNoSistema: string | null, inicioDoArquivo: string): string[] {
+  if (!ultimaNoSistema || inicioDoArquivo <= ultimaNoSistema) return [];
+  const faltando: string[] = [];
+  const d = new Date(ultimaNoSistema + "T12:00:00");
+  const fim = new Date(inicioDoArquivo + "T12:00:00");
+  d.setDate(d.getDate() + 1);
+  while (d < fim) {
+    const dia = d.getDay();
+    if (dia !== 0 && dia !== 6) faltando.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return faltando;
 }

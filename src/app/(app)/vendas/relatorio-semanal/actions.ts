@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { PAPEIS_ESCRITA } from "../guard";
-import { normalizar, type PedidoNormalizado, type Rejeitada } from "./lib";
+import {
+  coberturaPorDia,
+  diasFaltando,
+  normalizar,
+  type PedidoNormalizado,
+  type Rejeitada,
+} from "./lib";
 
 // Teto pra não estourar memória nem o payload da server action.
 const MAX_LINHAS = 20000;
@@ -22,6 +28,12 @@ export type ResultadoImport = {
     periodo: { inicio: string; fim: string } | null;
     valorTotal: number;
     amostra: { pedido: string; data: string; cliente: string; total: number; novo: boolean }[];
+    /** Pedidos e valor por dia — pra ver de bate-pronto se algum dia veio torto. */
+    cobertura: { data: string; pedidos: number; valor: number }[];
+    /** Dias úteis entre a última venda registrada e o início do arquivo. */
+    diasFaltando: string[];
+    ultimaNoSistema: string | null;
+    porAtendente: { atendente: string; pedidos: number; valor: number }[];
   };
   gravado?: {
     pedidosNovos: number;
@@ -117,8 +129,16 @@ export async function analisarImportacaoAction(
     };
   }
 
-  const existentes = await pedidosExistentes(supabase, pedidos.map((p) => p.pedido));
-  const idx = await montarIndiceClientes(supabase);
+  const [existentes, idx, { data: ultimo }] = await Promise.all([
+    pedidosExistentes(supabase, pedidos.map((p) => p.pedido)),
+    montarIndiceClientes(supabase),
+    supabase
+      .from("vendas_pedidos")
+      .select("data")
+      .order("data", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const novos = pedidos.filter((p) => !existentes.has(p.pedido));
   const nomesNovos = new Set<string>();
@@ -129,6 +149,17 @@ export async function analisarImportacaoAction(
   }
 
   const datas = pedidos.map((p) => p.data).sort();
+  const ultimaNoSistema = ultimo?.data ?? null;
+
+  // Quanto cada atendente vendeu neste arquivo — só o que conta como venda.
+  const atend = new Map<string, { pedidos: number; valor: number }>();
+  for (const p of novos) {
+    if (!p.atendente || p.total <= 0) continue;
+    const a = atend.get(p.atendente) ?? { pedidos: 0, valor: 0 };
+    a.pedidos++;
+    a.valor += p.total;
+    atend.set(p.atendente, a);
+  }
 
   return {
     previa: {
@@ -148,6 +179,12 @@ export async function analisarImportacaoAction(
         total: p.total,
         novo: !existentes.has(p.pedido),
       })),
+      cobertura: coberturaPorDia(pedidos),
+      diasFaltando: datas.length ? diasFaltando(ultimaNoSistema, datas[0]) : [],
+      ultimaNoSistema,
+      porAtendente: Array.from(atend.entries())
+        .map(([atendente, d]) => ({ atendente, ...d }))
+        .sort((a, b) => b.valor - a.valor),
     },
   };
 }
@@ -272,6 +309,7 @@ export async function gravarImportacaoAction(
     data: string;
     total: number;
     forma_pag: string | null;
+    atendente: string | null;
     importacao_id: string;
   }[] = [];
   for (const p of novos) {
@@ -287,6 +325,7 @@ export async function gravarImportacaoAction(
       data: p.data,
       total: p.total,
       forma_pag: p.formaPag,
+      atendente: p.atendente,
       importacao_id: imp!.id,
     });
   }

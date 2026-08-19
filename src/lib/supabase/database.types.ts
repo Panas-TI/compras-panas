@@ -1524,6 +1524,7 @@ export type Database = {
       }
       vendas_pedidos: {
         Row: {
+          atendente: string | null
           cliente_id: string | null
           criado_em: string
           data: string
@@ -1534,6 +1535,7 @@ export type Database = {
           total: number
         }
         Insert: {
+          atendente?: string | null
           cliente_id?: string | null
           criado_em?: string
           data: string
@@ -1544,6 +1546,7 @@ export type Database = {
           total?: number
         }
         Update: {
+          atendente?: string | null
           cliente_id?: string | null
           criado_em?: string
           data?: string
