@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { guardVendas } from "../../guard";
-import { EstadoPill, Telefone, ResultadoPill, MotivoTag, diasTexto, recenciaDias } from "../../ui";
+import {
+  EstadoPill,
+  Telefone,
+  ResultadoPill,
+  MotivoTag,
+  FrequenciaPill,
+  diasTexto,
+  recenciaDias,
+} from "../../ui";
 import type { ItemHabitual } from "../../ui";
 import { RegistrarContato } from "../../registrar-contato";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
@@ -55,6 +63,7 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold">{cliente.nome}</h1>
           <EstadoPill status={cliente.status} />
+          <FrequenciaPill classe={cliente.frequencia_classe} />
           {cliente.verificar && (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
               ⚠ {cliente.motivo_verificar ?? "conferir cadastro"}

@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { EstadoPill, Telefone, LinkCliente, ResultadoPill, diasTexto, recenciaDias } from "../ui";
+import {
+  EstadoPill,
+  Telefone,
+  LinkCliente,
+  ResultadoPill,
+  FrequenciaPill,
+  FREQUENCIA,
+  diasTexto,
+  recenciaDias,
+} from "../ui";
 import type { ItemHabitual } from "../ui";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 
@@ -25,6 +34,7 @@ export type LinhaCliente = {
   ticket_medio: number;
   total_vendas: number;
   receita_anual_risco: number | null;
+  frequencia_classe: string | null;
   itens_habituais: ItemHabitual[] | null;
   verificar: boolean;
 };
@@ -54,12 +64,14 @@ export function TabelaClientes({
   const [estado, setEstado] = useState(estadoInicial);
   const [ordem, setOrdem] = useState<Ordem>(estadoInicial === "inativo" ? "risco" : "total");
   const [soSemContato, setSoSemContato] = useState(false);
+  const [freq, setFreq] = useState("todas");
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     const out = clientes.filter((c) => {
       if (estado !== "todos" && c.status !== estado) return false;
       if (soSemContato && ultimoContato[c.id]) return false;
+      if (freq !== "todas" && c.frequencia_classe !== freq) return false;
       if (!q) return true;
       return (
         c.nome.toLowerCase().includes(q) ||
@@ -78,7 +90,7 @@ export function TabelaClientes({
       }
     });
     return out;
-  }, [clientes, busca, estado, ordem, soSemContato, ultimoContato]);
+  }, [clientes, busca, estado, ordem, soSemContato, freq, ultimoContato]);
 
   const semContato = clientes.filter((c) => !ultimoContato[c.id]).length;
 
@@ -103,6 +115,18 @@ export function TabelaClientes({
           <option value="atrasado">Atrasados</option>
           <option value="inativo">Inativos</option>
           <option value="sem_padrao">Sem padrão</option>
+        </select>
+        <select
+          value={freq}
+          onChange={(e) => setFreq(e.target.value)}
+          className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm"
+        >
+          <option value="todas">Toda frequência</option>
+          {Object.entries(FREQUENCIA).map(([v, f]) => (
+            <option key={v} value={v}>
+              {f.rotulo} — {f.desc}
+            </option>
+          ))}
         </select>
         <select
           value={ordem}
@@ -138,6 +162,7 @@ export function TabelaClientes({
             <tr>
               <th className="px-3 py-2">Cliente</th>
               <th className="px-3 py-2">Estado</th>
+              <th className="px-3 py-2">Frequência</th>
               <th className="px-3 py-2">Última compra</th>
               <th className="px-3 py-2 text-right">Ciclo</th>
               <th className="px-3 py-2 text-right">Pedidos</th>
@@ -165,6 +190,7 @@ export function TabelaClientes({
                     )}
                   </td>
                   <td className="px-3 py-2"><EstadoPill status={c.status} /></td>
+                  <td className="px-3 py-2"><FrequenciaPill classe={c.frequencia_classe} /></td>
                   <td className="whitespace-nowrap px-3 py-2 text-zinc-600">
                     {c.ultima_compra ? formatDateBR(c.ultima_compra) : "—"}
                     <span className="ml-1 text-xs text-zinc-400">({diasTexto(rec)})</span>

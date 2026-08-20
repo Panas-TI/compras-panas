@@ -11,6 +11,61 @@ const ESTADOS: Record<string, { rotulo: string; classe: string }> = {
   sem_padrao: { rotulo: "sem padrão", classe: "bg-zinc-50 text-zinc-500 border-zinc-200" },
 };
 
+/**
+ * Frequência de compra — pergunta diferente do `status`.
+ *
+ * status  = "quebrou o ritmo dele?"      → decide a fila do dia
+ * classe  = "com que frequência compra?" → decide o tratamento comercial
+ *
+ * Elas divergem de propósito: o MAGAZINO compra a cada 3 dias e parou há 41,
+ * então é 'inativo' pelo ritmo e 'media' pela frequência. As duas leituras
+ * estão certas e servem a decisões distintas.
+ */
+export const FREQUENCIA: Record<string, { rotulo: string; desc: string; classe: string }> = {
+  frequente: {
+    rotulo: "frequente",
+    desc: "5 ou mais compras por mês",
+    classe: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  },
+  media: {
+    rotulo: "média",
+    desc: "2 a 4 compras por mês",
+    classe: "bg-blue-50 text-blue-800 border-blue-200",
+  },
+  baixa: {
+    rotulo: "baixa",
+    desc: "cerca de 1 compra por mês",
+    classe: "bg-amber-50 text-amber-800 border-amber-200",
+  },
+  sazonal: {
+    rotulo: "sazonal",
+    desc: "1 a 4 compras nos últimos 4 meses",
+    classe: "bg-violet-50 text-violet-800 border-violet-200",
+  },
+  inativo: {
+    rotulo: "inativo",
+    desc: "sem comprar há mais de 4 meses",
+    classe: "bg-zinc-100 text-zinc-500 border-zinc-200",
+  },
+};
+
+export function FrequenciaPill({ classe }: { classe: string | null }) {
+  if (!classe) return null;
+  const f = FREQUENCIA[classe];
+  if (!f) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium",
+        f.classe
+      )}
+      title={`Frequência: ${f.desc}`}
+    >
+      {f.rotulo}
+    </span>
+  );
+}
+
 export function EstadoPill({ status }: { status: string | null }) {
   const e = ESTADOS[status ?? "sem_padrao"] ?? ESTADOS.sem_padrao;
   return (

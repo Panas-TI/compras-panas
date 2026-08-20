@@ -1305,6 +1305,7 @@ export type Database = {
           criado_em: string
           data_prevista_compra: string | null
           endereco: string | null
+          frequencia_classe: string | null
           frequencia_compras: number
           id: string
           intervalo_mediano_dias: number | null
@@ -1334,6 +1335,7 @@ export type Database = {
           criado_em?: string
           data_prevista_compra?: string | null
           endereco?: string | null
+          frequencia_classe?: string | null
           frequencia_compras?: number
           id?: string
           intervalo_mediano_dias?: number | null
@@ -1363,6 +1365,7 @@ export type Database = {
           criado_em?: string
           data_prevista_compra?: string | null
           endereco?: string | null
+          frequencia_classe?: string | null
           frequencia_compras?: number
           id?: string
           intervalo_mediano_dias?: number | null
@@ -1639,6 +1642,7 @@ export type Database = {
         }[]
       }
       current_user_role: { Args: never; Returns: string }
+      recalcular_frequencia_classe: { Args: never; Returns: number }
       recalcular_itens_habituais: { Args: never; Returns: number }
       recalcular_metricas_vendas: { Args: never; Returns: number }
       tem_papel_vendas: { Args: { papeis: string[] }; Returns: boolean }
