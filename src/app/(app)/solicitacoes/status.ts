@@ -39,7 +39,9 @@ export function computeSolicStatus(
     } else if (l.status === "Volumes ou Preço Alterados" && l.alteracao_confirmada) {
       pendingReceipt++;
     }
-    // "Aprovada & Recebida" e "Recusada" são terminais — não contam pra pendência
+    // "Aprovada & Recebida", "Recusada" e "Não Entregue" são terminais.
+    // Item que o fornecedor não entregou encerra a linha: sem isso a
+    // solicitação ficava presa em "Em recebimento" pra sempre.
   }
 
   if (pendingApproval > 0) return "Em aprovação";

@@ -24,6 +24,98 @@ function parseNumberBR(value: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+
+/**
+ * Fecha a solicitação quando não sobra nenhuma linha pendente.
+ *
+ * Antes nada setava `finalizada` — 0 de 14 solicitações tinham a marca. A tela
+ * até mostrava "Finalizada" quando as linhas acabavam, mas era só cálculo em
+ * memória: o banco nunca sabia que aquilo tinha encerrado.
+ */
+async function fecharSeCompleta(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  linha_id: string
+): Promise<void> {
+  const { data: linha } = await supabase
+    .from("solicitacao_linhas")
+    .select("solicitacao_id")
+    .eq("id", linha_id)
+    .maybeSingle();
+  if (!linha?.solicitacao_id) return;
+
+  const { data: pendentes } = await supabase
+    .from("solicitacao_linhas")
+    .select("id")
+    .eq("solicitacao_id", linha.solicitacao_id)
+    .not("status", "in", '("Aprovada & Recebida","Recusada","Não Entregue")')
+    .limit(1);
+
+  const completa = !pendentes || pendentes.length === 0;
+  const { data: solic } = await supabase
+    .from("solicitacoes_semanais")
+    .select("finalizada, enviada_em")
+    .eq("id", linha.solicitacao_id)
+    .maybeSingle();
+
+  // Rascunho não finaliza: ainda nem foi lançado pra aprovação.
+  if (!solic?.enviada_em) return;
+
+  if (completa && !solic.finalizada) {
+    await supabase
+      .from("solicitacoes_semanais")
+      .update({ finalizada: true, finalizada_em: new Date().toISOString() })
+      .eq("id", linha.solicitacao_id);
+  } else if (!completa && solic.finalizada) {
+    // Desfazer um recebimento reabre a solicitação.
+    await supabase
+      .from("solicitacoes_semanais")
+      .update({ finalizada: false, finalizada_em: null })
+      .eq("id", linha.solicitacao_id);
+  }
+}
+
+/**
+ * Marca que o item NÃO chegou.
+ *
+ * Sem isto o estoquista não tinha saída: a validação exigia quantidade maior
+ * que zero, então item que o fornecedor não entregou ficava pendente pra
+ * sempre e travava a solicitação inteira em "Em recebimento".
+ */
+export async function marcarNaoEntregueAction(
+  linha_id: string,
+  observacao?: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+
+  // Se já houve entrega parcial, o certo é finalizar com o que veio, não
+  // dizer que não veio nada.
+  const { data: entregas } = await supabase
+    .from("recebimento_entregas")
+    .select("id")
+    .eq("linha_id", linha_id)
+    .limit(1);
+  if (entregas && entregas.length > 0) {
+    return {
+      error:
+        "Este item já teve entrega registrada. Use “Finalizar recebimento” para fechar com a quantidade que chegou.",
+    };
+  }
+
+  const patch: LinhaUpdate = {
+    status: "Não Entregue",
+    volume_recebido: 0,
+    data_recebimento: new Date().toISOString().slice(0, 10),
+    observacao_recebimento: observacao?.trim() || "Fornecedor não entregou",
+  };
+  const { error } = await supabase.from("solicitacao_linhas").update(patch).eq("id", linha_id);
+  if (error) return { error: error.message };
+
+  await fecharSeCompleta(supabase, linha_id);
+  revalidatePath("/recebimento");
+  revalidatePath("/solicitacoes");
+  return {};
+}
+
 /** Adiciona uma entrega parcial à linha. */
 export async function addEntregaAction(
   linha_id: string,
@@ -93,6 +185,7 @@ export async function finalizarRecebimentoAction(linha_id: string): Promise<{ er
   const { error } = await supabase.from("solicitacao_linhas").update(patch).eq("id", linha_id);
   if (error) return { error: error.message };
 
+  await fecharSeCompleta(supabase, linha_id);
   revalidatePath("/recebimento");
   revalidatePath("/solicitacoes");
   return {};
@@ -129,6 +222,8 @@ export async function desfazerRecebimentoAction(
   const { error } = await supabase.from("solicitacao_linhas").update(patch).eq("id", linha_id);
   if (error) return { error: error.message };
 
+  // Reabre a solicitação: voltou a ter linha pendente.
+  await fecharSeCompleta(supabase, linha_id);
   revalidatePath("/recebimento");
   revalidatePath("/solicitacoes");
   return {};

@@ -54,6 +54,7 @@ const STATUS_STYLES: Record<string, string> = {
   "Para Aprovar": "bg-amber-50 text-amber-800 border-amber-200",
   Aprovada: "bg-emerald-50 text-emerald-800 border-emerald-200",
   "Aprovada & Recebida": "bg-emerald-100 text-emerald-900 border-emerald-300",
+  "Não Entregue": "bg-orange-100 text-orange-900 border-orange-300",
   Recusada: "bg-red-50 text-red-800 border-red-200",
   "Volumes ou Preço Alterados": "bg-blue-50 text-blue-800 border-blue-200",
 };

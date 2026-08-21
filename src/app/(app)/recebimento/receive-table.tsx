@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
-import { addEntregaAction, removerEntregaAction, finalizarRecebimentoAction } from "./actions";
+import {
+  addEntregaAction,
+  removerEntregaAction,
+  finalizarRecebimentoAction,
+  marcarNaoEntregueAction,
+} from "./actions";
 
 export type Entrega = {
   id: string;
@@ -121,6 +126,20 @@ function ItemCard({ linha }: { linha: LinhaPendente }) {
   const totalRecebido = linha.entregas.reduce((s, e) => s + e.quantidade, 0);
   const solicitado = linha.volume_solicitado ?? 0;
   const falta = Math.max(0, solicitado - totalRecebido);
+
+  const marcarNaoVeio = () => {
+    const motivo = window.prompt(
+      `O fornecedor não entregou "${linha.nome_item}"?\n\nMotivo (opcional):`,
+      "Fornecedor não entregou"
+    );
+    if (motivo === null) return; // cancelou
+    setError(null);
+    startTransition(async () => {
+      const res = await marcarNaoEntregueAction(linha.id, motivo);
+      if (res.error) setError(res.error);
+      else router.refresh();
+    });
+  };
 
   const salvarEntrega = () => {
     setError(null);
@@ -261,6 +280,17 @@ function ItemCard({ linha }: { linha: LinhaPendente }) {
           >
             + Add entrega
           </button>
+          {/* Sem isto o item que o fornecedor não mandou ficava pendente pra
+              sempre e travava a solicitação inteira em "Em recebimento". */}
+          {linha.entregas.length === 0 && (
+            <button
+              onClick={marcarNaoVeio}
+              disabled={isPending}
+              className="rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800 hover:bg-orange-100 disabled:opacity-50"
+            >
+              ✕ Não veio
+            </button>
+          )}
         </div>
       )}
 

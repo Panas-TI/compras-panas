@@ -1663,6 +1663,7 @@ export type Database = {
         | "Aprovada & Recebida"
         | "Recusada"
         | "Volumes ou Preço Alterados"
+        | "Não Entregue"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1796,6 +1797,7 @@ export const Constants = {
         "Aprovada & Recebida",
         "Recusada",
         "Volumes ou Preço Alterados",
+        "Não Entregue",
       ],
     },
   },
