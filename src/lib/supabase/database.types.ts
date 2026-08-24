@@ -761,27 +761,43 @@ export type Database = {
       }
       pcp_linha: {
         Row: {
-          criado_em: string
+          atualizado_em: string
           id: string
+          observacao: string | null
+          pcp_id: string
           produto_id: string
-          quantidade: number
+          projetado: number
+          realizado: number | null
           turno_id: string
         }
         Insert: {
-          criado_em?: string
+          atualizado_em?: string
           id?: string
+          observacao?: string | null
+          pcp_id: string
           produto_id: string
-          quantidade: number
+          projetado: number
+          realizado?: number | null
           turno_id: string
         }
         Update: {
-          criado_em?: string
+          atualizado_em?: string
           id?: string
+          observacao?: string | null
+          pcp_id?: string
           produto_id?: string
-          quantidade?: number
+          projetado?: number
+          realizado?: number | null
           turno_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pcp_linha_pcp_id_fkey"
+            columns: ["pcp_id"]
+            isOneToOne: false
+            referencedRelation: "pcp_dia"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pcp_linha_produto_id_fkey"
             columns: ["produto_id"]
@@ -798,73 +814,65 @@ export type Database = {
           },
         ]
       }
-      pcp_turno: {
-        Row: {
-          criado_em: string
-          hora_fim: string
-          hora_inicio: string
-          id: string
-          nome: string
-          ordem: number
-          pcp_id: string
-        }
-        Insert: {
-          criado_em?: string
-          hora_fim: string
-          hora_inicio: string
-          id?: string
-          nome: string
-          ordem?: number
-          pcp_id: string
-        }
-        Update: {
-          criado_em?: string
-          hora_fim?: string
-          hora_inicio?: string
-          id?: string
-          nome?: string
-          ordem?: number
-          pcp_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pcp_turno_pcp_id_fkey"
-            columns: ["pcp_id"]
-            isOneToOne: false
-            referencedRelation: "pcp_dia"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pcp_turno_colaborador: {
+      pcp_linha_colaborador: {
         Row: {
           colaborador_id: string
-          turno_id: string
+          linha_id: string
         }
         Insert: {
           colaborador_id: string
-          turno_id: string
+          linha_id: string
         }
         Update: {
           colaborador_id?: string
-          turno_id?: string
+          linha_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "pcp_turno_colaborador_colaborador_id_fkey"
+            foreignKeyName: "pcp_linha_colaborador_colaborador_id_fkey"
             columns: ["colaborador_id"]
             isOneToOne: false
             referencedRelation: "colaboradores"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "pcp_turno_colaborador_turno_id_fkey"
-            columns: ["turno_id"]
+            foreignKeyName: "pcp_linha_colaborador_linha_id_fkey"
+            columns: ["linha_id"]
             isOneToOne: false
-            referencedRelation: "pcp_turno"
+            referencedRelation: "pcp_linha"
             referencedColumns: ["id"]
           },
         ]
+      }
+      pcp_turno: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          hora_fim: string
+          hora_inicio: string
+          id?: string
+          nome: string
+          ordem: number
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          nome?: string
+          ordem?: number
+        }
+        Relationships: []
       }
       produto: {
         Row: {
