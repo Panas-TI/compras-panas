@@ -18,6 +18,7 @@ export default async function HubPage() {
       .maybeSingle();
     // Perfis com módulo único caem direto onde devem trabalhar
     if (profile?.role === "estoquista") redirect("/recebimento");
+    if (profile?.role === "gestor_producao") redirect("/estoque");
     if (profile?.role === "motorista") redirect("/motorista");
     if (profile?.role === "vendas") redirect("/vendas");
     ehAdmin = profile?.role === "aprovador";

@@ -13,12 +13,12 @@ import {
   type CreateUserState,
 } from "./actions";
 
-type Role = "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro";
+type Role = "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro" | "gestor_producao";
 
 export type UserRow = {
   id: string;
   nome: string;
-  role: "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro";
+  role: "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro" | "gestor_producao";
   ativo: boolean;
 };
 
@@ -48,6 +48,7 @@ export function UsersTable({ currentUserId, users }: { currentUserId: string; us
               <option value="comprador">Comprador (solicitações + entregas)</option>
               <option value="aprovador">Administrador (acesso total)</option>
               <option value="estoquista">Estoquista (recebimento + contagem)</option>
+              <option value="gestor_producao">Gestor de Produção (todo o Estoque)</option>
               <option value="motorista">Motorista (só entregas)</option>
               <option value="vendas">Atendente / Vendedor (só o módulo Vendas)</option>
               <option value="financeiro">Financeiro (só consulta contagens)</option>
@@ -132,6 +133,7 @@ function UserTr({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
             <option value="comprador">Comprador</option>
             <option value="aprovador">Administrador</option>
             <option value="estoquista">Estoquista</option>
+            <option value="gestor_producao">Gestor de Produção</option>
             <option value="motorista">Motorista</option>
             <option value="vendas">Atendente / Vendedor</option>
             <option value="financeiro">Financeiro</option>

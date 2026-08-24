@@ -21,7 +21,7 @@ export default async function ProjecaoDetalhePage({ params }: { params: Promise<
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (!["aprovador", "comprador"].includes(profile?.role ?? "")) redirect("/");
+  if (!["aprovador", "comprador", "gestor_producao"].includes(profile?.role ?? "")) redirect("/");
 
   const { data: projecao } = await supabase
     .from("projecao_producao")

@@ -23,7 +23,7 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Sea
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (!["aprovador", "comprador"].includes(profile?.role ?? "")) redirect("/");
+  if (!["aprovador", "comprador", "gestor_producao"].includes(profile?.role ?? "")) redirect("/");
 
   // Lista produtos com contagem de itens da ficha vigente
   let query = supabase

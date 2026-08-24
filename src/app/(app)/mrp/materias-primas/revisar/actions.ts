@@ -12,7 +12,7 @@ async function assertAccess() {
     .select("role, ativo")
     .eq("id", user.id)
     .maybeSingle();
-  if (!profile?.ativo || !["aprovador", "comprador"].includes(profile.role)) {
+  if (!profile?.ativo || !["aprovador", "comprador", "gestor_producao"].includes(profile.role)) {
     return { ok: false as const, error: "Sem permissão." };
   }
   return { ok: true as const };

@@ -9,6 +9,8 @@ export function roleLabel(role: string | null | undefined): string {
       return "Comprador";
     case "estoquista":
       return "Estoquista";
+    case "gestor_producao":
+      return "Gestor de Produção";
     case "motorista":
       return "Motorista";
     default:

@@ -8,7 +8,7 @@ import { roleLabel } from "@/lib/role-label";
 import { logoutAction } from "@/app/login/actions";
 
 type NavItem = { href: string; label: string; subItems?: NavItem[] };
-type Role = "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro";
+type Role = "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro" | "gestor_producao";
 
 // Sub-rotas do MRP (dropdown ao passar o mouse no item "MRP")
 const MRP_SUB: NavItem[] = [
@@ -76,6 +76,8 @@ function podeVerRota(href: string, role: Role): boolean {
   // Financeiro: só consulta contagens finalizadas (preço e fornecedor)
   if (role === "financeiro") return href === "/" || href === "/contagem";
   if (role === "estoquista") return ESTOQUISTA_ALLOWED.has(href);
+  // Gestor de produção manda no Estoque inteiro, menos o que é de admin.
+  if (role === "gestor_producao") return !APROVADOR_ONLY.has(href);
   if (role !== "aprovador" && APROVADOR_ONLY.has(href)) return false;
   return true;
 }

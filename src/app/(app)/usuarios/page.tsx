@@ -17,7 +17,7 @@ export default async function UsuariosPage() {
   const rows: UserRow[] = (profiles ?? []).map((p) => ({
     id: p.id,
     nome: p.nome,
-    role: p.role as "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro",
+    role: p.role as "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro" | "gestor_producao",
     ativo: p.ativo,
   }));
 

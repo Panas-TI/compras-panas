@@ -32,7 +32,7 @@ export default async function EstoqueMrpPage({ searchParams }: { searchParams: S
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (!["aprovador", "comprador"].includes(profile?.role ?? "")) redirect("/");
+  if (!["aprovador", "comprador", "gestor_producao"].includes(profile?.role ?? "")) redirect("/");
 
   // Última contagem finalizada (o estoquista faz semanalmente)
   const { data: ultimaContagem } = await supabase

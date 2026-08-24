@@ -24,7 +24,7 @@ export default async function MateriasPrimasPage({
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (!["aprovador", "comprador"].includes(profile?.role ?? "")) redirect("/");
+  if (!["aprovador", "comprador", "gestor_producao"].includes(profile?.role ?? "")) redirect("/");
 
   // Itens usados em fichas + contagem de produtos onde aparecem
   const { data: fichaItens } = await supabase

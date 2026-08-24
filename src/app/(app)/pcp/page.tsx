@@ -19,7 +19,7 @@ export default async function PCPListaPage() {
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  const podePlanejar = ["aprovador", "estoquista"].includes(perfil?.role ?? "");
+  const podePlanejar = ["aprovador", "estoquista", "gestor_producao"].includes(perfil?.role ?? "");
 
   const hoje = new Date().toISOString().slice(0, 10);
   const amanha = new Date(Date.now() + 86400000).toISOString().slice(0, 10);

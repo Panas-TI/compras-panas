@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-const PAPEIS = ["aprovador", "estoquista"];
+const PAPEIS = ["aprovador", "estoquista", "gestor_producao"];
 
 async function guard(supabase: Awaited<ReturnType<typeof createClient>>) {
   const {

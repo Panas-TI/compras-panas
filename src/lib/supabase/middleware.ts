@@ -51,13 +51,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Restrição de rotas para estoquista — só pode acessar /, /recebimento, /contagem
+  // Restrição de rotas por papel
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, ativo")
       .eq("id", user.id)
       .maybeSingle();
+
+    // Estoquista: recebimento, contagem e a folha do PCP que ele preenche.
     if (profile?.role === "estoquista" && profile.ativo) {
       const estoquistaAllowed =
         path === "/" ||
@@ -65,13 +67,39 @@ export async function updateSession(request: NextRequest) {
         path === "/recebimento" ||
         path.startsWith("/recebimento/") ||
         path === "/contagem" ||
-        path.startsWith("/contagem/");
+        path.startsWith("/contagem/") ||
+        path === "/pcp" ||
+        path.startsWith("/pcp/");
       if (!estoquistaAllowed) {
         const url = request.nextUrl.clone();
         url.pathname = "/recebimento";
         return NextResponse.redirect(url);
       }
     }
+
+    // Gestor de produção: o módulo Estoque inteiro, e só ele. Usuários,
+    // Entregas e Vendas ficam de fora.
+    if (profile?.role === "gestor_producao" && profile.ativo) {
+      const ESTOQUE = [
+        "/estoque",
+        "/solicitacoes",
+        "/recebimento",
+        "/contagem",
+        "/pcp",
+        "/itens",
+        "/mrp",
+        "/cadastros",
+        "/relatorios",
+      ];
+      const permitido =
+        path === "/" || ESTOQUE.some((r) => path === r || path.startsWith(r + "/"));
+      if (!permitido) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/estoque";
+        return NextResponse.redirect(url);
+      }
+    }
+
     // Atendimento (vendas): só o módulo Vendas e o hub
     if (profile?.role === "vendas" && profile.ativo) {
       const vendasAllowed =

@@ -36,7 +36,7 @@ export default async function ProjecoesPage({ searchParams }: { searchParams: Se
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (!["aprovador", "comprador"].includes(profile?.role ?? "")) redirect("/");
+  if (!["aprovador", "comprador", "gestor_producao"].includes(profile?.role ?? "")) redirect("/");
 
   let query = supabase
     .from("projecao_producao")

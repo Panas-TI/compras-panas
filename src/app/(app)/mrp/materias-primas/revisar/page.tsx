@@ -58,7 +58,7 @@ export default async function RevisarDuplicatasPage() {
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (!["aprovador", "comprador"].includes(profile?.role ?? "")) redirect("/");
+  if (!["aprovador", "comprador", "gestor_producao"].includes(profile?.role ?? "")) redirect("/");
 
   // Pega TODOS os itens ativos pra cruzamento
   const { data: todosItens } = await supabase

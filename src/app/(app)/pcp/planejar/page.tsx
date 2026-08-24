@@ -21,7 +21,7 @@ export default async function PlanejarPage({ searchParams }: { searchParams: Sea
     .select("role, ativo")
     .eq("id", user.id)
     .maybeSingle();
-  if (!perfil?.ativo || !["aprovador", "estoquista"].includes(perfil.role)) redirect("/pcp");
+  if (!perfil?.ativo || !["aprovador", "estoquista", "gestor_producao"].includes(perfil.role)) redirect("/pcp");
 
   const hoje = new Date().toISOString().slice(0, 10);
   const data = typeof sp.data === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.data) ? sp.data : hoje;

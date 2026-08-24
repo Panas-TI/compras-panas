@@ -28,11 +28,16 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     | "aprovador"
     | "estoquista"
     | "financeiro"
+    | "gestor_producao"
     | undefined;
-  const canRequestPurchase = role === "comprador" || role === "aprovador";
+  const canRequestPurchase =
+    role === "comprador" || role === "aprovador" || role === "gestor_producao";
   // Quem conta estoque não vê valores — regra já vigente no sistema.
   const podeVerPrecos =
-    role === "aprovador" || role === "comprador" || role === "financeiro";
+    role === "aprovador" ||
+    role === "comprador" ||
+    role === "financeiro" ||
+    role === "gestor_producao";
 
   const [{ data: linhasRaw }, { data: templates }] = await Promise.all([
     supabase

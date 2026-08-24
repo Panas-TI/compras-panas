@@ -38,7 +38,7 @@ export default async function FolhaPCPPage({
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  const podeLancar = ["aprovador", "estoquista"].includes(perfil?.role ?? "");
+  const podeLancar = ["aprovador", "estoquista", "gestor_producao"].includes(perfil?.role ?? "");
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dataParam)) redirect("/pcp");
   const data = dataParam;
