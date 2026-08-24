@@ -22,22 +22,13 @@ export type Colaborador = {
   data_admissao: string | null;
   data_desligamento: string | null;
   observacoes: string | null;
-  profile_id: string | null;
   ativo: boolean;
 };
-
-export type ContaAcesso = { id: string; nome: string; role: string };
 
 /** Sugestões, não lista fechada: setor novo aparece sem precisar mexer no código. */
 const SETORES = ["Produção", "Cozinha", "Estoque", "Entregas", "Vendas", "Administrativo", "Loja"];
 
-export function TabelaColaboradores({
-  colaboradores,
-  contas,
-}: {
-  colaboradores: Colaborador[];
-  contas: ContaAcesso[];
-}) {
+export function TabelaColaboradores({ colaboradores }: { colaboradores: Colaborador[] }) {
   const [estado, formAction, salvando] = useActionState<EstadoColaborador, FormData>(
     salvarColaboradorAction,
     null
@@ -123,15 +114,6 @@ export function TabelaColaboradores({
               <Input id="email" name="email" type="email" maxLength={120} defaultValue={editando?.email ?? ""} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="profile_id">Conta de acesso</Label>
-              <Select id="profile_id" name="profile_id" defaultValue={editando?.profile_id ?? ""}>
-                <option value="">— sem acesso ao sistema —</option>
-                {contas.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nome} ({c.role})</option>
-                ))}
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1.5">
               <Label htmlFor="data_admissao">Admissão</Label>
               <Input id="data_admissao" name="data_admissao" type="date" defaultValue={editando?.data_admissao ?? ""} />
             </div>
@@ -195,17 +177,16 @@ export function TabelaColaboradores({
               <th className="px-3 py-2">Setor</th>
               <th className="px-3 py-2">Contato</th>
               <th className="px-3 py-2">Admissão</th>
-              <th className="px-3 py-2">Acesso</th>
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
           <tbody>
             {filtrados.map((c) => (
-              <Linha key={c.id} c={c} contas={contas} onEditar={() => abrirEdicao(c)} />
+              <Linha key={c.id} c={c} onEditar={() => abrirEdicao(c)} />
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-sm text-zinc-500">
+                <td colSpan={6} className="px-3 py-10 text-center text-sm text-zinc-500">
                   {colaboradores.length === 0
                     ? "Nenhum colaborador cadastrado ainda."
                     : "Nenhum colaborador com esse filtro."}
@@ -219,18 +200,9 @@ export function TabelaColaboradores({
   );
 }
 
-function Linha({
-  c,
-  contas,
-  onEditar,
-}: {
-  c: Colaborador;
-  contas: ContaAcesso[];
-  onEditar: () => void;
-}) {
+function Linha({ c, onEditar }: { c: Colaborador; onEditar: () => void }) {
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
-  const conta = contas.find((x) => x.id === c.profile_id);
 
   const alternar = () => {
     iniciar(async () => {
@@ -260,13 +232,6 @@ function Linha({
       </td>
       <td className="whitespace-nowrap px-3 py-2 text-zinc-600">
         {c.data_admissao ? formatDateBR(c.data_admissao) : "—"}
-      </td>
-      <td className="px-3 py-2 text-xs">
-        {conta ? (
-          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-800">{conta.role}</span>
-        ) : (
-          <span className="text-zinc-400">sem login</span>
-        )}
       </td>
       <td className="px-3 py-2 text-right">
         <div className="flex justify-end gap-2">

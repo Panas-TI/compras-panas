@@ -91,7 +91,6 @@ export type Database = {
           id: string
           nome: string
           observacoes: string | null
-          profile_id: string | null
           setor: string | null
           telefone: string | null
         }
@@ -106,7 +105,6 @@ export type Database = {
           id?: string
           nome: string
           observacoes?: string | null
-          profile_id?: string | null
           setor?: string | null
           telefone?: string | null
         }
@@ -121,19 +119,10 @@ export type Database = {
           id?: string
           nome?: string
           observacoes?: string | null
-          profile_id?: string | null
           setor?: string | null
           telefone?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "colaboradores_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       contagem_linhas: {
         Row: {

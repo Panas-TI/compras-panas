@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { roleLabel } from "@/lib/role-label";
-import { TabelaColaboradores, type Colaborador, type ContaAcesso } from "./tabela";
+import { TabelaColaboradores, type Colaborador } from "./tabela";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +19,11 @@ export default async function ColaboradoresPage() {
     .maybeSingle();
   if (!perfil?.ativo || perfil.role !== "aprovador") redirect("/");
 
-  const [{ data: colaboradores }, { data: contas }] = await Promise.all([
-    supabase.from("colaboradores").select("*").order("ativo", { ascending: false }).order("nome"),
-    supabase.from("profiles").select("id, nome, role").eq("ativo", true).order("nome"),
-  ]);
+  const { data: colaboradores } = await supabase
+    .from("colaboradores")
+    .select("*")
+    .order("ativo", { ascending: false })
+    .order("nome");
 
   return (
     <div className="flex flex-col gap-4">
@@ -33,19 +33,12 @@ export default async function ColaboradoresPage() {
         </Link>
         <h1 className="mt-1 text-2xl font-semibold">Colaboradores</h1>
         <p className="text-sm text-zinc-600">
-          Quem trabalha na empresa. Diferente de <strong>Usuários</strong>, que é conta de login —
-          a maior parte do time não acessa o sistema, mas está aqui.
+          Quem trabalha na empresa e em quais atividades atua. Não tem relação com acesso ao
+          sistema — isso fica em Usuários.
         </p>
       </div>
 
-      <TabelaColaboradores
-        colaboradores={(colaboradores ?? []) as Colaborador[]}
-        contas={(contas ?? []).map((c) => ({
-          id: c.id,
-          nome: c.nome,
-          role: roleLabel(c.role as Parameters<typeof roleLabel>[0]),
-        })) as ContaAcesso[]}
-      />
+      <TabelaColaboradores colaboradores={(colaboradores ?? []) as Colaborador[]} />
     </div>
   );
 }

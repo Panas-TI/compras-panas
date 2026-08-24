@@ -55,7 +55,6 @@ export async function salvarColaboradorAction(
     data_admissao: limpo(formData.get("data_admissao")),
     data_desligamento: desligamento,
     observacoes: limpo(formData.get("observacoes")),
-    profile_id: limpo(formData.get("profile_id")),
     ativo,
   };
 
@@ -63,14 +62,7 @@ export async function salvarColaboradorAction(
     ? await supabase.from("colaboradores").update(dados).eq("id", id)
     : await supabase.from("colaboradores").insert(dados);
 
-  if (error) {
-    return {
-      error:
-        error.code === "23505"
-          ? "Essa conta de acesso já está ligada a outro colaborador."
-          : error.message,
-    };
-  }
+  if (error) return { error: error.message };
 
   revalidatePath("/configuracoes/colaboradores");
   revalidatePath("/configuracoes");

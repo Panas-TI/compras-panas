@@ -65,8 +65,8 @@ export default async function ConfiguracoesPage() {
               <div className="mb-1 text-3xl">🧑‍🍳</div>
               <CardTitle className="text-base">Colaboradores</CardTitle>
               <CardDescription>
-                Quem trabalha na empresa — cargo, setor, admissão e contato. A maioria não tem
-                login, e é por isso que não cabe em Usuários.
+                Quem trabalha na empresa e em quais atividades atua. Não trata de acesso ao
+                sistema.
               </CardDescription>
             </CardHeader>
             <CardContent>
