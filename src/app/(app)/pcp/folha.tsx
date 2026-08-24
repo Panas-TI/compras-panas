@@ -5,36 +5,31 @@ import { useRouter } from "next/navigation";
 import { codigoCurto, desvioClasse, hhmm, nomeLimpo, situacaoTurno, type SituacaoTurno } from "./lib";
 import { lancarRealizadoAction } from "./actions";
 
-export type ItemTurno = {
+export type LinhaFolha = {
   linha_id: string;
   produto: string;
   projetado: number;
   realizado: number | null;
   colaboradores: string[];
-};
-export type BlocoTurno = {
-  id: string;
-  nome: string;
+  turno_nome: string;
   hora_inicio: string;
   hora_fim: string;
-  itens: ItemTurno[];
 };
 
 /**
- * A folha do PCP: os turnos são blocos empilhados, cada um com os produtos
- * daquele horário logo abaixo.
+ * A folha do PCP: uma linha por produto, e o turno dele na coluna da direita.
  *
- * Turno em coluna obrigava rolar a tela pro lado — numa tela pendurada na
- * parede ninguém rola. Empilhado, cada bloco é lido de cima pra baixo e o
- * turno corrente aparece verde e destacado no meio da sequência.
+ * Turno em coluna repetia Projetado/Realizado/Colaborador seis vezes e jogava
+ * os últimos turnos pra fora da tela. Numa tela pendurada na parede ninguém
+ * rola pro lado — então o que sai da vista deixa de existir.
  */
 export function FolhaPCP({
   data,
-  blocos,
+  linhas,
   podeLancar,
 }: {
   data: string;
-  blocos: BlocoTurno[];
+  linhas: LinhaFolha[];
   podeLancar: boolean;
 }) {
   const [agora, setAgora] = useState<Date | null>(null);
@@ -53,9 +48,11 @@ export function FolhaPCP({
     return () => clearInterval(t);
   }, []);
 
-  const todos = blocos.flatMap((b) => b.itens);
-  const totalProj = todos.reduce((s, i) => s + i.projetado, 0);
-  const totalReal = todos.reduce((s, i) => s + (i.realizado ?? 0), 0);
+  const totalProj = linhas.reduce((s, l) => s + l.projetado, 0);
+  const totalReal = linhas.reduce((s, l) => s + (l.realizado ?? 0), 0);
+
+  const sit = (l: LinhaFolha): SituacaoTurno =>
+    agora ? situacaoTurno(l.hora_inicio, l.hora_fim, agora) : "proximo";
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,124 +77,103 @@ export function FolhaPCP({
         </div>
       </header>
 
-      <div className="flex flex-col gap-4">
-        {blocos.map((b) => (
-          <BlocoDeTurno
-            key={b.id}
-            bloco={b}
-            situacao={agora ? situacaoTurno(b.hora_inicio, b.hora_fim, agora) : "proximo"}
-            podeLancar={podeLancar}
-          />
-        ))}
-        {blocos.length === 0 && (
-          <div className="rounded-xl border border-zinc-300 bg-white px-4 py-16 text-center text-zinc-500">
-            Nenhum produto planejado para este dia.
-          </div>
-        )}
+      <div className="overflow-x-auto rounded-xl border border-zinc-300 bg-white">
+        <table className="w-full border-collapse text-base">
+          <thead>
+            <tr className="bg-zinc-100 text-xs font-bold uppercase tracking-wider text-zinc-600">
+              <th className="w-16 border-b-2 border-r border-zinc-300 px-3 py-2 text-left">Cód.</th>
+              <th className="border-b-2 border-r-2 border-zinc-300 px-3 py-2 text-left">Produto</th>
+              <th className="w-36 border-b-2 border-r border-zinc-300 px-2 py-2 text-center">
+                Projetado
+              </th>
+              <th className="w-36 border-b-2 border-r border-zinc-300 px-2 py-2 text-center">
+                Realizado
+              </th>
+              <th className="w-64 border-b-2 border-r-2 border-zinc-300 px-3 py-2 text-left">
+                Colaborador
+              </th>
+              <th className="w-52 border-b-2 border-zinc-300 px-3 py-2 text-center">Turno</th>
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.map((l, i) => {
+              const s = sit(l);
+              // A linha inteira acende no turno corrente: de longe, é o que diz
+              // à colaboradora quais produtos são os de agora.
+              const fundo =
+                s === "agora" ? "bg-emerald-50" : i % 2 ? "bg-zinc-50/60" : "bg-white";
+              return (
+                <tr key={l.linha_id} className={fundo}>
+                  <td className="border-b border-r border-zinc-200 px-3 py-2">
+                    <span className="inline-flex h-8 min-w-8 items-center justify-center rounded bg-zinc-900 px-2 text-sm font-bold tabular-nums text-white">
+                      {codigoCurto(l.produto)}
+                    </span>
+                  </td>
+                  <td className="border-b border-r-2 border-zinc-200 px-3 py-2 text-lg font-semibold leading-tight">
+                    {nomeLimpo(l.produto)}
+                  </td>
+                  <td className="border-b border-r border-zinc-200 px-2 py-2 text-center text-2xl font-bold tabular-nums">
+                    {l.projetado.toLocaleString("pt-BR")}
+                  </td>
+                  <td className="border-b border-r border-zinc-200 px-1 py-1 text-center">
+                    <CampoRealizado linha={l} podeLancar={podeLancar} />
+                  </td>
+                  <td className="border-b border-r-2 border-zinc-200 px-3 py-2 text-sm leading-tight text-zinc-700">
+                    {l.colaboradores.join(" / ") || "—"}
+                  </td>
+                  <td className="border-b border-zinc-200 px-2 py-1.5 text-center">
+                    <CelulaTurno linha={l} situacao={s} />
+                  </td>
+                </tr>
+              );
+            })}
+            {linhas.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-16 text-center text-zinc-500">
+                  Nenhum produto planejado para este dia.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
-function BlocoDeTurno({
-  bloco,
-  situacao,
-  podeLancar,
-}: {
-  bloco: BlocoTurno;
-  situacao: SituacaoTurno;
-  podeLancar: boolean;
-}) {
-  const proj = bloco.itens.reduce((s, i) => s + i.projetado, 0);
-  const real = bloco.itens.reduce((s, i) => s + (i.realizado ?? 0), 0);
-  const lancouAlgum = bloco.itens.some((i) => i.realizado !== null);
-
-  const moldura =
-    situacao === "agora"
-      ? "border-emerald-500 shadow-lg shadow-emerald-100"
-      : situacao === "encerrado"
-        ? "border-zinc-200"
-        : "border-zinc-300";
-  const faixa =
+function CelulaTurno({ linha, situacao }: { linha: LinhaFolha; situacao: SituacaoTurno }) {
+  const cor =
     situacao === "agora"
       ? "bg-emerald-500 text-white"
       : situacao === "encerrado"
         ? "bg-zinc-200 text-zinc-500"
         : "bg-zinc-800 text-white";
-
   return (
-    <section
-      className={`overflow-hidden rounded-xl border-2 bg-white ${moldura} ${
-        situacao === "encerrado" ? "opacity-70" : ""
-      }`}
-    >
-      <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 ${faixa}`}>
-        <span className="text-lg font-bold uppercase tracking-wider">{bloco.nome}</span>
-        <span className="text-2xl font-bold tabular-nums">
-          {hhmm(bloco.hora_inicio)} – {hhmm(bloco.hora_fim)}
-        </span>
-        {situacao === "agora" && (
-          <span className="rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold tracking-[0.2em]">
-            AGORA
-          </span>
-        )}
-        <span className="ml-auto text-sm font-semibold tabular-nums">
-          {proj.toLocaleString("pt-BR")} projetado
-          {lancouAlgum && <> · {real.toLocaleString("pt-BR")} feito</>}
-        </span>
+    <div className={`rounded-md px-2 py-1 ${cor}`}>
+      <div className="text-[11px] font-bold uppercase tracking-wider">
+        {linha.turno_nome}
+        {situacao === "agora" && <span className="ml-1.5 tracking-[0.15em]">· AGORA</span>}
       </div>
-
-      <table className="w-full border-collapse text-base">
-        <thead>
-          <tr className="bg-zinc-50 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-            <th className="w-14 border-b border-zinc-200 px-3 py-1 text-left">Cód.</th>
-            <th className="border-b border-zinc-200 px-3 py-1 text-left">Produto</th>
-            <th className="w-32 border-b border-zinc-200 px-2 py-1 text-center">Projetado</th>
-            <th className="w-32 border-b border-zinc-200 px-2 py-1 text-center">Realizado</th>
-            <th className="w-56 border-b border-zinc-200 px-3 py-1 text-left">Colaborador</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bloco.itens.map((i, idx) => (
-            <tr key={i.linha_id} className={idx % 2 ? "bg-zinc-50/60" : "bg-white"}>
-              <td className="border-b border-zinc-200 px-3 py-2">
-                <span className="inline-flex h-8 min-w-8 items-center justify-center rounded bg-zinc-900 px-2 text-sm font-bold tabular-nums text-white">
-                  {codigoCurto(i.produto)}
-                </span>
-              </td>
-              <td className="border-b border-zinc-200 px-3 py-2 text-lg font-semibold leading-tight">
-                {nomeLimpo(i.produto)}
-              </td>
-              <td className="border-b border-zinc-200 px-2 py-2 text-center text-2xl font-bold tabular-nums">
-                {i.projetado.toLocaleString("pt-BR")}
-              </td>
-              <td className="border-b border-zinc-200 px-1 py-1 text-center">
-                <CampoRealizado item={i} podeLancar={podeLancar} />
-              </td>
-              <td className="border-b border-zinc-200 px-3 py-2 text-sm leading-tight text-zinc-700">
-                {i.colaboradores.join(" / ") || "—"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+      <div className="text-base font-bold tabular-nums">
+        {hhmm(linha.hora_inicio)} – {hhmm(linha.hora_fim)}
+      </div>
+    </div>
   );
 }
 
 /** O realizado é lançado na própria folha, durante o turno. */
-function CampoRealizado({ item, podeLancar }: { item: ItemTurno; podeLancar: boolean }) {
+function CampoRealizado({ linha, podeLancar }: { linha: LinhaFolha; podeLancar: boolean }) {
   const router = useRouter();
-  const [valor, setValor] = useState(item.realizado === null ? "" : String(item.realizado));
+  const [valor, setValor] = useState(linha.realizado === null ? "" : String(linha.realizado));
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState(false);
 
-  const cor = desvioClasse(item.projetado, item.realizado);
+  const cor = desvioClasse(linha.projetado, linha.realizado);
 
   if (!podeLancar) {
     return (
       <span className={`text-2xl font-bold tabular-nums ${cor}`}>
-        {item.realizado === null ? "—" : item.realizado.toLocaleString("pt-BR")}
+        {linha.realizado === null ? "—" : linha.realizado.toLocaleString("pt-BR")}
       </span>
     );
   }
@@ -209,10 +185,10 @@ function CampoRealizado({ item, podeLancar }: { item: ItemTurno; podeLancar: boo
       setErro(true);
       return;
     }
-    if (n === item.realizado) return;
+    if (n === linha.realizado) return;
     setErro(false);
     iniciar(async () => {
-      const r = await lancarRealizadoAction(item.linha_id, n);
+      const r = await lancarRealizadoAction(linha.linha_id, n);
       if (r.error) setErro(true);
       else router.refresh();
     });

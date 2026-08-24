@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
-import { FolhaPCP, type BlocoTurno } from "../folha";
+import { FolhaPCP, type LinhaFolha } from "../folha";
 
 export const dynamic = "force-dynamic";
 
@@ -53,31 +53,37 @@ export default async function FolhaPCPPage({ params }: { params: Params }) {
     return m ? Number(m[1]) : 9999;
   };
 
-  // Um bloco por turno, na ordem do dia. Turno sem nada planejado não vira
-  // bloco — espaço vazio numa tela de parede só empurra o resto pra baixo.
-  const blocos: BlocoTurno[] = (turnos ?? [])
-    .map((t) => ({
-      id: t.id,
-      nome: t.nome,
-      hora_inicio: t.hora_inicio,
-      hora_fim: t.hora_fim,
-      itens: (pcp?.linhas ?? [])
-        .filter((l) => l.turno_id === t.id)
-        .map((l) => ({
-          linha_id: l.id,
-          produto: l.produto?.nome ?? "—",
-          projetado: Number(l.projetado),
-          realizado: l.realizado === null ? null : Number(l.realizado),
-          colaboradores: (l.equipe ?? [])
-            .map((e) => e.colaborador?.nome)
-            .filter((n): n is string => !!n)
-            .sort((a, b) => a.localeCompare(b, "pt-BR")),
-        }))
-        .sort((a, b) => num(a.produto) - num(b.produto) || a.produto.localeCompare(b.produto, "pt-BR")),
-    }))
-    .filter((b) => b.itens.length > 0);
+  // Ordem do turno vem do cadastro; a folha é lida na sequência do dia e,
+  // dentro do turno, na ordem do código que a produção já usa.
+  const ordemTurno = new Map((turnos ?? []).map((t) => [t.id, t.ordem]));
+  const dadosTurno = new Map((turnos ?? []).map((t) => [t.id, t]));
 
-  const temPlano = blocos.length > 0;
+  const linhas: LinhaFolha[] = (pcp?.linhas ?? [])
+    .map((l) => {
+      const t = dadosTurno.get(l.turno_id);
+      return {
+        linha_id: l.id,
+        produto: l.produto?.nome ?? "—",
+        projetado: Number(l.projetado),
+        realizado: l.realizado === null ? null : Number(l.realizado),
+        colaboradores: (l.equipe ?? [])
+          .map((e) => e.colaborador?.nome)
+          .filter((n): n is string => !!n)
+          .sort((a, b) => a.localeCompare(b, "pt-BR")),
+        turno_nome: t?.nome ?? "—",
+        hora_inicio: t?.hora_inicio ?? "00:00",
+        hora_fim: t?.hora_fim ?? "00:00",
+        _ordem: ordemTurno.get(l.turno_id) ?? 999,
+      };
+    })
+    .sort(
+      (a, b) =>
+        a._ordem - b._ordem ||
+        num(a.produto) - num(b.produto) ||
+        a.produto.localeCompare(b.produto, "pt-BR")
+    );
+
+  const temPlano = linhas.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -97,7 +103,7 @@ export default async function FolhaPCPPage({ params }: { params: Params }) {
 
       {temPlano ? (
         <>
-          <FolhaPCP data={porExtenso(data)} blocos={blocos} podeLancar={podeLancar} />
+          <FolhaPCP data={porExtenso(data)} linhas={linhas} podeLancar={podeLancar} />
           {pcp?.observacoes && (
             <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-5 py-3">
               <p className="text-xs font-bold uppercase tracking-widest text-amber-800">Avisos</p>
