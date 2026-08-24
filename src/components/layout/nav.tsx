@@ -32,6 +32,7 @@ const MOVIMENTACAO_SUB: NavItem[] = [
 const ESTOQUE_ITEMS: NavItem[] = [
   { href: "/estoque", label: "Início" },
   { href: "/solicitacoes", label: "Movimentação", subItems: MOVIMENTACAO_SUB },
+  { href: "/pcp", label: "PCP" },
   { href: "/itens", label: "Itens" },
   { href: "/mrp", label: "MRP", subItems: MRP_SUB },
   { href: "/cadastros", label: "Cadastros" },
@@ -66,7 +67,7 @@ const CONFIG_ITEMS: NavItem[] = [
 ];
 
 const APROVADOR_ONLY = new Set(["/usuarios", "/configuracoes"]);
-const ESTOQUISTA_ALLOWED = new Set(["/estoque", "/recebimento", "/contagem"]);
+const ESTOQUISTA_ALLOWED = new Set(["/estoque", "/recebimento", "/contagem", "/pcp"]);
 
 // Uma rota (item de topo ou sub-item) é visível pra este papel?
 function podeVerRota(href: string, role: Role): boolean {

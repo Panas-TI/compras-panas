@@ -724,6 +724,148 @@ export type Database = {
         }
         Relationships: []
       }
+      pcp_dia: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          data: string
+          id: string
+          observacoes: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          id?: string
+          observacoes?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          id?: string
+          observacoes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcp_dia_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcp_linha: {
+        Row: {
+          criado_em: string
+          id: string
+          produto_id: string
+          quantidade: number
+          turno_id: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          produto_id: string
+          quantidade: number
+          turno_id: string
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          produto_id?: string
+          quantidade?: number
+          turno_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcp_linha_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produto"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pcp_linha_turno_id_fkey"
+            columns: ["turno_id"]
+            isOneToOne: false
+            referencedRelation: "pcp_turno"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcp_turno: {
+        Row: {
+          criado_em: string
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          nome: string
+          ordem: number
+          pcp_id: string
+        }
+        Insert: {
+          criado_em?: string
+          hora_fim: string
+          hora_inicio: string
+          id?: string
+          nome: string
+          ordem?: number
+          pcp_id: string
+        }
+        Update: {
+          criado_em?: string
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          pcp_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcp_turno_pcp_id_fkey"
+            columns: ["pcp_id"]
+            isOneToOne: false
+            referencedRelation: "pcp_dia"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcp_turno_colaborador: {
+        Row: {
+          colaborador_id: string
+          turno_id: string
+        }
+        Insert: {
+          colaborador_id: string
+          turno_id: string
+        }
+        Update: {
+          colaborador_id?: string
+          turno_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcp_turno_colaborador_colaborador_id_fkey"
+            columns: ["colaborador_id"]
+            isOneToOne: false
+            referencedRelation: "colaboradores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pcp_turno_colaborador_turno_id_fkey"
+            columns: ["turno_id"]
+            isOneToOne: false
+            referencedRelation: "pcp_turno"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produto: {
         Row: {
           ativo: boolean
@@ -732,6 +874,7 @@ export type Database = {
           codigo_queops: string | null
           criado_em: string
           criado_por: string | null
+          estoque_seguranca: number | null
           id: string
           nome: string
           rendimento_padrao: number
@@ -745,6 +888,7 @@ export type Database = {
           codigo_queops?: string | null
           criado_em?: string
           criado_por?: string | null
+          estoque_seguranca?: number | null
           id?: string
           nome: string
           rendimento_padrao?: number
@@ -758,6 +902,7 @@ export type Database = {
           codigo_queops?: string | null
           criado_em?: string
           criado_por?: string | null
+          estoque_seguranca?: number | null
           id?: string
           nome?: string
           rendimento_padrao?: number
