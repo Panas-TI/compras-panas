@@ -127,22 +127,35 @@ function ItemCard({ linha }: { linha: LinhaPendente }) {
   const solicitado = linha.volume_solicitado ?? 0;
   const falta = Math.max(0, solicitado - totalRecebido);
 
-  const marcarNaoVeio = () => {
-    const motivo = window.prompt(
-      `O fornecedor não entregou "${linha.nome_item}"?\n\nMotivo (opcional):`,
-      "Fornecedor não entregou"
-    );
-    if (motivo === null) return; // cancelou
-    setError(null);
-    startTransition(async () => {
-      const res = await marcarNaoEntregueAction(linha.id, motivo);
-      if (res.error) setError(res.error);
-      else router.refresh();
-    });
-  };
+  // Zero não é entrega parcial: é o item que não veio. Salvar com 0 fecha a
+  // linha como "Não Entregue" — antes isso só existia num botão que, na
+  // prática, nunca aparecia, e o estoquista ficava sem saída nenhuma.
+  const naoVeio = qtd.trim() === "" || Number(qtd.trim().replace(",", ".")) === 0;
 
   const salvarEntrega = () => {
     setError(null);
+
+    if (naoVeio) {
+      if (totalRecebido > 0) {
+        setError(
+          "Este item já teve entrega registrada. Use “Finalizar recebimento” para fechar com a quantidade que chegou."
+        );
+        return;
+      }
+      if (
+        !confirm(
+          `Registrar que "${linha.nome_item}" NÃO veio?\n\nA linha fecha como Não Entregue e sai da lista de pendentes.`
+        )
+      )
+        return;
+      startTransition(async () => {
+        const res = await marcarNaoEntregueAction(linha.id, obs);
+        if (res.error) setError(res.error);
+        else router.refresh();
+      });
+      return;
+    }
+
     startTransition(async () => {
       const res = await addEntregaAction(linha.id, qtd, data, obs);
       if (res.error) {
@@ -239,7 +252,9 @@ function ItemCard({ linha }: { linha: LinhaPendente }) {
       {showForm ? (
         <div className="mt-2 flex flex-col gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-2 sm:flex-row sm:items-end">
           <div className="flex flex-1 flex-col gap-1">
-            <label className="text-xs font-medium text-zinc-600">Quantidade recebida</label>
+            <label className="text-xs font-medium text-zinc-600">
+              Quantidade recebida <span className="text-zinc-400">· 0 = não veio</span>
+            </label>
             <Input
               value={qtd}
               onChange={(e) => setQtd(e.target.value)}
@@ -280,17 +295,6 @@ function ItemCard({ linha }: { linha: LinhaPendente }) {
           >
             + Add entrega
           </button>
-          {/* Sem isto o item que o fornecedor não mandou ficava pendente pra
-              sempre e travava a solicitação inteira em "Em recebimento". */}
-          {linha.entregas.length === 0 && (
-            <button
-              onClick={marcarNaoVeio}
-              disabled={isPending}
-              className="rounded-md border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800 hover:bg-orange-100 disabled:opacity-50"
-            >
-              ✕ Não veio
-            </button>
-          )}
         </div>
       )}
 
