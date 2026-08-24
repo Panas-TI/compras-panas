@@ -70,6 +70,7 @@ export default async function FolhaPCPPage({ params }: { params: Params }) {
           .map((e) => e.colaborador?.nome)
           .filter((n): n is string => !!n)
           .sort((a, b) => a.localeCompare(b, "pt-BR")),
+        turno_id: l.turno_id,
         turno_nome: t?.nome ?? "—",
         hora_inicio: t?.hora_inicio ?? "00:00",
         hora_fim: t?.hora_fim ?? "00:00",
