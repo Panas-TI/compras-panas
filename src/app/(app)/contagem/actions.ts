@@ -84,7 +84,7 @@ export async function importarTemplateAction(
 
   const { data: tpl, error: tplErr } = await supabase
     .from("template_itens")
-    .select("ordem, secao, texto, item_id")
+    .select("ordem, secao, texto, item_id, produto_id")
     .eq("template_id", template_id)
     .order("ordem");
   if (tplErr) return { error: tplErr.message };
@@ -105,6 +105,7 @@ export async function importarTemplateAction(
     secao: t.secao,
     texto: t.texto,
     item_id: t.item_id,
+    produto_id: t.produto_id,
   }));
 
   // Insere em lotes

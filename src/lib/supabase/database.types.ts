@@ -92,6 +92,7 @@ export type Database = {
           observacao: string | null
           observacao_solicitacao: string | null
           ordem: number
+          produto_id: string | null
           quantidade: number | null
           secao: string | null
           solicitacao_qtd: number | null
@@ -109,6 +110,7 @@ export type Database = {
           observacao?: string | null
           observacao_solicitacao?: string | null
           ordem: number
+          produto_id?: string | null
           quantidade?: number | null
           secao?: string | null
           solicitacao_qtd?: number | null
@@ -126,6 +128,7 @@ export type Database = {
           observacao?: string | null
           observacao_solicitacao?: string | null
           ordem?: number
+          produto_id?: string | null
           quantidade?: number | null
           secao?: string | null
           solicitacao_qtd?: number | null
@@ -158,6 +161,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contagem_linhas_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produto"
             referencedColumns: ["id"]
           },
         ]
@@ -1170,6 +1180,7 @@ export type Database = {
           id: string
           item_id: string | null
           ordem: number
+          produto_id: string | null
           secao: string | null
           template_id: string
           texto: string
@@ -1179,6 +1190,7 @@ export type Database = {
           id?: string
           item_id?: string | null
           ordem: number
+          produto_id?: string | null
           secao?: string | null
           template_id: string
           texto: string
@@ -1188,6 +1200,7 @@ export type Database = {
           id?: string
           item_id?: string | null
           ordem?: number
+          produto_id?: string | null
           secao?: string | null
           template_id?: string
           texto?: string
@@ -1198,6 +1211,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produto"
             referencedColumns: ["id"]
           },
           {

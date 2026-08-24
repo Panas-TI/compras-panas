@@ -45,6 +45,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
            preco_referencia,
            fornecedor_padrao:fornecedores(nome)
          ),
+         produto:produto(nome, unidade_producao),
          linha_solicitada:solicitacao_linhas!contagem_linhas_enviado_linha_id_fkey(
            preco, valor, fornecedor:fornecedores(nome)
          )`
@@ -65,7 +66,8 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     solicitacao_qtd: l.solicitacao_qtd,
     enviado_em: l.enviado_em,
     enviado_solicitacao_id: l.enviado_solicitacao_id,
-    medida: l.item?.unidade?.nome ?? null,
+    // Linha de produto fabricado não tem item comprado: a unidade vem da produção.
+    medida: l.item?.unidade?.nome ?? l.produto?.unidade_producao ?? null,
     // Já enviada: preço/fornecedor CONGELADOS no momento da solicitação.
     // Ainda não enviada: preço/fornecedor ATUAIS do catálogo, pra simular o
     // custo enquanto se digita a quantidade.
