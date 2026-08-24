@@ -9,6 +9,7 @@ export default async function HubPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  let ehAdmin = false;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -19,6 +20,7 @@ export default async function HubPage() {
     if (profile?.role === "estoquista") redirect("/recebimento");
     if (profile?.role === "motorista") redirect("/motorista");
     if (profile?.role === "vendas") redirect("/vendas");
+    ehAdmin = profile?.role === "aprovador";
   }
 
   return (
@@ -80,6 +82,26 @@ export default async function HubPage() {
             </CardContent>
           </Card>
         </Link>
+
+        {/* Só admin: hoje o módulo é gestão de acesso, que ninguém mais faz. */}
+        {ehAdmin && (
+          <Link href="/configuracoes" className="group">
+            <Card className="h-full transition-shadow group-hover:shadow-lg">
+              <CardHeader>
+                <div className="mb-2 text-4xl">⚙️</div>
+                <CardTitle className="text-xl">Configurações</CardTitle>
+                <CardDescription>
+                  Usuários e perfis de acesso, e os ajustes que valem para o sistema inteiro.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <span className="text-sm font-medium text-zinc-700 group-hover:underline">
+                  Entrar →
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
       </div>
     </div>
   );
