@@ -5,43 +5,42 @@ import { useRouter } from "next/navigation";
 import { codigoCurto, desvioClasse, hhmm, nomeLimpo, situacaoTurno, type SituacaoTurno } from "./lib";
 import { lancarRealizadoAction } from "./actions";
 
-export type TurnoCol = { id: string; nome: string; hora_inicio: string; hora_fim: string };
-export type Celula = {
+export type ItemTurno = {
   linha_id: string;
+  produto: string;
   projetado: number;
   realizado: number | null;
   colaboradores: string[];
 };
-export type LinhaProduto = {
-  produto_id: string;
-  produto: string;
-  /** turno_id → célula */
-  celulas: Record<string, Celula>;
+export type BlocoTurno = {
+  id: string;
+  nome: string;
+  hora_inicio: string;
+  hora_fim: string;
+  itens: ItemTurno[];
 };
 
 /**
- * A folha do PCP, no mesmo desenho do papel que a produção já usa:
- * produtos nas linhas, turnos nas colunas, e em cada cruzamento o projetado,
- * o realizado e quem fez.
+ * A folha do PCP: os turnos são blocos empilhados, cada um com os produtos
+ * daquele horário logo abaixo.
  *
- * A coluna do turno corrente fica destacada. Numa tela pendurada na parede é
- * o que evita a colaboradora ter que achar a coluna certa entre seis.
+ * Turno em coluna obrigava rolar a tela pro lado — numa tela pendurada na
+ * parede ninguém rola. Empilhado, cada bloco é lido de cima pra baixo e o
+ * turno corrente aparece verde e destacado no meio da sequência.
  */
 export function FolhaPCP({
   data,
-  turnos,
-  linhas,
+  blocos,
   podeLancar,
 }: {
   data: string;
-  turnos: TurnoCol[];
-  linhas: LinhaProduto[];
+  blocos: BlocoTurno[];
   podeLancar: boolean;
 }) {
   const [agora, setAgora] = useState<Date | null>(null);
 
   // Só no cliente: hora vinda do servidor daria divergência de hidratação e
-  // destacaria a coluna errada no primeiro render.
+  // destacaria o turno errado no primeiro render.
   useEffect(() => {
     setAgora(new Date());
     const t = setInterval(() => setAgora(new Date()), 30_000);
@@ -54,17 +53,9 @@ export function FolhaPCP({
     return () => clearInterval(t);
   }, []);
 
-  const sit = (t: TurnoCol): SituacaoTurno =>
-    agora ? situacaoTurno(t.hora_inicio, t.hora_fim, agora) : "proximo";
-
-  const totalProj = linhas.reduce(
-    (s, l) => s + Object.values(l.celulas).reduce((a, c) => a + c.projetado, 0),
-    0
-  );
-  const totalReal = linhas.reduce(
-    (s, l) => s + Object.values(l.celulas).reduce((a, c) => a + (c.realizado ?? 0), 0),
-    0
-  );
+  const todos = blocos.flatMap((b) => b.itens);
+  const totalProj = todos.reduce((s, i) => s + i.projetado, 0);
+  const totalReal = todos.reduce((s, i) => s + (i.realizado ?? 0), 0);
 
   return (
     <div className="flex flex-col gap-4">
@@ -89,141 +80,124 @@ export function FolhaPCP({
         </div>
       </header>
 
-      <div className="overflow-x-auto rounded-xl border border-zinc-300 bg-white">
-        <table className="w-full border-collapse text-base">
-          <thead>
-            <tr>
-              <th className="sticky left-0 z-10 border-b-2 border-r border-zinc-300 bg-zinc-100 px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-zinc-600">
-                Cód.
-              </th>
-              <th className="sticky left-[52px] z-10 border-b-2 border-r-2 border-zinc-300 bg-zinc-100 px-3 py-2 text-left text-xs font-bold uppercase tracking-wider text-zinc-600">
-                Produto
-              </th>
-              {turnos.map((t) => {
-                const s = sit(t);
-                return (
-                  <th
-                    key={t.id}
-                    colSpan={3}
-                    className={`border-b-2 border-r-2 border-zinc-300 px-2 py-2 text-center ${
-                      s === "agora"
-                        ? "bg-emerald-500 text-white"
-                        : s === "encerrado"
-                          ? "bg-zinc-200 text-zinc-500"
-                          : "bg-zinc-800 text-white"
-                    }`}
-                  >
-                    <div className="text-sm font-bold uppercase tracking-wider">{t.nome}</div>
-                    <div className="text-lg font-bold tabular-nums">
-                      {hhmm(t.hora_inicio)} – {hhmm(t.hora_fim)}
-                    </div>
-                    {s === "agora" && (
-                      <div className="text-[10px] font-bold tracking-[0.2em]">AGORA</div>
-                    )}
-                  </th>
-                );
-              })}
-            </tr>
-            <tr className="bg-zinc-50 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-              <th className="sticky left-0 z-10 border-b border-r border-zinc-300 bg-zinc-50" />
-              <th className="sticky left-[52px] z-10 border-b border-r-2 border-zinc-300 bg-zinc-50" />
-              {turnos.map((t) => (
-                <FragmentoCabecalho key={t.id} />
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.map((l, i) => (
-              <tr key={l.produto_id} className={i % 2 ? "bg-zinc-50/60" : "bg-white"}>
-                <td className="sticky left-0 z-10 border-b border-r border-zinc-200 bg-inherit px-3 py-2">
-                  <span className="inline-flex h-8 min-w-8 items-center justify-center rounded bg-zinc-900 px-2 text-sm font-bold text-white tabular-nums">
-                    {codigoCurto(l.produto)}
-                  </span>
-                </td>
-                <td className="sticky left-[52px] z-10 border-b border-r-2 border-zinc-200 bg-inherit px-3 py-2 text-lg font-semibold leading-tight">
-                  {nomeLimpo(l.produto)}
-                </td>
-                {turnos.map((t) => (
-                  <CelulaTurno
-                    key={t.id}
-                    celula={l.celulas[t.id]}
-                    destaque={sit(t) === "agora"}
-                    podeLancar={podeLancar}
-                  />
-                ))}
-              </tr>
-            ))}
-            {linhas.length === 0 && (
-              <tr>
-                <td colSpan={2 + turnos.length * 3} className="px-4 py-16 text-center text-zinc-500">
-                  Nenhum produto planejado para este dia.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="flex flex-col gap-4">
+        {blocos.map((b) => (
+          <BlocoDeTurno
+            key={b.id}
+            bloco={b}
+            situacao={agora ? situacaoTurno(b.hora_inicio, b.hora_fim, agora) : "proximo"}
+            podeLancar={podeLancar}
+          />
+        ))}
+        {blocos.length === 0 && (
+          <div className="rounded-xl border border-zinc-300 bg-white px-4 py-16 text-center text-zinc-500">
+            Nenhum produto planejado para este dia.
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function FragmentoCabecalho() {
-  return (
-    <>
-      <th className="border-b border-r border-zinc-200 px-2 py-1 text-center">Projetado</th>
-      <th className="border-b border-r border-zinc-200 px-2 py-1 text-center">Realizado</th>
-      <th className="border-b border-r-2 border-zinc-300 px-2 py-1 text-center">Colaborador</th>
-    </>
-  );
-}
-
-function CelulaTurno({
-  celula,
-  destaque,
+function BlocoDeTurno({
+  bloco,
+  situacao,
   podeLancar,
 }: {
-  celula: Celula | undefined;
-  destaque: boolean;
+  bloco: BlocoTurno;
+  situacao: SituacaoTurno;
   podeLancar: boolean;
 }) {
-  const fundo = destaque ? "bg-emerald-50/70" : "";
-  if (!celula) {
-    return (
-      <>
-        <td className={`border-b border-r border-zinc-200 ${fundo}`} />
-        <td className={`border-b border-r border-zinc-200 ${fundo}`} />
-        <td className={`border-b border-r-2 border-zinc-300 ${fundo}`} />
-      </>
-    );
-  }
+  const proj = bloco.itens.reduce((s, i) => s + i.projetado, 0);
+  const real = bloco.itens.reduce((s, i) => s + (i.realizado ?? 0), 0);
+  const lancouAlgum = bloco.itens.some((i) => i.realizado !== null);
+
+  const moldura =
+    situacao === "agora"
+      ? "border-emerald-500 shadow-lg shadow-emerald-100"
+      : situacao === "encerrado"
+        ? "border-zinc-200"
+        : "border-zinc-300";
+  const faixa =
+    situacao === "agora"
+      ? "bg-emerald-500 text-white"
+      : situacao === "encerrado"
+        ? "bg-zinc-200 text-zinc-500"
+        : "bg-zinc-800 text-white";
+
   return (
-    <>
-      <td className={`border-b border-r border-zinc-200 px-2 py-2 text-center text-2xl font-bold tabular-nums ${fundo}`}>
-        {celula.projetado.toLocaleString("pt-BR")}
-      </td>
-      <td className={`border-b border-r border-zinc-200 px-1 py-1 text-center ${fundo}`}>
-        <CampoRealizado celula={celula} podeLancar={podeLancar} />
-      </td>
-      <td className={`border-b border-r-2 border-zinc-300 px-2 py-2 text-center text-sm leading-tight text-zinc-700 ${fundo}`}>
-        {celula.colaboradores.join(" / ") || "—"}
-      </td>
-    </>
+    <section
+      className={`overflow-hidden rounded-xl border-2 bg-white ${moldura} ${
+        situacao === "encerrado" ? "opacity-70" : ""
+      }`}
+    >
+      <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 ${faixa}`}>
+        <span className="text-lg font-bold uppercase tracking-wider">{bloco.nome}</span>
+        <span className="text-2xl font-bold tabular-nums">
+          {hhmm(bloco.hora_inicio)} – {hhmm(bloco.hora_fim)}
+        </span>
+        {situacao === "agora" && (
+          <span className="rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold tracking-[0.2em]">
+            AGORA
+          </span>
+        )}
+        <span className="ml-auto text-sm font-semibold tabular-nums">
+          {proj.toLocaleString("pt-BR")} projetado
+          {lancouAlgum && <> · {real.toLocaleString("pt-BR")} feito</>}
+        </span>
+      </div>
+
+      <table className="w-full border-collapse text-base">
+        <thead>
+          <tr className="bg-zinc-50 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <th className="w-14 border-b border-zinc-200 px-3 py-1 text-left">Cód.</th>
+            <th className="border-b border-zinc-200 px-3 py-1 text-left">Produto</th>
+            <th className="w-32 border-b border-zinc-200 px-2 py-1 text-center">Projetado</th>
+            <th className="w-32 border-b border-zinc-200 px-2 py-1 text-center">Realizado</th>
+            <th className="w-56 border-b border-zinc-200 px-3 py-1 text-left">Colaborador</th>
+          </tr>
+        </thead>
+        <tbody>
+          {bloco.itens.map((i, idx) => (
+            <tr key={i.linha_id} className={idx % 2 ? "bg-zinc-50/60" : "bg-white"}>
+              <td className="border-b border-zinc-200 px-3 py-2">
+                <span className="inline-flex h-8 min-w-8 items-center justify-center rounded bg-zinc-900 px-2 text-sm font-bold tabular-nums text-white">
+                  {codigoCurto(i.produto)}
+                </span>
+              </td>
+              <td className="border-b border-zinc-200 px-3 py-2 text-lg font-semibold leading-tight">
+                {nomeLimpo(i.produto)}
+              </td>
+              <td className="border-b border-zinc-200 px-2 py-2 text-center text-2xl font-bold tabular-nums">
+                {i.projetado.toLocaleString("pt-BR")}
+              </td>
+              <td className="border-b border-zinc-200 px-1 py-1 text-center">
+                <CampoRealizado item={i} podeLancar={podeLancar} />
+              </td>
+              <td className="border-b border-zinc-200 px-3 py-2 text-sm leading-tight text-zinc-700">
+                {i.colaboradores.join(" / ") || "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }
 
 /** O realizado é lançado na própria folha, durante o turno. */
-function CampoRealizado({ celula, podeLancar }: { celula: Celula; podeLancar: boolean }) {
+function CampoRealizado({ item, podeLancar }: { item: ItemTurno; podeLancar: boolean }) {
   const router = useRouter();
-  const [valor, setValor] = useState(celula.realizado === null ? "" : String(celula.realizado));
+  const [valor, setValor] = useState(item.realizado === null ? "" : String(item.realizado));
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState(false);
 
-  const cor = desvioClasse(celula.projetado, celula.realizado);
+  const cor = desvioClasse(item.projetado, item.realizado);
 
   if (!podeLancar) {
     return (
       <span className={`text-2xl font-bold tabular-nums ${cor}`}>
-        {celula.realizado === null ? "—" : celula.realizado.toLocaleString("pt-BR")}
+        {item.realizado === null ? "—" : item.realizado.toLocaleString("pt-BR")}
       </span>
     );
   }
@@ -235,10 +209,10 @@ function CampoRealizado({ celula, podeLancar }: { celula: Celula; podeLancar: bo
       setErro(true);
       return;
     }
-    if (n === celula.realizado) return;
+    if (n === item.realizado) return;
     setErro(false);
     iniciar(async () => {
-      const r = await lancarRealizadoAction(celula.linha_id, n);
+      const r = await lancarRealizadoAction(item.linha_id, n);
       if (r.error) setErro(true);
       else router.refresh();
     });

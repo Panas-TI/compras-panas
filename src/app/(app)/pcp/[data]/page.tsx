@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
-import { FolhaPCP, type LinhaProduto, type TurnoCol } from "../folha";
+import { FolhaPCP, type BlocoTurno } from "../folha";
 
 export const dynamic = "force-dynamic";
 
@@ -48,41 +48,36 @@ export default async function FolhaPCPPage({ params }: { params: Params }) {
       .maybeSingle(),
   ]);
 
-  // Só mostra as colunas de turno que têm produção planejada — seis colunas
-  // vazias numa tela de parede só atrapalham a leitura.
-  const turnosComPlano = new Set((pcp?.linhas ?? []).map((l) => l.turno_id));
-  const colunas: TurnoCol[] = (turnos ?? [])
-    .filter((t) => turnosComPlano.has(t.id))
-    .map((t) => ({ id: t.id, nome: t.nome, hora_inicio: t.hora_inicio, hora_fim: t.hora_fim }));
-
-  // Agrupa por produto, mantendo a ordem do código.
-  const porProduto = new Map<string, LinhaProduto>();
-  for (const l of pcp?.linhas ?? []) {
-    const nome = l.produto?.nome ?? "—";
-    const pid = l.produto?.id ?? l.id;
-    let alvo = porProduto.get(pid);
-    if (!alvo) {
-      alvo = { produto_id: pid, produto: nome, celulas: {} };
-      porProduto.set(pid, alvo);
-    }
-    alvo.celulas[l.turno_id] = {
-      linha_id: l.id,
-      projetado: Number(l.projetado),
-      realizado: l.realizado === null ? null : Number(l.realizado),
-      colaboradores: (l.equipe ?? [])
-        .map((e) => e.colaborador?.nome)
-        .filter((n): n is string => !!n)
-        .sort((a, b) => a.localeCompare(b, "pt-BR")),
-    };
-  }
-
   const num = (s: string) => {
     const m = s.match(/^\s*(\d{1,3})\s*[.\s]/);
     return m ? Number(m[1]) : 9999;
   };
-  const linhas = Array.from(porProduto.values()).sort(
-    (a, b) => num(a.produto) - num(b.produto) || a.produto.localeCompare(b.produto, "pt-BR")
-  );
+
+  // Um bloco por turno, na ordem do dia. Turno sem nada planejado não vira
+  // bloco — espaço vazio numa tela de parede só empurra o resto pra baixo.
+  const blocos: BlocoTurno[] = (turnos ?? [])
+    .map((t) => ({
+      id: t.id,
+      nome: t.nome,
+      hora_inicio: t.hora_inicio,
+      hora_fim: t.hora_fim,
+      itens: (pcp?.linhas ?? [])
+        .filter((l) => l.turno_id === t.id)
+        .map((l) => ({
+          linha_id: l.id,
+          produto: l.produto?.nome ?? "—",
+          projetado: Number(l.projetado),
+          realizado: l.realizado === null ? null : Number(l.realizado),
+          colaboradores: (l.equipe ?? [])
+            .map((e) => e.colaborador?.nome)
+            .filter((n): n is string => !!n)
+            .sort((a, b) => a.localeCompare(b, "pt-BR")),
+        }))
+        .sort((a, b) => num(a.produto) - num(b.produto) || a.produto.localeCompare(b.produto, "pt-BR")),
+    }))
+    .filter((b) => b.itens.length > 0);
+
+  const temPlano = blocos.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,9 +95,9 @@ export default async function FolhaPCPPage({ params }: { params: Params }) {
         )}
       </div>
 
-      {linhas.length > 0 ? (
+      {temPlano ? (
         <>
-          <FolhaPCP data={porExtenso(data)} turnos={colunas} linhas={linhas} podeLancar={podeLancar} />
+          <FolhaPCP data={porExtenso(data)} blocos={blocos} podeLancar={podeLancar} />
           {pcp?.observacoes && (
             <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-5 py-3">
               <p className="text-xs font-bold uppercase tracking-widest text-amber-800">Avisos</p>
