@@ -25,10 +25,12 @@ export default async function ConfiguracoesPage() {
     .maybeSingle();
   if (!profile?.ativo || profile.role !== "aprovador") redirect("/");
 
-  const [{ count: usuarios }, { count: fornecedores }] = await Promise.all([
-    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("ativo", true),
-    supabase.from("fornecedores").select("id", { count: "exact", head: true }).eq("ativo", true),
-  ]);
+  const [{ count: usuarios }, { count: fornecedores }, { count: colaboradores }] =
+    await Promise.all([
+      supabase.from("profiles").select("id", { count: "exact", head: true }).eq("ativo", true),
+      supabase.from("fornecedores").select("id", { count: "exact", head: true }).eq("ativo", true),
+      supabase.from("colaboradores").select("id", { count: "exact", head: true }).eq("ativo", true),
+    ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -52,6 +54,24 @@ export default async function ConfiguracoesPage() {
             <CardContent>
               <span className="text-sm text-zinc-500">
                 {usuarios ?? 0} {usuarios === 1 ? "usuário ativo" : "usuários ativos"}
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/configuracoes/colaboradores" className="group">
+          <Card className="h-full transition-shadow group-hover:shadow-md">
+            <CardHeader>
+              <div className="mb-1 text-3xl">🧑‍🍳</div>
+              <CardTitle className="text-base">Colaboradores</CardTitle>
+              <CardDescription>
+                Quem trabalha na empresa — cargo, setor, admissão e contato. A maioria não tem
+                login, e é por isso que não cabe em Usuários.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <span className="text-sm text-zinc-500">
+                {colaboradores ?? 0} {colaboradores === 1 ? "colaborador ativo" : "colaboradores ativos"}
               </span>
             </CardContent>
           </Card>

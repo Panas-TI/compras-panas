@@ -62,6 +62,7 @@ const VENDAS_ITEMS: NavItem[] = [
 const CONFIG_ITEMS: NavItem[] = [
   { href: "/configuracoes", label: "Início" },
   { href: "/usuarios", label: "Usuários" },
+  { href: "/configuracoes/colaboradores", label: "Colaboradores" },
 ];
 
 const APROVADOR_ONLY = new Set(["/usuarios", "/configuracoes"]);

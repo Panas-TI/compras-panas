@@ -79,6 +79,62 @@ export type Database = {
         }
         Relationships: []
       }
+      colaboradores: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          cargo: string | null
+          criado_em: string
+          data_admissao: string | null
+          data_desligamento: string | null
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          profile_id: string | null
+          setor: string | null
+          telefone: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          cargo?: string | null
+          criado_em?: string
+          data_admissao?: string | null
+          data_desligamento?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          profile_id?: string | null
+          setor?: string | null
+          telefone?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          cargo?: string | null
+          criado_em?: string
+          data_admissao?: string | null
+          data_desligamento?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          profile_id?: string | null
+          setor?: string | null
+          telefone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "colaboradores_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contagem_linhas: {
         Row: {
           atualizado_em: string
