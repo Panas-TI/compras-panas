@@ -82,7 +82,7 @@ export default async function PlanejarPage({ searchParams }: { searchParams: Sea
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <Link href={`/pcp?data=${data}`} className="text-sm text-zinc-600 hover:underline">
+        <Link href={`/pcp/${data}`} className="text-sm text-zinc-600 hover:underline">
           ← Folha da produção
         </Link>
         <h1 className="mt-1 text-2xl font-semibold">Planejar produção</h1>

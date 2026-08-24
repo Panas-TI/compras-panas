@@ -79,7 +79,7 @@ export function EditorPlano({
     iniciar(async () => {
       const r = await salvarPlanoAction(data, linhas, obs.trim() || null);
       if (r.error) return setErro(r.error);
-      router.push(`/pcp?data=${data}`);
+      router.push(`/pcp/${data}`);
     });
   };
 
@@ -88,7 +88,7 @@ export function EditorPlano({
     iniciar(async () => {
       const r = await apagarPlanoAction(data);
       if (r.error) return setErro(r.error);
-      router.push(`/pcp?data=${data}`);
+      router.push('/pcp');
     });
   };
 
@@ -285,7 +285,7 @@ export function EditorPlano({
         <Button onClick={salvar} disabled={pendente}>
           {pendente ? "Salvando…" : "Salvar plano"}
         </Button>
-        <Button variant="ghost" onClick={() => router.push(`/pcp?data=${data}`)}>Cancelar</Button>
+        <Button variant="ghost" onClick={() => router.push(`/pcp/${data}`)}>Cancelar</Button>
         <span className="text-sm text-zinc-600">
           Total: <strong className="tabular-nums">{totalPlanejado.toLocaleString("pt-BR")}</strong>
         </span>

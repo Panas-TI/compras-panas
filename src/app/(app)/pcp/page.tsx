@@ -2,24 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
-import { FolhaPCP, type LinhaProduto, type TurnoCol } from "./folha";
+import { formatDateBR } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
-const DIAS = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
-const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
-
-function porExtenso(iso: string): string {
-  const d = new Date(iso + "T12:00:00");
-  return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
-}
-const somaDias = (iso: string, n: number) =>
-  new Date(new Date(iso + "T12:00:00").getTime() + n * 86400000).toISOString().slice(0, 10);
-
-export default async function PCPPage({ searchParams }: { searchParams: SearchParams }) {
-  const sp = await searchParams;
+export default async function PCPListaPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -30,116 +19,151 @@ export default async function PCPPage({ searchParams }: { searchParams: SearchPa
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  const podeLancar = ["aprovador", "estoquista"].includes(perfil?.role ?? "");
+  const podePlanejar = ["aprovador", "estoquista"].includes(perfil?.role ?? "");
 
   const hoje = new Date().toISOString().slice(0, 10);
-  const data = typeof sp.data === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.data) ? sp.data : hoje;
 
-  const [{ data: turnos }, { data: pcp }] = await Promise.all([
-    supabase.from("pcp_turno").select("id, nome, hora_inicio, hora_fim, ordem").eq("ativo", true).order("ordem"),
-    supabase
-      .from("pcp_dia")
-      .select(
-        `id, observacoes,
-         linhas:pcp_linha(
-           id, turno_id, projetado, realizado,
-           produto:produto(id, nome),
-           equipe:pcp_linha_colaborador(colaborador:colaboradores(nome))
-         )`
-      )
-      .eq("data", data)
-      .maybeSingle(),
-  ]);
+  const { data: dias } = await supabase
+    .from("pcp_dia")
+    .select(
+      `id, data, observacoes,
+       criador:profiles!pcp_dia_criado_por_fkey(nome),
+       linhas:pcp_linha(projetado, realizado)`
+    )
+    .order("data", { ascending: false })
+    .limit(120);
 
-  // Só mostra as colunas de turno que têm produção planejada — seis colunas
-  // vazias numa tela de parede só atrapalham a leitura.
-  const turnosComPlano = new Set((pcp?.linhas ?? []).map((l) => l.turno_id));
-  const colunas: TurnoCol[] = (turnos ?? [])
-    .filter((t) => turnosComPlano.has(t.id))
-    .map((t) => ({ id: t.id, nome: t.nome, hora_inicio: t.hora_inicio, hora_fim: t.hora_fim }));
-
-  // Agrupa por produto, mantendo a ordem do código.
-  const porProduto = new Map<string, LinhaProduto>();
-  for (const l of pcp?.linhas ?? []) {
-    const nome = l.produto?.nome ?? "—";
-    const pid = l.produto?.id ?? l.id;
-    let alvo = porProduto.get(pid);
-    if (!alvo) {
-      alvo = { produto_id: pid, produto: nome, celulas: {} };
-      porProduto.set(pid, alvo);
-    }
-    alvo.celulas[l.turno_id] = {
-      linha_id: l.id,
-      projetado: Number(l.projetado),
-      realizado: l.realizado === null ? null : Number(l.realizado),
-      colaboradores: (l.equipe ?? [])
-        .map((e) => e.colaborador?.nome)
-        .filter((n): n is string => !!n)
-        .sort((a, b) => a.localeCompare(b, "pt-BR")),
+  const planos = (dias ?? []).map((d) => {
+    const linhas = d.linhas ?? [];
+    const projetado = linhas.reduce((s, l) => s + Number(l.projetado ?? 0), 0);
+    const realizado = linhas.reduce((s, l) => s + Number(l.realizado ?? 0), 0);
+    const lancadas = linhas.filter((l) => l.realizado !== null).length;
+    return {
+      id: d.id,
+      data: d.data,
+      criador: d.criador?.nome ?? null,
+      observacoes: d.observacoes,
+      projetado,
+      realizado,
+      linhas: linhas.length,
+      // Fechado = toda linha teve o realizado lançado. É o que diferencia
+      // "produção em andamento" de "dia encerrado".
+      pendentes: linhas.length - lancadas,
     };
-  }
+  });
 
-  const num = (s: string) => {
-    const m = s.match(/^\s*(\d{1,3})\s*[.\s]/);
-    return m ? Number(m[1]) : 9999;
-  };
-  const linhas = Array.from(porProduto.values()).sort(
-    (a, b) => num(a.produto) - num(b.produto) || a.produto.localeCompare(b.produto, "pt-BR")
-  );
+  const temHoje = planos.some((p) => p.data === hoje);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
-        <div className="flex items-center gap-2 text-sm">
-          <Link href={`/pcp?data=${somaDias(data, -1)}`} className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 hover:bg-zinc-50">
-            ← anterior
-          </Link>
-          {data !== hoje && (
-            <Link href="/pcp" className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 hover:bg-zinc-50">
-              hoje
-            </Link>
-          )}
-          <Link href={`/pcp?data=${somaDias(data, 1)}`} className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 hover:bg-zinc-50">
-            próximo →
-          </Link>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold">PCP — Planos de produção</h1>
+          <p className="text-sm text-zinc-600">
+            {planos.length} {planos.length === 1 ? "plano salvo" : "planos salvos"}. Abra um dia para
+            ver a folha e lançar o realizado.
+          </p>
         </div>
-        {podeLancar && (
+        {podePlanejar && (
           <Link
-            href={`/pcp/planejar?data=${data}`}
+            href={`/pcp/planejar?data=${hoje}`}
             className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800"
           >
-            {pcp ? "Editar plano" : "Montar plano do dia"}
+            {temHoje ? "Editar plano de hoje" : "+ Novo plano"}
           </Link>
         )}
       </div>
 
-      {linhas.length > 0 ? (
-        <>
-          <FolhaPCP data={porExtenso(data)} turnos={colunas} linhas={linhas} podeLancar={podeLancar} />
-          {pcp?.observacoes && (
-            <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-5 py-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-amber-800">Avisos</p>
-              <p className="mt-0.5 text-xl font-medium text-amber-900">{pcp.observacoes}</p>
-            </div>
-          )}
-          {podeLancar && (
-            <p className="text-xs text-zinc-500 print:hidden">
-              O campo <strong>Realizado</strong> é editável: digite e saia do campo para salvar.
-              Vermelho é abaixo do projetado, verde é acima.
-            </p>
-          )}
-        </>
-      ) : (
+      {!temHoje && podePlanejar && planos.length > 0 && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Ainda não há plano para <strong>hoje</strong>. A produção abre a tela e não encontra
+          orientação.
+        </div>
+      )}
+
+      {planos.length === 0 && (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 p-16 text-center">
+          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <div className="text-5xl">📋</div>
-            <p className="text-2xl font-semibold text-zinc-700">Nenhum plano para {porExtenso(data)}</p>
-            <p className="text-zinc-500">
-              {podeLancar ? "Monte o plano para a produção ver o que fazer." : "Aguardando o planejamento."}
+            <p className="text-xl font-semibold text-zinc-700">Nenhum plano salvo ainda</p>
+            <p className="text-sm text-zinc-500">
+              {podePlanejar
+                ? "Monte o primeiro plano para a produção ver o que fazer."
+                : "Aguardando o planejamento."}
             </p>
           </CardContent>
         </Card>
       )}
+
+      <div className="grid grid-cols-1 gap-3">
+        {planos.map((p) => {
+          const d = new Date(p.data + "T12:00:00");
+          const ehHoje = p.data === hoje;
+          const atingido = p.projetado > 0 ? Math.round((p.realizado / p.projetado) * 100) : 0;
+          return (
+            <Link key={p.id} href={`/pcp/${p.data}`}>
+              <Card
+                className={`transition-shadow hover:shadow-md ${
+                  ehHoje ? "border-emerald-300 ring-1 ring-emerald-200" : ""
+                }`}
+              >
+                <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{formatDateBR(p.data)}</span>
+                      <span className="text-sm text-zinc-500">{DIAS[d.getDay()]}</span>
+                      {ehHoje && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-800">
+                          hoje
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-zinc-600">
+                      {p.linhas} {p.linhas === 1 ? "lançamento" : "lançamentos"}
+                      {p.criador && <> · {p.criador}</>}
+                      {p.observacoes && <> · {p.observacoes}</>}
+                    </div>
+                  </div>
+                  <div className="flex gap-6 text-sm">
+                    <div>
+                      <div className="text-xs text-zinc-500">Projetado</div>
+                      <div className="text-lg font-semibold tabular-nums">
+                        {p.projetado.toLocaleString("pt-BR")}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-500">Realizado</div>
+                      <div
+                        className={`text-lg font-semibold tabular-nums ${
+                          p.realizado === 0
+                            ? "text-zinc-400"
+                            : p.realizado < p.projetado
+                              ? "text-amber-700"
+                              : "text-emerald-700"
+                        }`}
+                      >
+                        {p.realizado.toLocaleString("pt-BR")}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-zinc-500">
+                        {p.pendentes > 0 ? "A lançar" : "Atingido"}
+                      </div>
+                      <div
+                        className={`text-lg font-semibold tabular-nums ${
+                          p.pendentes > 0 ? "text-amber-700" : "text-zinc-900"
+                        }`}
+                      >
+                        {p.pendentes > 0 ? p.pendentes : `${atingido}%`}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }
