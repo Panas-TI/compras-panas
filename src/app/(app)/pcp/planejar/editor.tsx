@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { codigoCurto, hhmm, nomeLimpo } from "../lib";
-import { salvarPlanoAction, apagarPlanoAction, type LinhaEntrada } from "../actions";
+import { salvarPlanoAction, apagarPlanoAction, type LinhaEntrada, type TipoFolha } from "../actions";
 
 export type TurnoOpt = { id: string; nome: string; hora_inicio: string; hora_fim: string };
 export type ProdutoOpt = {
@@ -13,6 +13,8 @@ export type ProdutoOpt = {
   nome: string;
   estoque_seguranca: number | null;
   contado: number | null;
+  /** KG, L, UN… Recheio e massa são pesados; sem a unidade o número é ambíguo. */
+  unidade: string | null;
 };
 export type ColabOpt = { id: string; nome: string };
 
@@ -27,6 +29,7 @@ export function EditorPlano({
   gradeInicial,
   produtosIniciais,
   obsInicial,
+  tipo,
 }: {
   data: string;
   turnos: TurnoOpt[];
@@ -35,6 +38,7 @@ export function EditorPlano({
   gradeInicial: Grade;
   produtosIniciais: string[];
   obsInicial: string;
+  tipo: TipoFolha;
 }) {
   const router = useRouter();
   const [grade, setGrade] = useState<Grade>(gradeInicial);
@@ -44,6 +48,11 @@ export function EditorPlano({
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
   const [editandoEquipe, setEditandoEquipe] = useState<{ p: string; t: string } | null>(null);
+
+  // Recheio e massa não têm código numérico — a coluna ficaria só com traços.
+  const temCodigo = tipo === "final";
+  const aba = tipo === "final" ? "" : "?aba=recheios";
+  const rotulo = tipo === "final" ? "produtos acabados" : "recheios e massas";
 
   const porId = useMemo(() => new Map(produtos.map((p) => [p.id, p])), [produtos]);
 
@@ -77,16 +86,16 @@ export function EditorPlano({
       return;
     }
     iniciar(async () => {
-      const r = await salvarPlanoAction(data, linhas, obs.trim() || null);
+      const r = await salvarPlanoAction(data, linhas, obs.trim() || null, tipo);
       if (r.error) return setErro(r.error);
-      router.push(`/pcp/${data}`);
+      router.push(`/pcp/${data}${aba}`);
     });
   };
 
   const apagar = () => {
-    if (!confirm("Apagar o plano deste dia? A produção fica sem orientação.")) return;
+    if (!confirm(`Apagar a folha de ${rotulo} deste dia? A produção fica sem orientação.`)) return;
     iniciar(async () => {
-      const r = await apagarPlanoAction(data);
+      const r = await apagarPlanoAction(data, tipo);
       if (r.error) return setErro(r.error);
       router.push('/pcp');
     });
@@ -109,7 +118,7 @@ export function EditorPlano({
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar produto para adicionar à folha..."
+          placeholder={tipo === "final" ? "Buscar produto para adicionar à folha..." : "Buscar recheio, massa ou preparo..."}
           className="h-10"
         />
         {candidatos.length > 0 && (
@@ -124,7 +133,9 @@ export function EditorPlano({
                 }}
                 className="block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50"
               >
-                <strong className="tabular-nums">{codigoCurto(p.nome)}</strong> · {nomeLimpo(p.nome)}
+                {temCodigo && <strong className="tabular-nums">{codigoCurto(p.nome)} · </strong>}
+                {nomeLimpo(p.nome)}
+                {p.unidade && <span className="ml-1 text-xs text-zinc-500">({p.unidade})</span>}
                 {p.estoque_seguranca != null && (
                   <span className="ml-2 text-xs text-zinc-500">
                     ideal {Number(p.estoque_seguranca).toLocaleString("pt-BR")}
@@ -141,7 +152,9 @@ export function EditorPlano({
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-zinc-100">
-              <th className="border-b-2 border-r border-zinc-300 px-2 py-2 text-left text-xs font-bold uppercase text-zinc-600">Cód.</th>
+              {temCodigo && (
+                <th className="border-b-2 border-r border-zinc-300 px-2 py-2 text-left text-xs font-bold uppercase text-zinc-600">Cód.</th>
+              )}
               <th className="border-b-2 border-r-2 border-zinc-300 px-2 py-2 text-left text-xs font-bold uppercase text-zinc-600">Produto</th>
               <th className="border-b-2 border-r-2 border-zinc-300 px-2 py-2 text-center text-xs font-bold uppercase text-zinc-600">Situação</th>
               {turnos.map((t) => (
@@ -165,13 +178,16 @@ export function EditorPlano({
                   : null;
               return (
                 <tr key={pid} className={i % 2 ? "bg-zinc-50/60" : "bg-white"}>
-                  <td className="border-b border-r border-zinc-200 px-2 py-2">
-                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded bg-zinc-900 px-1.5 text-xs font-bold text-white tabular-nums">
-                      {codigoCurto(p.nome)}
-                    </span>
-                  </td>
+                  {temCodigo && (
+                    <td className="border-b border-r border-zinc-200 px-2 py-2">
+                      <span className="inline-flex h-7 min-w-7 items-center justify-center rounded bg-zinc-900 px-1.5 text-xs font-bold text-white tabular-nums">
+                        {codigoCurto(p.nome)}
+                      </span>
+                    </td>
+                  )}
                   <td className="border-b border-r-2 border-zinc-200 px-2 py-2 font-medium">
                     {nomeLimpo(p.nome)}
+                    {p.unidade && <span className="ml-1.5 text-xs font-normal text-zinc-500">{p.unidade}</span>}
                   </td>
                   <td className="whitespace-nowrap border-b border-r-2 border-zinc-200 px-2 py-2 text-center text-xs text-zinc-600">
                     {p.estoque_seguranca != null ? (
@@ -198,7 +214,7 @@ export function EditorPlano({
                         <Input
                           value={c.qtd}
                           onChange={(e) => setCel(pid, t.id, { qtd: e.target.value })}
-                          inputMode="numeric"
+                          inputMode={temCodigo ? "numeric" : "decimal"}
                           placeholder="—"
                           className="h-9 w-full text-center tabular-nums"
                         />
@@ -265,8 +281,8 @@ export function EditorPlano({
             })}
             {escolhidos.length === 0 && (
               <tr>
-                <td colSpan={4 + turnos.length} className="px-4 py-12 text-center text-zinc-500">
-                  Busque acima os produtos que entram na folha de hoje.
+                <td colSpan={(temCodigo ? 4 : 3) + turnos.length} className="px-4 py-12 text-center text-zinc-500">
+                  Busque acima o que entra na folha de {rotulo} deste dia.
                 </td>
               </tr>
             )}
@@ -285,12 +301,12 @@ export function EditorPlano({
         <Button onClick={salvar} disabled={pendente}>
           {pendente ? "Salvando…" : "Salvar plano"}
         </Button>
-        <Button variant="ghost" onClick={() => router.push(`/pcp/${data}`)}>Cancelar</Button>
+        <Button variant="ghost" onClick={() => router.push(`/pcp/${data}${aba}`)}>Cancelar</Button>
         <span className="text-sm text-zinc-600">
           Total: <strong className="tabular-nums">{totalPlanejado.toLocaleString("pt-BR")}</strong>
         </span>
         <button onClick={apagar} disabled={pendente} className="ml-auto text-sm text-red-600 hover:underline">
-          Apagar plano do dia
+          Apagar folha de {rotulo}
         </button>
       </div>
     </div>

@@ -11,6 +11,8 @@ export type LinhaFolha = {
   projetado: number;
   realizado: number | null;
   colaboradores: string[];
+  /** KG, L, UN… vazio nos acabados, que são contados em unidades. */
+  unidade: string | null;
   turno_id: string;
   turno_nome: string;
   hora_inicio: string;
@@ -26,12 +28,17 @@ export type LinhaFolha = {
  */
 export function FolhaPCP({
   data,
+  subtitulo,
   linhas,
   podeLancar,
+  mostrarCodigo = true,
 }: {
   data: string;
+  subtitulo?: string;
   linhas: LinhaFolha[];
   podeLancar: boolean;
+  /** Recheio e massa não têm código numérico: a coluna sairia só com traços. */
+  mostrarCodigo?: boolean;
 }) {
   const [agora, setAgora] = useState<Date | null>(null);
 
@@ -60,7 +67,7 @@ export function FolhaPCP({
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-            Plano de produção
+            {subtitulo ?? "Plano de produção"}
           </p>
           <h1 className="text-3xl font-bold tracking-tight">{data}</h1>
         </div>
@@ -82,7 +89,9 @@ export function FolhaPCP({
         <table className="w-full border-collapse text-base">
           <thead>
             <tr className="bg-zinc-100 text-xs font-bold uppercase tracking-wider text-zinc-600">
-              <th className="w-16 border-b-2 border-r border-zinc-300 px-3 py-2 text-left">Cód.</th>
+              {mostrarCodigo && (
+                <th className="w-16 border-b-2 border-r border-zinc-300 px-3 py-2 text-left">Cód.</th>
+              )}
               <th className="border-b-2 border-r-2 border-zinc-300 px-3 py-2 text-left">Produto</th>
               <th className="w-36 border-b-2 border-r border-zinc-300 px-2 py-2 text-center">
                 Projetado
@@ -111,13 +120,18 @@ export function FolhaPCP({
               const fecha = ultima ? "border-b-2 border-zinc-300" : "border-b border-zinc-200";
               return (
                 <tr key={l.linha_id} className={fundo}>
-                  <td className={`border-r border-zinc-200 px-3 py-2 ${fecha}`}>
-                    <span className="inline-flex h-8 min-w-8 items-center justify-center rounded bg-zinc-900 px-2 text-sm font-bold tabular-nums text-white">
-                      {codigoCurto(l.produto)}
-                    </span>
-                  </td>
+                  {mostrarCodigo && (
+                    <td className={`border-r border-zinc-200 px-3 py-2 ${fecha}`}>
+                      <span className="inline-flex h-8 min-w-8 items-center justify-center rounded bg-zinc-900 px-2 text-sm font-bold tabular-nums text-white">
+                        {codigoCurto(l.produto)}
+                      </span>
+                    </td>
+                  )}
                   <td className={`border-r-2 border-zinc-200 px-3 py-2 text-lg font-semibold leading-tight ${fecha}`}>
                     {nomeLimpo(l.produto)}
+                    {l.unidade && (
+                      <span className="ml-1.5 text-sm font-normal text-zinc-500">{l.unidade}</span>
+                    )}
                   </td>
                   <td className={`border-r border-zinc-200 px-2 py-2 text-center text-2xl font-bold tabular-nums ${fecha}`}>
                     {l.projetado.toLocaleString("pt-BR")}
@@ -141,7 +155,7 @@ export function FolhaPCP({
             })}
             {linhas.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-16 text-center text-zinc-500">
+                <td colSpan={mostrarCodigo ? 6 : 5} className="px-4 py-16 text-center text-zinc-500">
                   Nenhum produto planejado para este dia.
                 </td>
               </tr>

@@ -47,6 +47,13 @@ export async function lancarRealizadoAction(
   return {};
 }
 
+/**
+ * O PCP tem duas folhas no mesmo dia: o que sai pra venda ("final") e o que
+ * alimenta a produção — recheios, massas ("intermediario"). Cada aba grava só
+ * as suas linhas; sem isso, salvar uma apagaria a outra.
+ */
+export type TipoFolha = "final" | "intermediario";
+
 export type LinhaEntrada = {
   turno_id: string;
   produto_id: string;
@@ -64,7 +71,8 @@ export type LinhaEntrada = {
 export async function salvarPlanoAction(
   data: string,
   linhas: LinhaEntrada[],
-  observacoes: string | null
+  observacoes: string | null,
+  tipo: TipoFolha = "final"
 ): Promise<{ error?: string; ok?: boolean }> {
   const supabase = await createClient();
   const g = await guard(supabase);
@@ -77,6 +85,21 @@ export async function salvarPlanoAction(
     if (vistos.has(k)) return { error: "O mesmo produto aparece duas vezes no mesmo turno." };
     vistos.add(k);
     if (!(l.projetado > 0)) return { error: "Toda linha precisa de quantidade maior que zero." };
+  }
+
+  // Produto de outra folha não entra: a aba que o receberia acabaria apagando
+  // a linha na próxima gravação, sem ninguém entender por quê.
+  if (linhas.length > 0) {
+    const ids = Array.from(new Set(linhas.map((l) => l.produto_id)));
+    const { data: prods, error: pErr } = await supabase
+      .from("produto")
+      .select("id, tipo")
+      .in("id", ids);
+    if (pErr) return { error: pErr.message };
+    if ((prods ?? []).length !== ids.length) return { error: "Produto não encontrado." };
+    if ((prods ?? []).some((p) => p.tipo !== tipo)) {
+      return { error: "Há produto que não pertence a esta folha." };
+    }
   }
 
   const { data: existente } = await supabase
@@ -101,15 +124,26 @@ export async function salvarPlanoAction(
   // Guarda o realizado antes de regravar — é trabalho já feito pela produção.
   const { data: antigas } = await supabase
     .from("pcp_linha")
-    .select("turno_id, produto_id, realizado")
+    .select("id, turno_id, produto_id, realizado, produto:produto(tipo)")
     .eq("pcp_id", pcpId);
+  const desteTipo = (antigas ?? []).filter((a) => a.produto?.tipo === tipo);
   const realizadoAntes = new Map(
-    (antigas ?? [])
+    desteTipo
       .filter((a) => a.realizado !== null)
       .map((a) => [`${a.turno_id}|${a.produto_id}`, Number(a.realizado)])
   );
 
-  await supabase.from("pcp_linha").delete().eq("pcp_id", pcpId);
+  // Só as linhas desta folha. A outra aba fica intacta.
+  if (desteTipo.length > 0) {
+    const { error: dErr } = await supabase
+      .from("pcp_linha")
+      .delete()
+      .in(
+        "id",
+        desteTipo.map((a) => a.id)
+      );
+    if (dErr) return { error: dErr.message };
+  }
 
   for (const l of linhas) {
     const { data: nova, error } = await supabase
@@ -138,12 +172,39 @@ export async function salvarPlanoAction(
   return { ok: true };
 }
 
-export async function apagarPlanoAction(data: string): Promise<{ error?: string }> {
+export async function apagarPlanoAction(
+  data: string,
+  tipo: TipoFolha = "final"
+): Promise<{ error?: string }> {
   const supabase = await createClient();
   const g = await guard(supabase);
   if (g.erro) return { error: g.erro };
-  const { error } = await supabase.from("pcp_dia").delete().eq("data", data);
-  if (error) return { error: error.message };
+
+  const { data: dia } = await supabase.from("pcp_dia").select("id").eq("data", data).maybeSingle();
+  if (!dia) return {};
+
+  const { data: linhas } = await supabase
+    .from("pcp_linha")
+    .select("id, produto:produto(tipo)")
+    .eq("pcp_id", dia.id);
+  const alvo = (linhas ?? []).filter((l) => l.produto?.tipo === tipo);
+
+  if (alvo.length > 0) {
+    const { error } = await supabase
+      .from("pcp_linha")
+      .delete()
+      .in(
+        "id",
+        alvo.map((l) => l.id)
+      );
+    if (error) return { error: error.message };
+  }
+
+  // Dia sem nenhuma folha não deve continuar aparecendo na lista.
+  if ((linhas ?? []).length === alvo.length) {
+    await supabase.from("pcp_dia").delete().eq("id", dia.id);
+  }
+
   revalidatePath("/pcp");
   return {};
 }

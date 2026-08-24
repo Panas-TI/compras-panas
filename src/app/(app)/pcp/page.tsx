@@ -29,16 +29,21 @@ export default async function PCPListaPage() {
     .select(
       `id, data, observacoes,
        criador:profiles!pcp_dia_criado_por_fkey(nome),
-       linhas:pcp_linha(projetado, realizado)`
+       linhas:pcp_linha(projetado, realizado, produto:produto(tipo))`
     )
     .order("data", { ascending: false })
     .limit(120);
 
   const planos = (dias ?? []).map((d) => {
-    const linhas = d.linhas ?? [];
-    const projetado = linhas.reduce((s, l) => s + Number(l.projetado ?? 0), 0);
-    const realizado = linhas.reduce((s, l) => s + Number(l.realizado ?? 0), 0);
-    const lancadas = linhas.filter((l) => l.realizado !== null).length;
+    const todas = d.linhas ?? [];
+    // Acabado é contado em unidades e recheio em quilos: somar os dois num
+    // número só daria um total que não significa nada. O placar é o dos
+    // acabados; a folha de recheios aparece ao lado, pelo que tem.
+    const finais = todas.filter((l) => l.produto?.tipo !== "intermediario");
+    const intermediarias = todas.filter((l) => l.produto?.tipo === "intermediario");
+    const projetado = finais.reduce((s, l) => s + Number(l.projetado ?? 0), 0);
+    const realizado = finais.reduce((s, l) => s + Number(l.realizado ?? 0), 0);
+    const lancadas = finais.filter((l) => l.realizado !== null).length;
     return {
       id: d.id,
       data: d.data,
@@ -46,10 +51,11 @@ export default async function PCPListaPage() {
       observacoes: d.observacoes,
       projetado,
       realizado,
-      linhas: linhas.length,
+      linhas: finais.length,
+      recheios: intermediarias.length,
       // Fechado = toda linha teve o realizado lançado. É o que diferencia
       // "produção em andamento" de "dia encerrado".
-      pendentes: linhas.length - lancadas,
+      pendentes: finais.length - lancadas,
     };
   });
 
@@ -137,11 +143,17 @@ export default async function PCPListaPage() {
                       )}
                     </div>
                     <div className="text-sm text-zinc-600">
-                      {p.linhas} {p.linhas === 1 ? "lançamento" : "lançamentos"}
+                      {p.linhas} {p.linhas === 1 ? "acabado" : "acabados"}
+                      {p.recheios > 0 && (
+                        <> · {p.recheios} {p.recheios === 1 ? "recheio/massa" : "recheios e massas"}</>
+                      )}
                       {p.criador && <> · {p.criador}</>}
                       {p.observacoes && <> · {p.observacoes}</>}
                     </div>
                   </div>
+                  {p.linhas === 0 ? (
+                    <div className="text-sm text-zinc-500">Só recheios e massas neste dia</div>
+                  ) : (
                   <div className="flex gap-6 text-sm">
                     <div>
                       <div className="text-xs text-zinc-500">Projetado</div>
@@ -176,6 +188,7 @@ export default async function PCPListaPage() {
                       </div>
                     </div>
                   </div>
+                  )}
                 </CardContent>
               </Card>
             </Link>
