@@ -22,6 +22,7 @@ export default async function PCPListaPage() {
   const podePlanejar = ["aprovador", "estoquista"].includes(perfil?.role ?? "");
 
   const hoje = new Date().toISOString().slice(0, 10);
+  const amanha = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
   const { data: dias } = await supabase
     .from("pcp_dia")
@@ -65,12 +66,29 @@ export default async function PCPListaPage() {
           </p>
         </div>
         {podePlanejar && (
-          <Link
-            href={`/pcp/planejar?data=${hoje}`}
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800"
-          >
-            {temHoje ? "Editar plano de hoje" : "+ Novo plano"}
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {temHoje && (
+              <Link
+                href={`/pcp/planejar?data=${hoje}`}
+                className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+              >
+                Editar plano de hoje
+              </Link>
+            )}
+            {/* Escolher a data aqui: sem isso, planejar o dia seguinte exigia
+                entrar no plano de hoje e trocar a data lá dentro. */}
+            <form action="/pcp/planejar" method="get" className="flex items-center gap-2">
+              <input
+                type="date"
+                name="data"
+                defaultValue={temHoje ? amanha : hoje}
+                className="h-9 rounded-md border border-zinc-300 px-2 text-sm"
+              />
+              <button className="h-9 rounded-md bg-zinc-900 px-3 text-sm font-medium text-white hover:bg-zinc-800">
+                + Novo plano
+              </button>
+            </form>
+          </div>
         )}
       </div>
 
@@ -88,7 +106,7 @@ export default async function PCPListaPage() {
             <p className="text-xl font-semibold text-zinc-700">Nenhum plano salvo ainda</p>
             <p className="text-sm text-zinc-500">
               {podePlanejar
-                ? "Monte o primeiro plano para a produção ver o que fazer."
+                ? "Escolha uma data no topo da tela e monte o primeiro plano."
                 : "Aguardando o planejamento."}
             </p>
           </CardContent>
