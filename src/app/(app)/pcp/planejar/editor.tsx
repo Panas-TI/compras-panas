@@ -48,6 +48,7 @@ export function EditorPlano({
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
   const [editandoEquipe, setEditandoEquipe] = useState<{ p: string; t: string } | null>(null);
+  const [destacado, setDestacado] = useState<string | null>(null);
 
   // Recheio e massa não têm código numérico — a coluna ficaria só com traços.
   const temCodigo = tipo === "final";
@@ -56,13 +57,34 @@ export function EditorPlano({
 
   const porId = useMemo(() => new Map(produtos.map((p) => [p.id, p])), [produtos]);
 
+  // Quanto já está planejado do produto, somando todos os turnos.
+  const totalDoProduto = (pid: string) =>
+    turnos.reduce((a, t) => a + (Number(cel(pid, t.id).qtd.replace(",", ".")) || 0), 0);
+
+  // A busca mostra TAMBÉM o que já está na folha, marcado. Esconder criava o
+  // problema oposto: quem procurava e não achava concluía que não tinha
+  // colocado, e ia procurar outro nome pro mesmo produto.
   const candidatos = useMemo(() => {
     const q = busca.trim().toLowerCase();
     if (!q) return [];
     return produtos
-      .filter((p) => !escolhidos.includes(p.id) && p.nome.toLowerCase().includes(q))
+      .filter((p) => p.nome.toLowerCase().includes(q))
+      .map((p) => ({ ...p, jaNaFolha: escolhidos.includes(p.id) }))
+      .sort((a, b) => Number(b.jaNaFolha) - Number(a.jaNaFolha))
       .slice(0, 8);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busca, produtos, escolhidos]);
+
+  // Clicar num produto que já está na folha leva até a linha dele em vez de
+  // duplicar: é a resposta certa pra "será que já coloquei?".
+  const irParaLinha = (pid: string) => {
+    setBusca("");
+    setDestacado(pid);
+    requestAnimationFrame(() => {
+      document.getElementById(`linha-${pid}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    setTimeout(() => setDestacado(null), 2500);
+  };
 
   const cel = (p: string, t: string) => grade[p]?.[t] ?? { qtd: "", colabs: [] };
 
@@ -128,18 +150,30 @@ export function EditorPlano({
                 key={p.id}
                 type="button"
                 onClick={() => {
+                  if (p.jaNaFolha) return irParaLinha(p.id);
                   setEscolhidos((e) => [...e, p.id]);
                   setBusca("");
                 }}
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50"
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-50 ${
+                  p.jaNaFolha ? "bg-amber-50/60" : ""
+                }`}
               >
-                {temCodigo && <strong className="tabular-nums">{codigoCurto(p.nome)} · </strong>}
-                {nomeLimpo(p.nome)}
-                {p.unidade && <span className="ml-1 text-xs text-zinc-500">({p.unidade})</span>}
-                {p.estoque_seguranca != null && (
-                  <span className="ml-2 text-xs text-zinc-500">
-                    ideal {Number(p.estoque_seguranca).toLocaleString("pt-BR")}
-                    {p.contado != null && ` · tem ${Number(p.contado).toLocaleString("pt-BR")}`}
+                <span className="min-w-0 flex-1 truncate">
+                  {temCodigo && <strong className="tabular-nums">{codigoCurto(p.nome)} · </strong>}
+                  {nomeLimpo(p.nome)}
+                  {p.unidade && <span className="ml-1 text-xs text-zinc-500">({p.unidade})</span>}
+                  {p.estoque_seguranca != null && (
+                    <span className="ml-2 text-xs text-zinc-500">
+                      ideal {Number(p.estoque_seguranca).toLocaleString("pt-BR")}
+                      {p.contado != null && ` · tem ${Number(p.contado).toLocaleString("pt-BR")}`}
+                    </span>
+                  )}
+                </span>
+                {p.jaNaFolha && (
+                  <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                    já na folha
+                    {totalDoProduto(p.id) > 0 && `: ${totalDoProduto(p.id).toLocaleString("pt-BR")}`}
+                    {" · ver"}
                   </span>
                 )}
               </button>
@@ -165,6 +199,9 @@ export function EditorPlano({
                   </div>
                 </th>
               ))}
+              <th className="border-b-2 border-l-2 border-zinc-300 bg-zinc-100 px-2 py-2 text-center text-xs font-bold uppercase text-zinc-600">
+                Planejado
+              </th>
               <th className="border-b-2 border-zinc-300 px-2 py-2" />
             </tr>
           </thead>
@@ -177,7 +214,17 @@ export function EditorPlano({
                   ? Math.max(0, Number(p.estoque_seguranca) - Number(p.contado))
                   : null;
               return (
-                <tr key={pid} className={i % 2 ? "bg-zinc-50/60" : "bg-white"}>
+                <tr
+                  key={pid}
+                  id={`linha-${pid}`}
+                  className={`transition-colors ${
+                    destacado === pid
+                      ? "bg-amber-100 ring-2 ring-inset ring-amber-400"
+                      : i % 2
+                        ? "bg-zinc-50/60"
+                        : "bg-white"
+                  }`}
+                >
                   {temCodigo && (
                     <td className="border-b border-r border-zinc-200 px-2 py-2">
                       <span className="inline-flex h-7 min-w-7 items-center justify-center rounded bg-zinc-900 px-1.5 text-xs font-bold text-white tabular-nums">
@@ -216,7 +263,13 @@ export function EditorPlano({
                           onChange={(e) => setCel(pid, t.id, { qtd: e.target.value })}
                           inputMode={temCodigo ? "numeric" : "decimal"}
                           placeholder="—"
-                          className="h-9 w-full text-center tabular-nums"
+                          /* Preenchido tem que saltar aos olhos: seis campos
+                             iguais com "—" escondem o que já foi decidido. */
+                          className={`h-9 w-full text-center tabular-nums ${
+                            c.qtd.trim()
+                              ? "border-zinc-900 bg-zinc-900 font-bold text-white placeholder:text-white"
+                              : ""
+                          }`}
                         />
                         <button
                           type="button"
@@ -268,6 +321,20 @@ export function EditorPlano({
                       </td>
                     );
                   })}
+                  <td className="border-b border-l-2 border-zinc-200 px-2 py-2 text-center">
+                    {(() => {
+                      const tot = totalDoProduto(pid);
+                      return (
+                        <span
+                          className={`text-lg font-bold tabular-nums ${
+                            tot > 0 ? "text-zinc-900" : "text-zinc-300"
+                          }`}
+                        >
+                          {tot > 0 ? tot.toLocaleString("pt-BR") : "—"}
+                        </span>
+                      );
+                    })()}
+                  </td>
                   <td className="border-b border-zinc-200 px-2 text-center">
                     <button
                       onClick={() => setEscolhidos((e) => e.filter((x) => x !== pid))}
@@ -281,12 +348,46 @@ export function EditorPlano({
             })}
             {escolhidos.length === 0 && (
               <tr>
-                <td colSpan={(temCodigo ? 4 : 3) + turnos.length} className="px-4 py-12 text-center text-zinc-500">
+                <td colSpan={(temCodigo ? 5 : 4) + turnos.length} className="px-4 py-12 text-center text-zinc-500">
                   Busque acima o que entra na folha de {rotulo} deste dia.
                 </td>
               </tr>
             )}
           </tbody>
+          {escolhidos.length > 0 && (
+            <tfoot>
+              {/* Carga por turno: um turno vazio no meio do dia é erro de
+                  digitação quase sempre, e assim ele aparece. */}
+              <tr className="bg-zinc-100 font-bold">
+                <td
+                  colSpan={temCodigo ? 3 : 2}
+                  className="border-t-2 border-zinc-300 px-2 py-2 text-right text-xs uppercase tracking-wider text-zinc-600"
+                >
+                  Total do turno
+                </td>
+                {turnos.map((tu) => {
+                  const soma = escolhidos.reduce(
+                    (a, pid) => a + (Number(cel(pid, tu.id).qtd.replace(",", ".")) || 0),
+                    0
+                  );
+                  return (
+                    <td
+                      key={tu.id}
+                      className={`border-l-2 border-t-2 border-zinc-300 px-2 py-2 text-center tabular-nums ${
+                        soma > 0 ? "text-zinc-900" : "text-zinc-300"
+                      }`}
+                    >
+                      {soma > 0 ? soma.toLocaleString("pt-BR") : "—"}
+                    </td>
+                  );
+                })}
+                <td className="border-l-2 border-t-2 border-zinc-300 px-2 py-2 text-center text-lg tabular-nums">
+                  {totalPlanejado.toLocaleString("pt-BR")}
+                </td>
+                <td className="border-t-2 border-zinc-300" />
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 
