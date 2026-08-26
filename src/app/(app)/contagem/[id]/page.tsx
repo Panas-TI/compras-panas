@@ -12,7 +12,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
   const { data: contagem } = await supabase
     .from("contagens")
     .select(
-      `id, nome, data_contagem, finalizada, finalizada_em, criado_por,
+      `id, nome, data_contagem, finalizada, finalizada_em, criado_por, paginar_por_secao,
        criador:profiles!contagens_criado_por_fkey(nome)`
     )
     .eq("id", id)
@@ -112,6 +112,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
         templates={opts}
         canRequestPurchase={canRequestPurchase}
         mostrarPrecos={podeVerPrecos}
+        paginarPorSecao={contagem.paginar_por_secao ?? false}
       />
     </div>
   );

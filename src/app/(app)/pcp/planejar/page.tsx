@@ -66,8 +66,12 @@ export default async function PlanejarPage({ searchParams }: { searchParams: Sea
       .select("produto_id, quantidade")
       .eq("contagem_id", ultima.id)
       .not("produto_id", "is", null);
+    // Soma, não sobrescreve: o mesmo sabor aparece uma vez por câmara e o
+    // estoque dele é o total das duas.
     for (const l of linhas ?? []) {
-      if (l.produto_id && l.quantidade != null) contado.set(l.produto_id, Number(l.quantidade));
+      if (l.produto_id && l.quantidade != null) {
+        contado.set(l.produto_id, (contado.get(l.produto_id) ?? 0) + Number(l.quantidade));
+      }
     }
   }
 

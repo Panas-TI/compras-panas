@@ -82,6 +82,12 @@ export async function importarTemplateAction(
 ): Promise<{ error?: string; importados?: number }> {
   const supabase = await createClient();
 
+  const { data: tplInfo } = await supabase
+    .from("templates_contagem")
+    .select("paginar_por_secao")
+    .eq("id", template_id)
+    .maybeSingle();
+
   const { data: tpl, error: tplErr } = await supabase
     .from("template_itens")
     .select("ordem, secao, texto, item_id, produto_id")
@@ -113,6 +119,15 @@ export async function importarTemplateAction(
   for (let i = 0; i < payload.length; i += BATCH) {
     const { error } = await supabase.from("contagem_linhas").insert(payload.slice(i, i + BATCH));
     if (error) return { error: error.message };
+  }
+
+  // Uma vez paginada, segue paginada: quem importa a folha das câmaras espera
+  // contar uma câmara de cada vez.
+  if (tplInfo?.paginar_por_secao) {
+    await supabase
+      .from("contagens")
+      .update({ paginar_por_secao: true })
+      .eq("id", contagem_id);
   }
 
   revalidatePath(`/contagem/${contagem_id}`);

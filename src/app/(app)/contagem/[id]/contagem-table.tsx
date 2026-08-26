@@ -51,6 +51,7 @@ export function ContagemTable({
   templates,
   canRequestPurchase,
   mostrarPrecos = false,
+  paginarPorSecao = false,
 }: {
   contagemId: string;
   finalizada: boolean;
@@ -58,6 +59,8 @@ export function ContagemTable({
   templates: TemplateOpt[];
   canRequestPurchase: boolean;
   mostrarPrecos?: boolean;
+  /** Uma página por seção. É o caso das empanadas, contadas câmara a câmara. */
+  paginarPorSecao?: boolean;
 }) {
   const router = useRouter();
   const [linhas, setLinhas] = useState(initialLinhas);
@@ -65,6 +68,7 @@ export function ContagemTable({
   const [selectedTpl, setSelectedTpl] = useState(templates[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
+  const [pagina, setPagina] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Coluna "Solicitação" só aparece DEPOIS que a contagem foi finalizada.
@@ -181,9 +185,22 @@ export function ContagemTable({
     ? linhas.filter((l) => l.texto.toLowerCase().includes(q))
     : linhas;
 
+  // Páginas = as seções, na ordem em que aparecem. A busca continua varrendo
+  // a contagem inteira: procurar "CALABRESA" e não achar porque está na outra
+  // câmara seria pior do que não ter páginas.
+  const secoes: string[] = [];
+  for (const l of linhas) {
+    if (l.secao && !secoes.includes(l.secao)) secoes.push(l.secao);
+  }
+  const paginando = paginarPorSecao && secoes.length > 1;
+  const paginaAtual = paginando ? (pagina ?? secoes[0]) : null;
+
+  const visiveis =
+    paginando && !q ? linhasFiltradas.filter((l) => l.secao === paginaAtual) : linhasFiltradas;
+
   // Agrupa por seção pra exibir como subgrupos
   const grupos: Array<{ secao: string | null; itens: LinhaC[] }> = [];
-  for (const l of linhasFiltradas) {
+  for (const l of visiveis) {
     const last = grupos[grupos.length - 1];
     if (!last || last.secao !== l.secao) {
       grupos.push({ secao: l.secao, itens: [l] });
@@ -260,6 +277,48 @@ export function ContagemTable({
           placeholder="🔎 Buscar item pelo nome..."
           className="max-w-md print:hidden"
         />
+      )}
+
+      {paginando && (
+        <div className="flex flex-wrap gap-1 border-b border-zinc-200 print:hidden">
+          {secoes.map((s) => {
+            const daSecao = linhas.filter((l) => l.secao === s);
+            const feitas = daSecao.filter((l) => l.quantidade != null).length;
+            const completa = feitas === daSecao.length;
+            const ativa = s === paginaAtual;
+            return (
+              <button
+                key={s}
+                onClick={() => setPagina(s)}
+                className={`-mb-px rounded-t-md border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  ativa
+                    ? "border-zinc-900 text-zinc-900"
+                    : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
+                }`}
+              >
+                {s}
+                {/* Quanto falta na página: sem isto só se descobre rolando. */}
+                <span
+                  className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] tabular-nums ${
+                    completa
+                      ? "bg-emerald-100 text-emerald-800"
+                      : ativa
+                        ? "bg-zinc-900 text-white"
+                        : "bg-zinc-100 text-zinc-600"
+                  }`}
+                >
+                  {completa ? "✓" : `${feitas}/${daSecao.length}`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {paginando && q && (
+        <p className="text-xs text-zinc-500">
+          Busca ativa: mostrando resultados de <strong>todas as câmaras</strong>.
+        </p>
       )}
 
       {linhas.length === 0 && (
