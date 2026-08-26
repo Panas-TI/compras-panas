@@ -45,3 +45,26 @@ body {
     overflow: visible !important;
   }
 }
+
+/* ── Modo TV ────────────────────────────────────────────────────────────────
+   A folha do PCP espelhada num monitor da produção. Some tudo que é de
+   operação — menu, abas, botões — e o que sobra é ampliado, porque quem lê
+   está a metros de distância, não a um palmo do teclado. */
+body.modo-tv header,
+body.modo-tv [data-tv-oculto] {
+  display: none !important;
+}
+
+body.modo-tv main {
+  max-width: none;
+  padding: 1rem 1.5rem;
+}
+
+body.modo-tv {
+  background: #fff;
+}
+
+/* zoom (e não transform) pra tabela continuar fluindo e quebrando sozinha */
+body.modo-tv .folha-tv {
+  zoom: var(--tv-zoom, 1.35);
+}

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { FolhaPCP, type LinhaFolha } from "../folha";
 import { AbasPCP } from "../abas";
+import { BotaoTV } from "../botao-tv";
 import type { TipoFolha } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -113,23 +114,31 @@ export default async function FolhaPCPPage({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
-        <Link href="/pcp" className="text-sm text-zinc-600 hover:underline">
+        <Link href="/pcp" className="text-sm text-zinc-600 hover:underline" data-tv-oculto>
           ← Todos os planos
         </Link>
-        {podeLancar && (
-          <Link
-            href={`/pcp/planejar?data=${data}${tipo === "final" ? "" : "&aba=recheios"}`}
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800"
-          >
-            {temPlano ? `Editar ${rotulo}` : `Montar ${rotulo}`}
-          </Link>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {/* Fora do bloco escondido: em modo TV ele vira o controle flutuante
+              de tamanho, e sumir junto deixaria a tela sem saída. */}
+          {temPlano && <BotaoTV />}
+          {podeLancar && (
+            <Link
+              href={`/pcp/planejar?data=${data}${tipo === "final" ? "" : "&aba=recheios"}`}
+              className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800"
+              data-tv-oculto
+            >
+              {temPlano ? `Editar ${rotulo}` : `Montar ${rotulo}`}
+            </Link>
+          )}
+        </div>
       </div>
 
-      <AbasPCP base={`/pcp/${data}`} tipo={tipo} contagem={contagem} />
+      <div data-tv-oculto>
+        <AbasPCP base={`/pcp/${data}`} tipo={tipo} contagem={contagem} />
+      </div>
 
       {temPlano ? (
-        <>
+        <div className="folha-tv flex flex-col gap-4">
           <FolhaPCP
             data={porExtenso(data)}
             subtitulo={tipo === "final" ? "Plano de produção" : "Recheios e massas"}
@@ -144,12 +153,12 @@ export default async function FolhaPCPPage({
             </div>
           )}
           {podeLancar && (
-            <p className="text-xs text-zinc-500 print:hidden">
+            <p className="text-xs text-zinc-500 print:hidden" data-tv-oculto>
               O campo <strong>Realizado</strong> é editável: digite e saia do campo para salvar.
               Vermelho é abaixo do projetado, verde é acima.
             </p>
           )}
-        </>
+        </div>
       ) : (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 p-16 text-center">

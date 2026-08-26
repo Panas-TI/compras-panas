@@ -51,10 +51,13 @@ export function FolhaPCP({
   }, []);
 
   // Mudança feita no planejamento chega ao monitor sem ninguém apertar F5.
+  // router.refresh() e não location.reload(): recarregar a página derrubaria
+  // o modo TV da tela cheia a cada cinco minutos.
+  const router = useRouter();
   useEffect(() => {
-    const t = setInterval(() => window.location.reload(), 5 * 60_000);
+    const t = setInterval(() => router.refresh(), 5 * 60_000);
     return () => clearInterval(t);
-  }, []);
+  }, [router]);
 
   const totalProj = linhas.reduce((s, l) => s + l.projetado, 0);
   const totalReal = linhas.reduce((s, l) => s + (l.realizado ?? 0), 0);
