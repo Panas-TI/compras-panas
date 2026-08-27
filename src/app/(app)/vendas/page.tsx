@@ -20,6 +20,7 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const FAIXA: Record<ClienteDoPlano["faixa"], { rotulo: string; classe: string }> = {
+  retorno: { rotulo: "retorno combinado", classe: "bg-emerald-100 text-emerald-900 border-emerald-300" },
   vencido: { rotulo: "vencido", classe: "bg-amber-100 text-amber-900 border-amber-200" },
   previsto: { rotulo: "vence agora", classe: "bg-blue-50 text-blue-800 border-blue-200" },
   novo: { rotulo: "cliente novo", classe: "bg-violet-50 text-violet-800 border-violet-200" },
@@ -119,7 +120,11 @@ export default async function VendasHojePage() {
                 </div>
 
                 <p className="text-sm text-zinc-600">
-                  {c.motivo_contato ?? (c.faixa === "reativacao" ? "parado além do ritmo dele" : "")}
+                  {c.faixa === "retorno" && c.combinado
+                    ? `combinado para ${formatDateBR(c.combinado.adiarAte)}${
+                        c.combinado.observacao ? ` — “${c.combinado.observacao}”` : ""
+                      }`
+                    : (c.motivo_contato ?? (c.faixa === "reativacao" ? "parado além do ritmo dele" : ""))}
                   {c.intervalo_mediano_dias ? ` · compra a cada ${c.intervalo_mediano_dias} dias` : ""}
                   {c.ultima_compra
                     ? ` · última ${formatDateBR(c.ultima_compra)} (${diasTexto(rec)})`
