@@ -112,7 +112,11 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
   const gravar = () => {
     const p = res?.previa;
     if (!p) return;
-    if (!confirm(`Confirma importar ${p.pedidosNovos} pedidos novos? A carteira será recalculada.`))
+    const extra =
+      p.pedidosAlterados.length > 0
+        ? ` e corrigir ${p.pedidosAlterados.length} que mudaram`
+        : "";
+    if (!confirm(`Confirma importar ${p.pedidosNovos} pedidos novos${extra}? A carteira será recalculada.`))
       return;
     setErro(null);
     iniciar(async () => {
@@ -250,6 +254,11 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
             <h2 className="text-base font-semibold text-emerald-700">✓ Importado</h2>
             <p className="text-sm text-zinc-700">
               <strong>{res.gravado.pedidosNovos}</strong> pedidos novos ·{" "}
+              {res.gravado.pedidosAtualizados > 0 && (
+                <>
+                  <strong>{res.gravado.pedidosAtualizados}</strong> corrigidos ·{" "}
+                </>
+              )}
               <strong>{res.gravado.clientesNovos}</strong> clientes novos ·{" "}
               <strong>{res.gravado.itensNovos}</strong> itens. A carteira foi recalculada.
             </p>
@@ -287,7 +296,7 @@ function PreviaImport({
   onConfirmar: () => void;
   onVoltar: () => void;
 }) {
-  const nada = previa.pedidosNovos === 0;
+  const nada = previa.pedidosNovos === 0 && previa.pedidosAlterados.length === 0;
   return (
     <Card>
       <CardContent className="flex flex-col gap-4 p-6">
@@ -421,11 +430,37 @@ function PreviaImport({
           </div>
         )}
 
-        {previa.pedidosJaExistiam > 0 && (
+        {previa.pedidosJaExistiam > previa.pedidosAlterados.length && (
           <p className="text-sm text-zinc-600">
-            {previa.pedidosJaExistiam} pedidos do arquivo já estavam no sistema e serão ignorados —
-            reimportar a mesma semana não duplica nada.
+            {previa.pedidosJaExistiam - previa.pedidosAlterados.length} pedidos do arquivo já
+            estavam no sistema iguais e serão ignorados — reimportar não duplica nada.
           </p>
+        )}
+
+        {previa.pedidosAlterados.length > 0 && (
+          <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2">
+            <p className="text-sm font-medium text-blue-900">
+              {previa.pedidosAlterados.length}{" "}
+              {previa.pedidosAlterados.length === 1
+                ? "pedido mudou desde a última importação e será corrigido"
+                : "pedidos mudaram desde a última importação e serão corrigidos"}
+              :
+            </p>
+            {/* Listado item a item: sobrescrever valor no escuro é como um
+                arquivo errado passaria sem ninguém perceber. */}
+            <ul className="mt-1 flex flex-col gap-0.5 text-sm text-blue-800">
+              {previa.pedidosAlterados.slice(0, 15).map((a) => (
+                <li key={a.pedido}>
+                  <span className="tabular-nums">{a.pedido}</span> — {a.de}
+                </li>
+              ))}
+            </ul>
+            {previa.pedidosAlterados.length > 15 && (
+              <p className="mt-1 text-xs text-blue-700">
+                e mais {previa.pedidosAlterados.length - 15}.
+              </p>
+            )}
+          </div>
         )}
 
         {previa.clientesNovos.length > 0 && (
@@ -501,7 +536,11 @@ function PreviaImport({
 
         <div className="flex flex-wrap gap-2">
           <Button onClick={onConfirmar} disabled={pendente || nada}>
-            {pendente ? "Gravando…" : `Confirmar e importar ${previa.pedidosNovos} pedidos`}
+            {pendente
+              ? "Gravando…"
+              : previa.pedidosAlterados.length > 0
+                ? `Confirmar: ${previa.pedidosNovos} novos + ${previa.pedidosAlterados.length} corrigidos`
+                : `Confirmar e importar ${previa.pedidosNovos} pedidos`}
           </Button>
           <Button variant="ghost" onClick={onVoltar}>
             {rotuloVoltar}

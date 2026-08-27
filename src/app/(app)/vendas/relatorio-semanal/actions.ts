@@ -21,6 +21,8 @@ export type ResultadoImport = {
     pedidosNoArquivo: number;
     pedidosNovos: number;
     pedidosJaExistiam: number;
+    /** Já existiam, mas com valor/data/atendente diferentes do arquivo. */
+    pedidosAlterados: { pedido: string; de: string; para: string }[];
     clientesNovos: string[];
     clientesReconhecidos: number;
     linhasRejeitadas: { linha: number; motivo: string }[];
@@ -37,6 +39,7 @@ export type ResultadoImport = {
   };
   gravado?: {
     pedidosNovos: number;
+    pedidosAtualizados: number;
     clientesNovos: number;
     itensNovos: number;
     importacaoId: string;
@@ -44,17 +47,63 @@ export type ResultadoImport = {
 };
 
 /** Busca em lotes: `in()` com lista gigante estoura a URL do PostgREST. */
+type PedidoGravado = {
+  pedido: string;
+  data: string;
+  total: number;
+  forma_pag: string | null;
+  atendente: string | null;
+};
+
+/**
+ * O que já está gravado, com os campos — e não só o número.
+ *
+ * Importar antes do dia fechar é o uso normal: o vendedor precisa enxergar o
+ * pedido de amanhã pra não ligar cobrando quem já pediu. Só que pedido em
+ * aberto ainda muda de valor. Por isso a importação compara e corrige, em vez
+ * de ignorar o que já existe.
+ */
 async function pedidosExistentes(
   supabase: Awaited<ReturnType<typeof createClient>>,
   numeros: string[]
-): Promise<Set<string>> {
-  const achados = new Set<string>();
+): Promise<Map<string, PedidoGravado>> {
+  const achados = new Map<string, PedidoGravado>();
   for (let i = 0; i < numeros.length; i += LOTE) {
     const fatia = numeros.slice(i, i + LOTE);
-    const { data } = await supabase.from("vendas_pedidos").select("pedido").in("pedido", fatia);
-    for (const r of data ?? []) achados.add(String(r.pedido));
+    const { data } = await supabase
+      .from("vendas_pedidos")
+      .select("pedido, data, total, forma_pag, atendente")
+      .in("pedido", fatia);
+    for (const r of data ?? []) {
+      achados.set(String(r.pedido), {
+        pedido: String(r.pedido),
+        data: String(r.data),
+        total: Number(r.total),
+        forma_pag: r.forma_pag,
+        atendente: r.atendente,
+      });
+    }
   }
   return achados;
+}
+
+/** Centavos batem? Comparação de dinheiro nunca por igualdade de float. */
+const mesmoValor = (a: number, b: number) => Math.round(a * 100) === Math.round(b * 100);
+
+/** O que mudou entre o gravado e o arquivo. Vazio = nada a fazer. */
+function diferencas(velho: PedidoGravado, novo: PedidoNormalizado): string[] {
+  const d: string[] = [];
+  if (!mesmoValor(velho.total, novo.total)) {
+    d.push(`R$ ${velho.total.toFixed(2)} → R$ ${novo.total.toFixed(2)}`);
+  }
+  if (velho.data !== novo.data) d.push(`data ${velho.data} → ${novo.data}`);
+  if ((velho.forma_pag ?? "") !== (novo.formaPag ?? "")) {
+    d.push(`pagto ${velho.forma_pag ?? "—"} → ${novo.formaPag ?? "—"}`);
+  }
+  if ((velho.atendente ?? "") !== (novo.atendente ?? "")) {
+    d.push(`atendente ${velho.atendente ?? "—"} → ${novo.atendente ?? "—"}`);
+  }
+  return d;
 }
 
 /**
@@ -151,6 +200,18 @@ export async function analisarImportacaoAction(
   const datas = pedidos.map((p) => p.data).sort();
   const ultimaNoSistema = ultimo?.data ?? null;
 
+  // O que já existe mas veio diferente. Mostrar antes de gravar é o que
+  // permite desconfiar de um arquivo errado em vez de sobrescrever no escuro.
+  const pedidosAlterados: { pedido: string; de: string; para: string }[] = [];
+  for (const p of pedidos) {
+    const velho = existentes.get(p.pedido);
+    if (!velho) continue;
+    const d = diferencas(velho, p);
+    if (d.length > 0) {
+      pedidosAlterados.push({ pedido: p.pedido, de: d.join(" · "), para: "" });
+    }
+  }
+
   // Quanto cada atendente vendeu neste arquivo — só o que conta como venda.
   const atend = new Map<string, { pedidos: number; valor: number }>();
   for (const p of novos) {
@@ -166,6 +227,7 @@ export async function analisarImportacaoAction(
       pedidosNoArquivo: pedidos.length,
       pedidosNovos: novos.length,
       pedidosJaExistiam: pedidos.length - novos.length,
+      pedidosAlterados,
       clientesNovos: Array.from(nomesNovos).sort(),
       clientesReconhecidos: reconhecidos,
       linhasRejeitadas: rejeitadas.slice(0, 50),
@@ -214,8 +276,16 @@ export async function gravarImportacaoAction(
 
   const existentes = await pedidosExistentes(supabase, pedidos.map((p) => p.pedido));
   const novos = pedidos.filter((p) => !existentes.has(p.pedido));
-  if (novos.length === 0) {
-    return { error: "Todos os pedidos do arquivo já estavam no sistema. Nada a importar." };
+
+  // Pedido em aberto muda de valor até fechar. Reimportar o mesmo dia corrige
+  // o que mudou em vez de deixar congelado o número da primeira leitura.
+  const aAtualizar = pedidos.filter((p) => {
+    const velho = existentes.get(p.pedido);
+    return velho && diferencas(velho, p).length > 0;
+  });
+
+  if (novos.length === 0 && aAtualizar.length === 0) {
+    return { error: "Todos os pedidos do arquivo já estavam no sistema, sem nenhuma alteração." };
   }
 
   const idx = await montarIndiceClientes(supabase);
@@ -269,7 +339,7 @@ export async function gravarImportacaoAction(
   }
 
   // 2) Registro da importação — vem antes pra cada pedido já nascer vinculado.
-  const datas = novos.map((p) => p.data).sort();
+  const datas = (novos.length > 0 ? novos : aAtualizar).map((p) => p.data).sort();
   const { data: imp, error: impErr } = await supabase
     .from("vendas_importacoes")
     .insert({
@@ -278,7 +348,7 @@ export async function gravarImportacaoAction(
       periodo_inicio: datas[0],
       periodo_fim: datas[datas.length - 1],
       pedidos_novos: novos.length,
-      pedidos_ignorados: pedidos.length - novos.length,
+      pedidos_ignorados: pedidos.length - novos.length - aAtualizar.length,
       clientes_novos: clientesNovos,
       cadastros_a_verificar: clientesNovos,
       avisos: rejeitadas.slice(0, 200),
@@ -336,6 +406,41 @@ export async function gravarImportacaoAction(
     if (error) return abortar(`Erro gravando pedidos: ${error.message}`);
   }
 
+  // 3b) Corrige os que já existiam e vieram diferentes. Um a um de propósito:
+  //     upsert em lote sobrescreveria importacao_id e apagaria de qual
+  //     importação o pedido veio originalmente.
+  let atualizados = 0;
+  for (const p of aAtualizar) {
+    const cliente_id = acharCliente(p, idx);
+    const { error } = await supabase
+      .from("vendas_pedidos")
+      .update({
+        data: p.data,
+        total: p.total,
+        forma_pag: p.formaPag,
+        atendente: p.atendente,
+        ...(cliente_id ? { cliente_id } : {}),
+      })
+      .eq("pedido", p.pedido);
+    if (error) return abortar(`Erro atualizando o pedido ${p.pedido}: ${error.message}`);
+
+    // Os itens do pedido são regravados: se o valor mudou, a composição mudou
+    // junto, e item velho sobrando estragaria o "costuma levar".
+    if (p.itens.length > 0) {
+      await supabase.from("vendas_itens").delete().eq("pedido", p.pedido);
+      const itens = p.itens.map((it) => ({
+        pedido: p.pedido,
+        produto: it.produto,
+        qtd: it.qtd,
+        valor: it.valor,
+        eh_produto: !/^(taxa|desconto|extra)/i.test(it.produto.trim()),
+      }));
+      const { error: iErr } = await supabase.from("vendas_itens").insert(itens);
+      if (iErr) return abortar(`Erro regravando itens do pedido ${p.pedido}: ${iErr.message}`);
+    }
+    atualizados++;
+  }
+
   // 4) Itens, quando o arquivo trouxer. eh_produto separa produto de taxa e
   //    desconto — é o que a métrica de "costuma levar" usa.
   const linhasItem = novos.flatMap((p) =>
@@ -374,6 +479,7 @@ export async function gravarImportacaoAction(
   return {
     gravado: {
       pedidosNovos: novos.length,
+      pedidosAtualizados: atualizados,
       clientesNovos,
       itensNovos: linhasItem.length,
       importacaoId: imp!.id,

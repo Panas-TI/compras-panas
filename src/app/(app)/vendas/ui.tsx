@@ -252,6 +252,9 @@ export function diasTexto(dias: number | null): string {
   if (dias == null) return "—";
   if (dias === 0) return "hoje";
   if (dias === 1) return "ontem";
+  // Importar o dia seguinte é o uso normal: o vendedor precisa enxergar quem
+  // já pediu pra amanhã. Sem isto a tela mostrava "-1 dias".
+  if (dias < 0) return dias === -1 ? "pedido para amanhã" : `pedido daqui a ${-dias} dias`;
   return `${dias} dias`;
 }
 
