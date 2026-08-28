@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { BotaoHoje } from "./botao-hoje";
 
 /** Busca sem acento: "portena" tem que achar "PORTEÑA". */
 const semAcento = (s: string) =>
@@ -62,12 +63,18 @@ export function TabelaClientes({
   estadoInicial = "todos",
   titulo,
   ultimoContato = {},
+  naFilaDeHoje = [],
+  podeEscrever = false,
 }: {
   clientes: LinhaCliente[];
   estadoInicial?: string;
   titulo?: string;
   ultimoContato?: Record<string, UltimoContato>;
+  /** Quem já foi puxado à mão para o atendimento de hoje. */
+  naFilaDeHoje?: string[];
+  podeEscrever?: boolean;
 }) {
+  const fila = new Set(naFilaDeHoje);
   const [busca, setBusca] = useState("");
   const [estado, setEstado] = useState(estadoInicial);
   const [ordem, setOrdem] = useState<Ordem>(estadoInicial === "inativo" ? "risco" : "total");
@@ -188,6 +195,7 @@ export function TabelaClientes({
               {titulo === "inativos" && <th className="px-3 py-2 text-right">Risco/ano</th>}
               <th className="px-3 py-2">Último contato</th>
               <th className="px-3 py-2">Telefone</th>
+              {podeEscrever && <th className="px-3 py-2">Hoje</th>}
             </tr>
           </thead>
           <tbody>
@@ -249,6 +257,11 @@ export function TabelaClientes({
                       canal={c.canal_preferido}
                     />
                   </td>
+                                  {podeEscrever && (
+                    <td className="px-3 py-2">
+                      <BotaoHoje clienteId={c.id} jaNaFila={fila.has(c.id)} podeEscrever />
+                    </td>
+                  )}
                 </tr>
               );
             })}

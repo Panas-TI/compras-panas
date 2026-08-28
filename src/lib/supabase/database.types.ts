@@ -1663,6 +1663,48 @@ export type Database = {
           },
         ]
       }
+      vendas_fila_manual: {
+        Row: {
+          cliente_id: string
+          criado_em: string
+          criado_por: string | null
+          data: string
+          id: string
+          motivo: string | null
+        }
+        Insert: {
+          cliente_id: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          id?: string
+          motivo?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          id?: string
+          motivo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_fila_manual_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vendas_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_fila_manual_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendas_import_mapeamentos: {
         Row: {
           atualizado_em: string

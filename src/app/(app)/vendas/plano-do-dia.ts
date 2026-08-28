@@ -25,7 +25,9 @@ export type ClienteDoPlano = {
   ticket_medio: number;
   itens_habituais: ItemHabitual[] | null;
   /** De onde veio na composição do dia. */
-  faixa: "retorno" | "vencido" | "previsto" | "novo" | "reativacao";
+  faixa: "escolhido" | "retorno" | "vencido" | "previsto" | "novo" | "reativacao";
+  /** Só na faixa "escolhido": por que alguém puxou este cliente. */
+  motivoManual?: string | null;
   /** Só na faixa "retorno": o combinado que venceu. */
   combinado: { resultado: string; adiarAte: string; observacao: string | null } | null;
   /** Produto que ele comprava e parou — a munição do vendedor. */
@@ -93,6 +95,30 @@ export async function montarPlanoDoDia(): Promise<{
     trabalhado: trabalhadosHoje.has(c.id as string),
   });
 
+  // 0) Puxados à mão. Vêm na frente de tudo: alguém decidiu falar com este
+  //    cliente hoje, por um motivo que o sistema não conhece. Passa por cima
+  //    de adiamento e de qualquer regra de ciclo — é uma decisão humana.
+  const { data: manuais } = await supabase
+    .from("vendas_fila_manual")
+    .select("cliente_id, motivo")
+    .eq("data", hoje);
+
+  const escolhidos: ClienteDoPlano[] = [];
+  const motivoManual = new Map((manuais ?? []).map((m) => [m.cliente_id, m.motivo]));
+  if (motivoManual.size > 0) {
+    const { data: cls } = await supabase
+      .from("vendas_clientes")
+      .select(CAMPOS)
+      .in("id", Array.from(motivoManual.keys()))
+      .eq("ativo", true);
+    for (const c of cls ?? []) {
+      const item = monta(c as Bruto, "escolhido");
+      item.motivoManual = motivoManual.get(c.id) ?? null;
+      escolhidos.push(item);
+    }
+  }
+  const jaEscolhido = new Set(escolhidos.map((c) => c.id));
+
   // 1) Retornos combinados — a data que o vendedor prometeu chegou.
   //
   // Sem isto, `adiar_ate` só tirava da lista e nunca recolocava: quem voltava
@@ -131,7 +157,7 @@ export async function montarPlanoDoDia(): Promise<{
       // ciclo normal, não como cobrança de promessa.
       const compradoDepois =
         c.ultima_compra && String(c.ultima_compra) >= comb.criado_em.slice(0, 10);
-      if (compradoDepois) continue;
+      if (compradoDepois || jaEscolhido.has(c.id)) continue;
       retornos.push(
         monta(c as Bruto, "retorno", {
           resultado: comb.resultado,
@@ -148,7 +174,7 @@ export async function montarPlanoDoDia(): Promise<{
 
   // 2) Fila natural, sem quem combinou de voltar depois e sem repetir retorno.
   const disponiveis = (fila ?? []).filter(
-    (c) => !silenciados.has(c.id) && !jaEmRetorno.has(c.id)
+    (c) => !silenciados.has(c.id) && !jaEmRetorno.has(c.id) && !jaEscolhido.has(c.id)
   );
 
   const vencidos = disponiveis
@@ -165,7 +191,7 @@ export async function montarPlanoDoDia(): Promise<{
     .filter((c) => c.motivo_contato?.startsWith("cliente novo"))
     .map((c) => monta(c as Bruto, "novo"));
 
-  const base = [...retornos, ...vencidos, ...previstos, ...novos];
+  const base = [...escolhidos, ...retornos, ...vencidos, ...previstos, ...novos];
 
   // 3) Cota de reativação: completa até o alvo, do maior valor em risco pro
   //    menor. Sem isso o backlog de inativos nunca é tocado.
@@ -188,7 +214,7 @@ export async function montarPlanoDoDia(): Promise<{
     .limit(faltam + silenciados.size + jaNaLista.size + 20);
 
   const reativacao = (inativos ?? [])
-    .filter((c) => !jaNaLista.has(c.id) && !silenciados.has(c.id))
+    .filter((c) => !jaNaLista.has(c.id) && !silenciados.has(c.id) && !jaEscolhido.has(c.id))
     .slice(0, faltam)
     .map((c) => monta(c as Bruto, "reativacao"));
 
