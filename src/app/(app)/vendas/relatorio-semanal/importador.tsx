@@ -44,10 +44,14 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
   const [res, setRes] = useState<ResultadoImport | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
+  // Entre escolher o arquivo e a prévia aparecer havia silêncio: se a ida ao
+  // servidor demora, a tela fica parada e parece que não fez nada.
+  const [lendo, setLendo] = useState(false);
 
   const lerArquivo = async (file: File) => {
     setErro(null);
     setRes(null);
+    setLendo(true);
     try {
       const buf = await file.arrayBuffer();
       // cellDates: deixa o SheetJS resolver o serial de data do Excel.
@@ -93,6 +97,8 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
       setEtapa("mapear");
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não consegui ler o arquivo.");
+    } finally {
+      setLendo(false);
     }
   };
 
@@ -162,12 +168,18 @@ export function Importador({ mapeamentoSalvo }: { mapeamentoSalvo: Mapeamento | 
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
+              disabled={lendo}
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) lerArquivo(f);
               }}
-              className="text-sm file:mr-3 file:rounded-md file:border file:border-zinc-300 file:bg-white file:px-3 file:py-1.5 file:text-sm hover:file:bg-zinc-50"
+              className="text-sm file:mr-3 file:rounded-md file:border file:border-zinc-300 file:bg-white file:px-3 file:py-1.5 file:text-sm hover:file:bg-zinc-50 disabled:opacity-50"
             />
+            {lendo && (
+              <p className="text-sm font-medium text-zinc-700">
+                Lendo o arquivo e conferindo com o que já está no sistema…
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -304,8 +316,13 @@ function PreviaImport({
           <h2 className="text-sm font-semibold">3. Confira antes de gravar</h2>
           {previa.periodo && (
             <p className="mt-1 text-sm text-zinc-600">
-              Período do arquivo: {formatDateBR(previa.periodo.inicio)} a{" "}
+              Pedidos encontrados no arquivo: de {formatDateBR(previa.periodo.inicio)} a{" "}
               {formatDateBR(previa.periodo.fim)}
+              {" "}
+              <span className="text-zinc-500">
+                — é a data dos pedidos, não o filtro que você pediu no Queóps. Se você filtrou um
+                dia a mais e ele não aparece aqui, é porque nenhum pedido daquele dia entrou ainda.
+              </span>
             </p>
           )}
         </div>
