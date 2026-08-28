@@ -2,6 +2,26 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./database.types";
 
+/**
+ * Teto de tempo para cada ida ao Supabase.
+ *
+ * O middleware roda em TODA rota. Sem limite, um engasgo do Supabase pendura a
+ * função até a Vercel matá-la em 25s — e o app inteiro devolve 504, inclusive
+ * a tela de login. Foi o que aconteceu em 28/08: 32 quedas em dois minutos.
+ *
+ * Melhor decidir com informação incompleta e deixar a página decidir de novo:
+ * cada página refaz getUser() e o banco tem RLS. O middleware é atalho de
+ * navegação, não a tranca.
+ */
+const LIMITE_MS = 4000;
+
+function comLimite<T>(p: PromiseLike<T>, fallback: T): Promise<T> {
+  return Promise.race([
+    Promise.resolve(p),
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), LIMITE_MS)),
+  ]);
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -26,10 +46,20 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the session so RSCs get fresh tokens
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refresh the session so RSCs get fresh tokens.
+  // Se estourar o tempo, `indefinido` — e aí o middleware não redireciona
+  // ninguém: deixa passar e a própria página resolve. Derrubar a sessão de
+  // quem está trabalhando por causa de um engasgo de rede seria pior.
+  // O .catch existe porque getUser() REJEITA quando o refresh token é inválido
+  // — já apareceu nos logs. Sem ele, a exceção derruba a requisição inteira.
+  const sessao = await comLimite(
+    supabase.auth
+      .getUser()
+      .then((r) => ({ user: r.data.user, respondeu: true }))
+      .catch(() => ({ user: null, respondeu: true })),
+    { user: null, respondeu: false }
+  );
+  const user = sessao.user;
 
   const path = request.nextUrl.pathname;
   const isPublic =
@@ -38,6 +68,9 @@ export async function updateSession(request: NextRequest) {
     path === "/_next" ||
     path.startsWith("/_next/") ||
     path.startsWith("/favicon");
+
+  // Sem resposta do Supabase: não decide nada, deixa a página decidir.
+  if (!sessao.respondeu) return response;
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
@@ -53,11 +86,16 @@ export async function updateSession(request: NextRequest) {
 
   // Restrição de rotas por papel
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, ativo")
-      .eq("id", user.id)
-      .maybeSingle();
+    // Papel indisponível a tempo = nenhuma restrição de rota nesta requisição.
+    // Falhar aberto aqui é seguro: a página refaz a checagem e o banco tem RLS.
+    const profile = await comLimite(
+      Promise.resolve(
+        supabase.from("profiles").select("role, ativo").eq("id", user.id).maybeSingle()
+      )
+        .then((r) => r.data)
+        .catch(() => null),
+      null as { role: string; ativo: boolean } | null
+    );
 
     // Estoquista: recebimento, contagem e a folha do PCP que ele preenche.
     if (profile?.role === "estoquista" && profile.ativo) {
