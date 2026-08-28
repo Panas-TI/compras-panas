@@ -1,6 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
+/** Busca sem acento: "portena" tem que achar "PORTEÑA". */
+const semAcento = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 import {
   EstadoPill,
   Telefone,
@@ -67,16 +75,25 @@ export function TabelaClientes({
   const [freq, setFreq] = useState("todas");
 
   const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
+    const q = semAcento(busca);
+    // Só compara telefone quando a busca TEM dígito.
+    //
+    // Antes: `telefone.includes(q.replace(/\D/g, ""))`. Buscar "mester" deixava
+    // o lado direito como string vazia, e "qualquer coisa".includes("") é
+    // sempre true — então todo cliente casava e a busca por nome não filtrava
+    // nada. O sintoma era a lista inteira aparecendo como se nada tivesse sido
+    // digitado.
+    const digitos = busca.replace(/\D/g, "");
     const out = clientes.filter((c) => {
       if (estado !== "todos" && c.status !== estado) return false;
       if (soSemContato && ultimoContato[c.id]) return false;
       if (freq !== "todas" && c.frequencia_classe !== freq) return false;
       if (!q) return true;
       return (
-        c.nome.toLowerCase().includes(q) ||
-        (c.telefone_raw ?? "").includes(q.replace(/\D/g, "")) ||
-        (c.itens_habituais ?? []).some((i) => i.produto.toLowerCase().includes(q))
+        semAcento(c.nome).includes(q) ||
+        (digitos.length >= 3 &&
+          `${c.telefone_raw ?? ""}${c.telefone_e164 ?? ""}`.replace(/\D/g, "").includes(digitos)) ||
+        (c.itens_habituais ?? []).some((i) => semAcento(i.produto).includes(q))
       );
     });
     const rec = (c: LinhaCliente) => recenciaDias(c.ultima_compra) ?? -1;
