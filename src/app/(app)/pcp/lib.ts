@@ -27,9 +27,15 @@ export function situacaoTurno(inicio: string, fim: string, agora: Date): Situaca
 }
 
 /** Cor do realizado contra o projetado: abaixo puxa atenção, acima é ganho. */
+/**
+ * Cor do realizado na folha, lida de longe no monitor da produção:
+ *   abaixo do projetado -> vermelho   (faltou produzir)
+ *   igual ao projetado  -> verde      (bateu a meta)
+ *   acima do projetado  -> amarelo    (produziu a mais)
+ */
 export function desvioClasse(projetado: number, realizado: number | null): string {
   if (realizado === null) return "text-zinc-300";
   if (realizado < projetado) return "text-red-600";
-  if (realizado > projetado) return "text-emerald-600";
-  return "text-zinc-900";
+  if (realizado > projetado) return "text-amber-500";
+  return "text-emerald-600";
 }
