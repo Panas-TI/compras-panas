@@ -29,15 +29,25 @@ export default async function RelatorioSemanalPage() {
       .select("colunas")
       .eq("nome", "padrao")
       .maybeSingle(),
+    // Última venda REALIZADA. O relatório traz pedido agendado para os próximos
+    // dias; sem o recorte, a "última venda" cairia no futuro e o atraso ficaria
+    // negativo — a tela diria que está tudo em dia para sempre.
     supabase
       .from("vendas_pedidos")
       .select("data")
+      .lte("data", new Date().toISOString().slice(0, 10))
       .order("data", { ascending: false })
       .limit(1)
       .maybeSingle(),
   ]);
 
-  const atraso = diasDesde(ultimoPedido?.data ?? null);
+  // A urgência vem de quando alguém importou pela última vez, não da data do
+  // pedido — é a importação que atrasa, não a venda.
+  const ultimaImportacao = importacoes?.[0] ?? null;
+  const atraso = ultimaImportacao
+    ? diasDesde(String(ultimaImportacao.importado_em).slice(0, 10))
+    : null;
+  const ultimaVenda = ultimoPedido?.data ?? null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,8 +69,15 @@ export default async function RelatorioSemanalPage() {
                 : "border-emerald-200 bg-emerald-50 text-emerald-800"
           }`}
         >
-          Última venda registrada: <strong>{formatDateBR(ultimoPedido!.data)}</strong> ({atraso}{" "}
-          {atraso === 1 ? "dia" : "dias"} atrás).
+          Última importação:{" "}
+          <strong>
+            {formatDateBR(String(ultimaImportacao!.importado_em).slice(0, 10))}
+          </strong>{" "}
+          ({atraso === 0 ? "hoje" : `${atraso} ${atraso === 1 ? "dia" : "dias"} atrás`})
+          {ultimaImportacao!.importado_por ? ` por ${ultimaImportacao!.importado_por}` : ""}.
+          {ultimaVenda && (
+            <> Última venda registrada: <strong>{formatDateBR(ultimaVenda)}</strong>.</>
+          )}
           {atraso > 3 && (
             <> Enquanto não importar, a fila de hoje vai apontar cliente que já comprou.</>
           )}
