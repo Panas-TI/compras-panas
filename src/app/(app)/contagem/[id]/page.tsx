@@ -46,6 +46,8 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
         `id, ordem, secao, texto, quantidade, observacao, observacao_solicitacao,
          solicitacao_qtd, enviado_em, enviado_solicitacao_id, enviado_linha_id,
          item:itens(
+           nome,
+           codigo_queops,
            unidade:unidades_medida(nome),
            preco_referencia,
            fornecedor_padrao:fornecedores(nome)
@@ -65,6 +67,12 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     ordem: l.ordem,
     secao: l.secao,
     texto: l.texto,
+    // Nome REAL do item de compra que esta linha aciona. O rótulo do modelo
+    // (`texto`) é escrito à mão e pode não ter nada a ver com o item vinculado
+    // — foi assim que "Água C/ gás:" virou "AGUA C/GAS 2 L" no pedido. Agora o
+    // item aparece já na contagem, onde dá pra corrigir antes de virar compra.
+    itemNome: l.item?.nome ?? null,
+    itemCodigo: l.item?.codigo_queops ?? null,
     quantidade: l.quantidade,
     observacao: l.observacao,
     observacao_solicitacao: l.observacao_solicitacao,

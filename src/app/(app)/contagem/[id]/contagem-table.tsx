@@ -20,6 +20,9 @@ export type LinhaC = {
   ordem: number;
   secao: string | null;
   texto: string;
+  /** Nome do item de compra vinculado — o que vai sair no pedido. */
+  itemNome: string | null;
+  itemCodigo: string | null;
   quantidade: number | null;
   observacao: string | null;
   /** Justificativa da compra — de quem solicita, não do estoquista. */
@@ -35,6 +38,58 @@ export type LinhaC = {
   fornecedor?: string | null;
   congelado?: boolean;
 };
+
+/**
+ * O rótulo do modelo de contagem e o nome do item de compra são campos
+ * DIFERENTES, escritos por pessoas diferentes. Quem conta lê o rótulo; quem
+ * compra recebe o nome do item. Quando os dois discordam, o pedido sai com um
+ * produto que ninguém pediu — foi o caso de "Água C/ gás:" amarrada a
+ * "AGUA C/GAS 2 L". As duas funções abaixo tornam essa divergência visível na
+ * própria contagem, antes de virar compra.
+ */
+function normalizar(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/C\//g, " COM ")
+    .replace(/S\//g, " SEM ")
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+}
+
+/** Volumes/pesos citados no texto, normalizados em ml e g. */
+function volumes(s: string): string[] {
+  const out: string[] = [];
+  const re = /(\d+(?:[.,]\d+)?)\s*(KG|G|GR|ML|LTS|LT|L)\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(normalizar(s)))) {
+    const v = Number(m[1].replace(",", "."));
+    const u = m[2];
+    if (u === "ML") out.push(`ML${v}`);
+    else if (u === "L" || u === "LT" || u === "LTS") out.push(`ML${v * 1000}`);
+    else if (u === "KG") out.push(`G${v * 1000}`);
+    else out.push(`G${v}`);
+  }
+  return out;
+}
+
+/** Rótulo e item citam volumes e NENHUM bate: quase sempre é vínculo errado. */
+export function conflitoDeVolume(texto: string, itemNome: string | null): boolean {
+  if (!itemNome) return false;
+  const a = volumes(texto);
+  const b = volumes(itemNome);
+  if (!a.length || !b.length) return false;
+  return !a.some((v) => b.includes(v));
+}
+
+/** Mostra o item só quando ele acrescenta informação ao rótulo. */
+export function mostrarItem(texto: string, itemNome: string | null): boolean {
+  if (!itemNome) return false;
+  const a = normalizar(texto);
+  const b = normalizar(itemNome);
+  return a !== b && !a.includes(b) && !b.includes(a);
+}
 
 /** Valor da linha: congelado quando já enviada, senão qtd × preço atual. */
 export function valorLinha(l: LinhaC): number {
@@ -182,7 +237,12 @@ export function ContagemTable({
   // Filtro de busca por item (nome/texto) — vale durante e depois da contagem
   const q = busca.trim().toLowerCase();
   const linhasFiltradas = q
-    ? linhas.filter((l) => l.texto.toLowerCase().includes(q))
+    ? linhas.filter(
+        (l) =>
+          l.texto.toLowerCase().includes(q) ||
+          (l.itemNome ?? "").toLowerCase().includes(q) ||
+          (l.itemCodigo ?? "").includes(q)
+      )
     : linhas;
 
   // Páginas = as seções, na ordem em que aparecem. A busca continua varrendo
@@ -474,7 +534,24 @@ function LinhaRow({
   return (
     <tr className={`border-b border-zinc-100 last:border-0 ${jaEnviado ? "bg-emerald-50/40" : ""}`}>
       <td className="px-2 py-1.5 text-right text-xs text-zinc-400 tabular-nums">{linha.ordem}</td>
-      <td className="px-2 py-1.5">{linha.texto}</td>
+      <td className="px-2 py-1.5">
+        {linha.texto}
+        {mostrarItem(linha.texto, linha.itemNome) &&
+          (conflitoDeVolume(linha.texto, linha.itemNome) ? (
+            <div
+              className="mt-0.5 text-xs font-medium text-amber-700"
+              title="O rótulo desta linha e o item de compra falam de volumes diferentes. Confira antes de enviar — o pedido sai com o nome do item."
+            >
+              ⚠ compra como: {linha.itemNome}
+              {linha.itemCodigo ? ` · ${linha.itemCodigo}` : ""}
+            </div>
+          ) : (
+            <div className="mt-0.5 text-xs text-zinc-400" title="Nome que vai sair no pedido de compra">
+              → {linha.itemNome}
+              {linha.itemCodigo ? ` · ${linha.itemCodigo}` : ""}
+            </div>
+          ))}
+      </td>
       <td className="px-2 py-1.5">
         {linha.medida ? (
           <span className="inline-flex rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-700">
