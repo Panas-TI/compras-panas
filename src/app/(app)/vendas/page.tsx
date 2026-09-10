@@ -17,7 +17,7 @@ import { PlacarMeta } from "./placar-meta";
 import { montarPlanoDoDia, TAMANHO_LISTA, type ClienteDoPlano } from "./plano-do-dia";
 import { createClient } from "@/lib/supabase/server";
 import { AguardandoResposta, type EmAberto } from "./aguardando-resposta";
-import { hojeMais, rotuloQuando, TETO_BANDEJA_DIAS } from "./contato-regras";
+import { hojeMais, rotuloQuando, diaEmSP, inicioDoDiaSP, TETO_BANDEJA_DIAS } from "./contato-regras";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,11 @@ const FAIXA: Record<ClienteDoPlano["faixa"], { rotulo: string; classe: string }>
 
 export default async function VendasHojePage() {
   const { podeEscrever } = await guardVendas();
-  const hoje = new Date().toISOString().slice(0, 10);
+  // O MESMO "hoje" que montarPlanoDoDia() usa. Com este em UTC e aquele no
+  // fuso local, das 21h à meia-noite a tela tinha dois dias diferentes: um
+  // contato com retorno pra hoje ficava silenciado no plano E fora da bandeja
+  // — invisível nas duas seções, à noite, que é quando se trabalha.
+  const hoje = diaEmSP(new Date());
   const { lista, trabalhados, totalReativacao } = await montarPlanoDoDia();
 
   // Quem saiu da lista por ter combinado data — some sem explicação seria pior.
@@ -56,8 +60,9 @@ export default async function VendasHojePage() {
   // marcar "ainda sem resposta" agenda o retorno pra amanhã e o cliente some da
   // lista de hoje. Enquanto essa data não vence, só a bandeja o exibe; quando
   // vence, ele volta como "retorno combinado" logo acima e sai daqui — por isso
-  // o corte é `adiar_ate >= hoje` e não uma idade fixa, que duplicaria o cliente
-  // nas duas seções.
+  // o corte é pela data de retorno e não por idade fixa, que duplicaria o
+  // cliente nas duas seções. `> hoje` e não `>= hoje`: o combinado marcado pra
+  // hoje já é retorno, e apareceria nos dois lugares.
   //
   // Duas consultas, ambas limitadas de propósito. Uma varredura de todos os
   // contatos da janela estouraria o teto de 1000 linhas do PostgREST, que
@@ -71,8 +76,8 @@ export default async function VendasHojePage() {
                                telefone_presumido, canal_preferido)`
     )
     .eq("resultado", "sem_resposta")
-    .gte("adiar_ate", hoje)
-    .gte("criado_em", `${hojeMais(-TETO_BANDEJA_DIAS)}T00:00:00`)
+    .gt("adiar_ate", hoje)
+    .gte("criado_em", inicioDoDiaSP(hojeMais(-TETO_BANDEJA_DIAS)))
     .order("criado_em", { ascending: false })
     .limit(200);
 
@@ -118,7 +123,10 @@ export default async function VendasHojePage() {
   // cliente da bandeja apareceria lá embaixo também — contado duas vezes na
   // mesma tela. A bandeja é a versão acionável; o rodapé fica com o resto.
   const naBandeja = new Set(emAberto.map((i) => i.clienteId));
-  const foraDaLista = aguardando.filter((a) => !naBandeja.has(a.cliente_id!));
+  const naLista = new Set(lista.map((c) => c.id));
+  const foraDaLista = aguardando.filter(
+    (a) => !naBandeja.has(a.cliente_id!) && !naLista.has(a.cliente_id!)
+  );
 
   const pct = lista.length > 0 ? Math.round((trabalhados / lista.length) * 100) : 0;
   const pendentes = lista.length - trabalhados;

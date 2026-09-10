@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { diaEmSP } from "./contato-regras";
+import { diaEmSP, inicioDoDiaSP } from "./contato-regras";
 import type { ItemHabitual } from "./ui";
 
 /**
@@ -71,7 +71,7 @@ export async function montarPlanoDoDia(): Promise<{
       supabase
         .from("vendas_contatos")
         .select("cliente_id")
-        .gte("criado_em", `${hoje}T00:00:00`),
+        .gte("criado_em", inicioDoDiaSP(hoje)),
       supabase
         .from("vendas_contatos")
         .select("cliente_id, resultado, adiar_ate, observacao, criado_em, atualizado_em")
@@ -149,8 +149,15 @@ export async function montarPlanoDoDia(): Promise<{
     }
   }
 
+  // `<= hoje`, não `< hoje`.
+  //
+  // Combinado marcado PRA HOJE caía num vão: `silenciados` tira da fila natural
+  // quem tem adiar_ate >= hoje, e o retorno só pegava adiar_ate < hoje. O
+  // cliente que pediu "me liga quinta" não aparecia na quinta em lugar nenhum —
+  // só na sexta, e no rodapé "fora da lista" dizendo "volta em quinta". Toda
+  // promessa nascia um dia atrasada.
   const idsRetorno = Array.from(ultimoCombinado.entries())
-    .filter(([, v]) => v.adiar_ate < hoje)
+    .filter(([, v]) => v.adiar_ate <= hoje)
     .map(([id]) => id);
 
   const retornos: ClienteDoPlano[] = [];

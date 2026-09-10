@@ -141,8 +141,29 @@ export function diasDesde(criadoEm: string): number {
   return Math.floor((Date.now() - d.getTime()) / 86_400_000);
 }
 
-/** Ainda dá pra corrigir este contato? Só a janela — quem checa se é o mais
- *  recente do cliente é o servidor, que enxerga a tabela inteira. */
+/**
+ * Ainda dá pra corrigir este contato?
+ *
+ * Compara instantes, não dias inteiros. Com arredondamento por piso, um contato
+ * das 09h de sete dias atrás ainda dava "7" às 14h de hoje: a tela oferecia
+ * "Corrigir resposta", o servidor deixava passar e o trigger no banco — que usa
+ * `now() - interval '7 days'` — recusava. Uma faixa de até 24h em que a
+ * interface prometia o que o banco negava.
+ *
+ * Quem checa se é o contato mais recente do cliente é o servidor, que enxerga
+ * a tabela inteira.
+ */
 export function dentroDaJanela(criadoEm: string): boolean {
-  return diasDesde(criadoEm) <= JANELA_EDICAO_DIAS;
+  return Date.now() - new Date(criadoEm).getTime() <= JANELA_EDICAO_DIAS * 86_400_000;
+}
+
+/**
+ * Início do dia em Porto Alegre, pronto pra comparar com timestamptz.
+ *
+ * `${dia}T00:00:00` sem offset é lido como UTC pelo Postgres — o banco roda em
+ * UTC. Mesmo com o dia certo, o corte pegava desde as 21h da véspera: o placar
+ * "X de 50" e o "✓ falado hoje" herdavam as três últimas horas do dia anterior.
+ */
+export function inicioDoDiaSP(dia: string): string {
+  return `${dia}T00:00:00-03:00`;
 }

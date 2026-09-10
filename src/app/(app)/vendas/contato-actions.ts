@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
-import { calcularAdiarAte, JANELA_EDICAO_DIAS, diasDesde, RESULTADOS } from "./contato-regras";
+import { MOTIVO_OUTRO } from "./ui";
+import { calcularAdiarAte, JANELA_EDICAO_DIAS, dentroDaJanela, RESULTADOS } from "./contato-regras";
 
 const PAPEIS = ["aprovador", "vendas"];
 
@@ -56,6 +57,13 @@ export async function atualizarContatoAction(input: {
     return { error: "Resultado inválido." };
   }
 
+  // Mesma regra do formulário. O action é endpoint público: sem isto,
+  // { motivo: "Outro", observacao: "" } grava a linha inútil que a lista
+  // fechada de motivos existe pra impedir.
+  if (input.motivo === MOTIVO_OUTRO && !input.observacao?.trim()) {
+    return { error: "Escolheu “Outro” — escreva o que o cliente disse." };
+  }
+
   const { data: atual, error: errBusca } = await supabase
     .from("vendas_contatos")
     .select("id, cliente_id, resultado, criado_em")
@@ -64,7 +72,8 @@ export async function atualizarContatoAction(input: {
   if (errBusca) return { error: errBusca.message };
   if (!atual) return { error: "Contato não encontrado." };
 
-  if (diasDesde(atual.criado_em) > JANELA_EDICAO_DIAS) {
+  // Mesma conta da tela e do trigger: instantes, não dias inteiros.
+  if (!dentroDaJanela(atual.criado_em)) {
     return {
       error: `Este contato tem mais de ${JANELA_EDICAO_DIAS} dias. Registre um contato novo em vez de corrigir o antigo.`,
     };

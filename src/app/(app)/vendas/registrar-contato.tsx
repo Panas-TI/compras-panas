@@ -71,10 +71,22 @@ export function RegistrarContato({
 
   const comprou = resultado === "comprou";
   const retornoPrevisto = hojeMais(diasAteVoltar(intervaloDias));
-  // Enquanto ninguém tocar na data, ela acompanha o resultado escolhido.
+  /**
+   * A data que vai ser gravada.
+   *
+   * Três casos, nesta ordem:
+   *  - mexeram no campo → vale o que digitaram;
+   *  - o resultado continua o mesmo da gravação anterior → mantém a data que
+   *    já estava lá. Quem combinou "volta dia 20" não perde isso só por abrir
+   *    o formulário e salvar;
+   *  - o resultado mudou → segue o prazo padrão do novo resultado.
+   */
+  const resultadoMudou = !editando || resultado !== contato.resultado;
   const adiarEfetivo = dataTocada
     ? adiar
-    : (calcularAdiarAte(resultado, intervaloDias, null) ?? "");
+    : resultadoMudou
+      ? (calcularAdiarAte(resultado, intervaloDias, null) ?? "")
+      : (contato?.adiar_ate ?? "");
 
   const precisaDetalhar = motivo === MOTIVO_OUTRO && !observacao.trim();
 
@@ -96,8 +108,10 @@ export function RegistrarContato({
           motivo,
           observacao,
           canal,
-          // Data intocada = o servidor aplica o padrão do resultado.
-          adiarAte: dataTocada ? adiar || null : null,
+          // Manda a data só quando ela é uma escolha (digitada, ou a que já
+          // estava valendo). Se o resultado mudou e ninguém tocou no campo,
+          // manda null e deixa o servidor aplicar o padrão do novo resultado.
+          adiarAte: dataTocada || !resultadoMudou ? adiarEfetivo || null : null,
         });
         if (r.error) throw new Error(r.error);
       } else {
