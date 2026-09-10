@@ -41,7 +41,7 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
     supabase
       .from("vendas_contatos")
       .select(
-        "id, canal, resultado, motivo, observacao, adiar_ate, criado_em, resultado_inicial, atualizado_em, usuario:profiles(nome)"
+        "id, canal, resultado, motivo, observacao, adiar_ate, criado_em, resultado_inicial, atualizado_em, usuario:profiles!vendas_contatos_usuario_id_fkey(nome), corretor:profiles!vendas_contatos_corrigido_por_fkey(nome)"
       )
       .eq("cliente_id", id)
       .order("criado_em", { ascending: false })
@@ -229,8 +229,11 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
                             RESULTADO_LABEL[c.resultado_inicial ?? ""] ?? c.resultado_inicial
                           }” e corrigido depois.`}
                         >
-                          corrigido em {ddmm(String(c.atualizado_em).slice(0, 10))} · antes:{" "}
-                          {RESULTADO_LABEL[c.resultado_inicial ?? ""] ?? c.resultado_inicial}
+                          corrigido em {ddmm(String(c.atualizado_em).slice(0, 10))}
+                          {(c.corretor as { nome?: string } | null)?.nome
+                            ? ` por ${(c.corretor as { nome?: string }).nome}`
+                            : ""}{" "}
+                          · antes: {RESULTADO_LABEL[c.resultado_inicial ?? ""] ?? c.resultado_inicial}
                         </span>
                       )}
                     </div>

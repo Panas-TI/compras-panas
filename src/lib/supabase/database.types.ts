@@ -1618,6 +1618,7 @@ export type Database = {
           atualizado_em: string | null
           canal: string | null
           cliente_id: string
+          corrigido_por: string | null
           criado_em: string
           id: string
           motivo: string | null
@@ -1631,6 +1632,7 @@ export type Database = {
           atualizado_em?: string | null
           canal?: string | null
           cliente_id: string
+          corrigido_por?: string | null
           criado_em?: string
           id?: string
           motivo?: string | null
@@ -1644,6 +1646,7 @@ export type Database = {
           atualizado_em?: string | null
           canal?: string | null
           cliente_id?: string
+          corrigido_por?: string | null
           criado_em?: string
           id?: string
           motivo?: string | null

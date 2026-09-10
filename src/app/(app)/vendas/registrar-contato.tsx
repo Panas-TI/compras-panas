@@ -49,16 +49,32 @@ export function RegistrarContato({
   const editando = !!contato;
 
   const [aberto, setAberto] = useState(false);
-  const [canal, setCanal] = useState<string>(contato?.canal ?? "whatsapp");
+  // Em edição com canal vazio o campo fica vazio de propósito: herdar
+  // "whatsapp" faria a tela afirmar um canal que ninguém digitou.
+  const [canal, setCanal] = useState<string>(contato ? (contato.canal ?? "") : "whatsapp");
   const [resultado, setResultado] = useState<string>(contato?.resultado ?? "vai_comprar");
   const [motivo, setMotivo] = useState<string>(contato?.motivo ?? "");
   const [observacao, setObservacao] = useState(contato?.observacao ?? "");
   const [adiar, setAdiar] = useState(contato?.adiar_ate ?? "");
+  /**
+   * O vendedor mexeu no campo de data?
+   *
+   * No modo edição o campo vem semeado com a data do resultado ANTERIOR, e
+   * qualquer data preenchida vence o prazo padrão do novo resultado. Sem esta
+   * distinção, trocar "ainda sem resposta" (retorno amanhã) para "Não quer
+   * mais" (90 dias) gravava amanhã: o cliente que pediu pra não ser mais
+   * procurado voltava à fila no dia seguinte.
+   */
+  const [dataTocada, setDataTocada] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   const comprou = resultado === "comprou";
   const retornoPrevisto = hojeMais(diasAteVoltar(intervaloDias));
+  // Enquanto ninguém tocar na data, ela acompanha o resultado escolhido.
+  const adiarEfetivo = dataTocada
+    ? adiar
+    : (calcularAdiarAte(resultado, intervaloDias, null) ?? "");
 
   const precisaDetalhar = motivo === MOTIVO_OUTRO && !observacao.trim();
 
@@ -80,7 +96,8 @@ export function RegistrarContato({
           motivo,
           observacao,
           canal,
-          adiarAte: adiar || null,
+          // Data intocada = o servidor aplica o padrão do resultado.
+          adiarAte: dataTocada ? adiar || null : null,
         });
         if (r.error) throw new Error(r.error);
       } else {
@@ -95,7 +112,7 @@ export function RegistrarContato({
           canal,
           resultado,
           motivo: motivo || null,
-          adiar_ate: calcularAdiarAte(resultado, intervaloDias, adiar || null),
+          adiar_ate: calcularAdiarAte(resultado, intervaloDias, dataTocada ? adiar || null : null),
           observacao: observacao.trim() || null,
         });
         if (error) throw new Error(error.message);
@@ -106,6 +123,7 @@ export function RegistrarContato({
         setMotivo("");
         setObservacao("");
         setAdiar("");
+        setDataTocada(false);
       }
       router.refresh();
     } catch (e) {
@@ -141,6 +159,7 @@ export function RegistrarContato({
           onChange={(e) => setCanal(e.target.value)}
           className="h-8 rounded border border-zinc-300 bg-white px-2 text-sm"
         >
+          {editando && !contato.canal && <option value="">canal não informado</option>}
           {CANAIS.map((c) => (
             <option key={c} value={c}>
               {c}
@@ -176,8 +195,16 @@ export function RegistrarContato({
             voltar em
             <input
               type="date"
-              value={adiar}
-              onChange={(e) => setAdiar(e.target.value)}
+              value={adiarEfetivo}
+              min={hojeMais(0)}
+              // Um ano é o teto que o banco aceita. Sem `max`, escorregar no
+              // ano ("9999") silencia o cliente pra sempre: a fila esconde
+              // quem tem data de retorno no futuro.
+              max={hojeMais(365)}
+              onChange={(e) => {
+                setDataTocada(true);
+                setAdiar(e.target.value);
+              }}
               className="h-8 rounded border border-zinc-300 bg-white px-2 text-sm"
             />
           </label>

@@ -58,7 +58,7 @@ export async function atualizarContatoAction(input: {
 
   const { data: atual, error: errBusca } = await supabase
     .from("vendas_contatos")
-    .select("id, cliente_id, resultado, resultado_inicial, criado_em")
+    .select("id, cliente_id, resultado, criado_em")
     .eq("id", input.id)
     .maybeSingle();
   if (errBusca) return { error: errBusca.message };
@@ -72,14 +72,21 @@ export async function atualizarContatoAction(input: {
 
   // Só o mais recente do cliente. Corrigir um contato que já foi sucedido por
   // outro deixaria o histórico contando duas versões da mesma conversa.
-  const { data: maisRecente } = await supabase
+  const { data: maisRecente, error: errRecente } = await supabase
     .from("vendas_contatos")
     .select("id")
     .eq("cliente_id", atual.cliente_id)
     .order("criado_em", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (maisRecente && maisRecente.id !== atual.id) {
+  // Falha fechada. Com `if (maisRecente && ...)` sozinho, um timeout do
+  // PostgREST — que este projeto já viu — pulava a trava inteira e deixava
+  // reescrever um contato que outra pessoa já sucedeu. O trigger no banco
+  // também barra, mas a mensagem de lá não explica nada pro vendedor.
+  if (errRecente || !maisRecente) {
+    return { error: "Não deu pra confirmar se este é o contato mais recente. Tente de novo." };
+  }
+  if (maisRecente.id !== atual.id) {
     return { error: "Já existe um contato mais novo com este cliente. Corrija aquele." };
   }
 
@@ -96,7 +103,10 @@ export async function atualizarContatoAction(input: {
       cliente?.intervalo_mediano_dias ?? null,
       input.adiarAte
     ),
-    atualizado_em: new Date().toISOString(),
+    // atualizado_em, resultado_inicial e corrigido_por são carimbados pelo
+    // trigger no banco — não aqui. Assim o rastro existe por qualquer caminho,
+    // inclusive numa chamada crua ao PostgREST, e a hora vem do relógio do
+    // banco, o mesmo que gravou criado_em.
   };
   // Campo ausente ≠ campo apagado. Os botões de um clique da bandeja mandam só
   // o resultado; se o `undefined` deles virasse null, a observação que o
@@ -104,11 +114,6 @@ export async function atualizarContatoAction(input: {
   if (input.motivo !== undefined) patch.motivo = input.motivo?.trim() || null;
   if (input.observacao !== undefined) patch.observacao = input.observacao?.trim() || null;
   if (input.canal) patch.canal = input.canal;
-
-  // Só na PRIMEIRA correção: guarda o que foi dito antes. Corrigir duas vezes
-  // não pode apagar o registro original — é ele que permite medir quantos
-  // "ainda sem resposta" viram venda.
-  if (!atual.resultado_inicial) patch.resultado_inicial = atual.resultado;
 
   const { error } = await supabase.from("vendas_contatos").update(patch).eq("id", input.id);
   if (error) return { error: error.message };

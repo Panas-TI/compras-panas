@@ -7,12 +7,15 @@
 
 alter table public.vendas_contatos
   add column if not exists resultado_inicial text,
-  add column if not exists atualizado_em timestamptz;
+  add column if not exists atualizado_em timestamptz,
+  add column if not exists corrigido_por uuid references public.profiles(id);
 
 comment on column public.vendas_contatos.resultado_inicial is
   'Resultado gravado na PRIMEIRA vez. Preenchido só na 1a correção; null = nunca corrigido.';
 comment on column public.vendas_contatos.atualizado_em is
   'Quando a resposta tardia do cliente foi registrada por cima do resultado inicial.';
+comment on column public.vendas_contatos.corrigido_por is
+  'Quem corrigiu. usuario_id continua sendo quem FEZ o contato — os dois podem ser pessoas diferentes.';
 
 -- Resultado só pode ser um dos cinco conhecidos.
 --
@@ -37,7 +40,7 @@ create or replace function public.vendas_contatos_trava_correcao()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, auth
 as $$
 begin
   if new.criado_em is distinct from old.criado_em
@@ -52,6 +55,26 @@ begin
     raise exception 'Contato com mais de 7 dias não pode ser corrigido. Registre um contato novo.'
       using errcode = 'check_violation';
   end if;
+
+  -- Data de retorno absurda esconde o cliente PARA SEMPRE: o plano do dia
+  -- silencia quem tem adiar_ate >= hoje e só devolve à fila quando a data
+  -- vence. Um dedo escorregando no ano ("31/12/9999") apaga o cliente de todas
+  -- as telas sem erro nenhum. Um ano à frente já cobre qualquer combinado real.
+  if new.adiar_ate is not null and new.adiar_ate > current_date + interval '365 days' then
+    raise exception 'Data de retorno longe demais (máximo um ano).'
+      using errcode = 'check_violation';
+  end if;
+
+  -- O rastro da correção é gravado AQUI, não pelo chamador.
+  --
+  -- Quem escreve direto no PostgREST poderia mandar atualizado_em = null e
+  -- apagar o selo "corrigido" das telas, ou forjar resultado_inicial para
+  -- esconder o que tinha sido dito antes. Carimbando no banco, o rastro existe
+  -- por qualquer caminho — e resultado_inicial só é preenchido na primeira
+  -- correção, senão a segunda apagaria a original.
+  new.atualizado_em := now();
+  new.resultado_inicial := coalesce(old.resultado_inicial, old.resultado);
+  new.corrigido_por := coalesce(auth.uid(), new.corrigido_por);
 
   -- Zerar a data de retorno da linha mais nova é o caminho mais sorrateiro pro
   -- combinado antigo ressuscitar: a fila de retorno só enxerga linhas com

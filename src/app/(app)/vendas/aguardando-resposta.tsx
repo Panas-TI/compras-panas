@@ -44,13 +44,14 @@ export function AguardandoResposta({
   const router = useRouter();
   const [pendente, startTransition] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
+  /** Qual botão está salvando — "<id do contato>:<resultado>". */
   const [mexendo, setMexendo] = useState<string | null>(null);
 
   if (itens.length === 0) return null;
 
   const marcar = (id: string, resultado: string) => {
     setErro(null);
-    setMexendo(id);
+    setMexendo(`${id}:${resultado}`);
     startTransition(async () => {
       const r = await atualizarContatoAction({ id, resultado });
       setMexendo(null);
@@ -67,7 +68,8 @@ export function AguardandoResposta({
           {itens.length} em aberto
         </span>
         <span className="text-xs text-amber-800/80">
-          respondeu depois? marque aqui — corrige o registro, não cria outro
+          respondeu depois? marque aqui — corrige o registro, não cria outro. Dá pra refazer na
+          ficha do cliente.
         </span>
       </div>
 
@@ -98,17 +100,25 @@ export function AguardandoResposta({
 
             {podeEscrever && (
               <div className="flex flex-wrap gap-1.5">
-                {RAPIDOS.map((r) => (
-                  <button
-                    key={r.v}
-                    type="button"
-                    onClick={() => marcar(i.id, r.v)}
-                    disabled={pendente}
-                    className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${r.classe}`}
-                  >
-                    {mexendo === i.id ? "..." : r.label}
-                  </button>
-                ))}
+                {RAPIDOS.map((r) => {
+                  // Só o botão clicado vira "salvando", e só a linha dele
+                  // trava. Antes os três diziam "..." ao mesmo tempo e todas as
+                  // linhas da bandeja congelavam: quem errasse o alvo não tinha
+                  // como saber o que foi gravado, e a linha some depois.
+                  const esteSalvando = mexendo === `${i.id}:${r.v}`;
+                  const linhaOcupada = mexendo?.startsWith(`${i.id}:`) ?? false;
+                  return (
+                    <button
+                      key={r.v}
+                      type="button"
+                      onClick={() => marcar(i.id, r.v)}
+                      disabled={pendente && linhaOcupada}
+                      className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${r.classe}`}
+                    >
+                      {esteSalvando ? "salvando..." : r.label}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </li>

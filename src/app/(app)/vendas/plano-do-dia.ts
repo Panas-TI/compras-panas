@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { diaEmSP } from "./contato-regras";
 import type { ItemHabitual } from "./ui";
 
 /**
@@ -54,7 +55,13 @@ export async function montarPlanoDoDia(): Promise<{
   totalReativacao: number;
 }> {
   const supabase = await createClient();
-  const hoje = new Date().toISOString().slice(0, 10);
+  // Dia civil de Porto Alegre, não UTC.
+  //
+  // Com toISOString() o dia virava às 21h locais: o corte de "contatos de hoje"
+  // passava a ser amanhã, o placar caía de "32 de 50" pra "0 de 50", todo
+  // "✓ falado hoje" sumia e os clientes puxados à mão desapareciam da lista —
+  // no meio do expediente da noite. Bug que já existia; aparecia todo dia.
+  const hoje = diaEmSP(new Date());
 
   const [{ data: fila }, { data: adiados }, { data: oport }, { data: contatosHoje }, { data: todosContatos }] =
     await Promise.all([
@@ -67,7 +74,7 @@ export async function montarPlanoDoDia(): Promise<{
         .gte("criado_em", `${hoje}T00:00:00`),
       supabase
         .from("vendas_contatos")
-        .select("cliente_id, resultado, adiar_ate, observacao, criado_em")
+        .select("cliente_id, resultado, adiar_ate, observacao, criado_em, atualizado_em")
         .not("adiar_ate", "is", null)
         .order("criado_em", { ascending: false }),
     ]);
@@ -125,7 +132,7 @@ export async function montarPlanoDoDia(): Promise<{
   // era só quem por acaso caía de novo na fila natural. Cliente que disse
   // "me liga amanhã" e não estava vencido pelo ciclo simplesmente sumia, e a
   // promessa morria sem ninguém saber.
-  const ultimoCombinado = new Map<string, { resultado: string; adiar_ate: string; observacao: string | null; criado_em: string }>();
+  const ultimoCombinado = new Map<string, { resultado: string; adiar_ate: string; observacao: string | null; criado_em: string; combinadoEm: string }>();
   for (const c of todosContatos ?? []) {
     // Vem ordenado do mais recente pro mais antigo: o primeiro de cada cliente
     // é o que vale. Combinado antigo não ressuscita.
@@ -135,6 +142,9 @@ export async function montarPlanoDoDia(): Promise<{
         adiar_ate: String(c.adiar_ate),
         observacao: c.observacao,
         criado_em: String(c.criado_em),
+        // Quando o combinado foi de fato firmado. Num contato corrigido, é a
+        // data da correção — foi aí que o cliente disse o que disse.
+        combinadoEm: String(c.atualizado_em ?? c.criado_em),
       });
     }
   }
@@ -155,8 +165,14 @@ export async function montarPlanoDoDia(): Promise<{
       const comb = ultimoCombinado.get(c.id)!;
       // Comprou depois do contato: o combinado se resolveu sozinho. Volta pelo
       // ciclo normal, não como cobrança de promessa.
+      //
+      // Compara com a data do COMBINADO, não com a do primeiro toque. Num
+      // contato corrigido as duas divergem, e usar a antiga descartava promessa
+      // nova: cliente que comprou pouco na terça e prometeu um pedido grande na
+      // quinta sumia da lista, porque a compra de terça é posterior ao contato
+      // de segunda.
       const compradoDepois =
-        c.ultima_compra && String(c.ultima_compra) >= comb.criado_em.slice(0, 10);
+        c.ultima_compra && String(c.ultima_compra) >= comb.combinadoEm.slice(0, 10);
       if (compradoDepois || jaEscolhido.has(c.id)) continue;
       retornos.push(
         monta(c as Bruto, "retorno", {

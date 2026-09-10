@@ -47,15 +47,61 @@ export const JANELA_EDICAO_DIAS = 7;
  * plano do dia e sai daqui. Sem essa amarração, um mesmo cliente apareceria
  * duas vezes na mesma tela a partir do segundo dia.
  *
- * Este número é só uma trava de segurança contra registro com data de retorno
- * absurda lá na frente, que ficaria preso na bandeja pra sempre.
+ * É o MESMO número da janela de edição de propósito. Com 14 aqui e 7 lá, um
+ * contato com data de retorno longa ficava listado com os três botões
+ * habilitados do dia 8 ao 14, e todo clique voltava "tem mais de 7 dias" — sem
+ * nenhum caminho na tela para resolver a linha. Bandeja não pode oferecer o
+ * que o servidor recusa.
  */
-export const TETO_BANDEJA_DIAS = 14;
+export const TETO_BANDEJA_DIAS = JANELA_EDICAO_DIAS;
 
+/**
+ * Fuso fixo pra rotular horários.
+ *
+ * O servidor da Vercel roda em UTC e o vendedor está em Porto Alegre. Formatar
+ * com o fuso da máquina mostraria 13h40 pro contato das 10h40 — e formatar no
+ * cliente daria divergência de hidratação, porque servidor e navegador
+ * chegariam a strings diferentes. Fixar o fuso resolve os dois.
+ */
+const TZ = "America/Sao_Paulo";
+
+/** Dia civil em Porto Alegre, no formato YYYY-MM-DD. */
+export function diaEmSP(d: Date | string): string {
+  const dt = typeof d === "string" ? new Date(d) : d;
+  return dt.toLocaleDateString("en-CA", { timeZone: TZ });
+}
+
+/** "hoje 10h40", "ontem 16h05", "27/08 09h20". */
+export function rotuloQuando(criadoEm: string): string {
+  const dia = diaEmSP(criadoEm);
+  const hoje = diaEmSP(new Date());
+  const anteontem = new Date();
+  anteontem.setDate(anteontem.getDate() - 1);
+  const ontem = diaEmSP(anteontem);
+
+  const hora = new Date(criadoEm)
+    .toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
+    .replace(":", "h");
+
+  if (dia === hoje) return `hoje ${hora}`;
+  if (dia === ontem) return `ontem ${hora}`;
+  return `${ddmm(dia)} ${hora}`;
+}
+
+/**
+ * Data de hoje mais N dias, no dia civil de Porto Alegre.
+ *
+ * Antes usava toISOString(), que devolve o dia em UTC. Isso não fazia diferença
+ * enquanto a conta rodava só no navegador do vendedor — mas a correção de
+ * contato roda no servidor da Vercel, que é UTC. Das 21h à meia-noite os dois
+ * discordam em um dia: um "ainda sem resposta" registrado às 21h30 ganhava
+ * retorno para depois de amanhã, e o cliente ficava preso dois dias em vez de
+ * um. Trabalhar de noite é normal aqui, então o erro seria diário.
+ */
 export function hojeMais(dias: number): string {
   const d = new Date();
   d.setDate(d.getDate() + dias);
-  return d.toISOString().slice(0, 10);
+  return diaEmSP(d);
 }
 
 export function ddmm(iso: string): string {
@@ -99,37 +145,4 @@ export function diasDesde(criadoEm: string): number {
  *  recente do cliente é o servidor, que enxerga a tabela inteira. */
 export function dentroDaJanela(criadoEm: string): boolean {
   return diasDesde(criadoEm) <= JANELA_EDICAO_DIAS;
-}
-
-/**
- * Fuso fixo pra rotular horários.
- *
- * O servidor da Vercel roda em UTC e o vendedor está em Porto Alegre. Formatar
- * com o fuso da máquina mostraria 13h40 pro contato das 10h40 — e formatar no
- * cliente daria divergência de hidratação, porque servidor e navegador
- * chegariam a strings diferentes. Fixar o fuso resolve os dois.
- */
-const TZ = "America/Sao_Paulo";
-
-/** Dia civil em Porto Alegre, no formato YYYY-MM-DD. */
-export function diaEmSP(d: Date | string): string {
-  const dt = typeof d === "string" ? new Date(d) : d;
-  return dt.toLocaleDateString("en-CA", { timeZone: TZ });
-}
-
-/** "hoje 10h40", "ontem 16h05", "27/08 09h20". */
-export function rotuloQuando(criadoEm: string): string {
-  const dia = diaEmSP(criadoEm);
-  const hoje = diaEmSP(new Date());
-  const anteontem = new Date();
-  anteontem.setDate(anteontem.getDate() - 1);
-  const ontem = diaEmSP(anteontem);
-
-  const hora = new Date(criadoEm)
-    .toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
-    .replace(":", "h");
-
-  if (dia === hoje) return `hoje ${hora}`;
-  if (dia === ontem) return `ontem ${hora}`;
-  return `${ddmm(dia)} ${hora}`;
 }

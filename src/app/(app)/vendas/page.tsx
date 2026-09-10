@@ -59,39 +59,66 @@ export default async function VendasHojePage() {
   // o corte é `adiar_ate >= hoje` e não uma idade fixa, que duplicaria o cliente
   // nas duas seções.
   //
-  // A janela de `criado_em` serve só pra garantir que o primeiro registro de
-  // cada cliente nesta lista seja mesmo o mais recente dele.
-  const { data: recentes } = await supabase
+  // Duas consultas, ambas limitadas de propósito. Uma varredura de todos os
+  // contatos da janela estouraria o teto de 1000 linhas do PostgREST, que
+  // trunca EM SILÊNCIO: o cliente cortado sumiria da bandeja e da lista ao
+  // mesmo tempo — de volta ao problema que esta tela resolve.
+  const { data: candidatos } = await supabase
     .from("vendas_contatos")
     .select(
-      `id, cliente_id, canal, resultado, observacao, criado_em, adiar_ate,
+      `id, cliente_id, canal, observacao, criado_em,
        cliente:vendas_clientes(id, nome, ativo, telefone_e164, telefone_raw,
                                telefone_presumido, canal_preferido)`
     )
+    .eq("resultado", "sem_resposta")
+    .gte("adiar_ate", hoje)
     .gte("criado_em", `${hojeMais(-TETO_BANDEJA_DIAS)}T00:00:00`)
-    .order("criado_em", { ascending: false });
+    .order("criado_em", { ascending: false })
+    .limit(200);
 
-  const jaVisto = new Set<string>();
+  // Dos candidatos, ficam só os que ninguém sucedeu com um contato mais novo.
   const emAberto: EmAberto[] = [];
-  for (const c of recentes ?? []) {
-    if (!c.cliente_id || jaVisto.has(c.cliente_id)) continue;
-    jaVisto.add(c.cliente_id);
-    if (c.resultado !== "sem_resposta" || !c.cliente?.ativo) continue;
-    // Data de retorno vencida = já voltou pra lista como "retorno". Não repete.
-    if (!c.adiar_ate || String(c.adiar_ate) < hoje) continue;
-    emAberto.push({
-      id: c.id,
-      clienteId: c.cliente.id,
-      nome: c.cliente.nome,
-      canal: c.canal,
-      quando: rotuloQuando(String(c.criado_em)),
-      observacao: c.observacao,
-      telefone_e164: c.cliente.telefone_e164,
-      telefone_raw: c.cliente.telefone_raw,
-      telefone_presumido: c.cliente.telefone_presumido,
-      canal_preferido: c.cliente.canal_preferido,
-    });
+  if (candidatos && candidatos.length > 0) {
+    const ids = candidatos.map((c) => c.cliente_id);
+    const { data: posteriores } = await supabase
+      .from("vendas_contatos")
+      .select("cliente_id, criado_em")
+      .in("cliente_id", ids)
+      .order("criado_em", { ascending: false })
+      .limit(1000);
+
+    const maisNovo = new Map<string, string>();
+    for (const p of posteriores ?? []) {
+      if (p.cliente_id && !maisNovo.has(p.cliente_id)) {
+        maisNovo.set(p.cliente_id, String(p.criado_em));
+      }
+    }
+
+    const jaVisto = new Set<string>();
+    for (const c of candidatos) {
+      if (!c.cliente_id || jaVisto.has(c.cliente_id) || !c.cliente?.ativo) continue;
+      jaVisto.add(c.cliente_id);
+      if (maisNovo.get(c.cliente_id) !== String(c.criado_em)) continue;
+      emAberto.push({
+        id: c.id,
+        clienteId: c.cliente.id,
+        nome: c.cliente.nome,
+        canal: c.canal,
+        quando: rotuloQuando(String(c.criado_em)),
+        observacao: c.observacao,
+        telefone_e164: c.cliente.telefone_e164,
+        telefone_raw: c.cliente.telefone_raw,
+        telefone_presumido: c.cliente.telefone_presumido,
+        canal_preferido: c.cliente.canal_preferido,
+      });
+    }
   }
+
+  // O bloco "fora da lista" usa o mesmo corte `adiar_ate >= hoje`, então todo
+  // cliente da bandeja apareceria lá embaixo também — contado duas vezes na
+  // mesma tela. A bandeja é a versão acionável; o rodapé fica com o resto.
+  const naBandeja = new Set(emAberto.map((i) => i.clienteId));
+  const foraDaLista = aguardando.filter((a) => !naBandeja.has(a.cliente_id!));
 
   const pct = lista.length > 0 ? Math.round((trabalhados / lista.length) * 100) : 0;
   const pendentes = lista.length - trabalhados;
@@ -223,16 +250,16 @@ export default async function VendasHojePage() {
         reativação — na cota atual, o backlog é percorrido por inteiro em algumas semanas.
       </p>
 
-      {aguardando.length > 0 && (
+      {foraDaLista.length > 0 && (
         <details className="rounded-md border border-zinc-200 bg-white">
           <summary className="cursor-pointer px-4 py-3 text-sm text-zinc-600">
-            <strong className="text-zinc-900">{aguardando.length}</strong>{" "}
-            {aguardando.length === 1 ? "cliente fora da lista" : "clientes fora da lista"} por
+            <strong className="text-zinc-900">{foraDaLista.length}</strong>{" "}
+            {foraDaLista.length === 1 ? "cliente fora da lista" : "clientes fora da lista"} por
             combinação anterior
             <span className="ml-1 text-xs text-zinc-400">(clique pra ver)</span>
           </summary>
           <ul className="flex flex-col gap-2 border-t border-zinc-100 px-4 py-3">
-            {aguardando.map((a) => (
+            {foraDaLista.map((a) => (
               <li key={a.cliente_id} className="flex flex-wrap items-center gap-2 text-sm">
                 <ResultadoPill resultado={a.resultado} />
                 {a.cliente && <LinkCliente id={a.cliente.id} nome={a.cliente.nome} />}
