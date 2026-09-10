@@ -19,6 +19,8 @@ export type LinhaContato = {
   observacao: string | null;
   adiar_ate: string | null;
   criado_em: string;
+  resultado_inicial: string | null;
+  atualizado_em: string | null;
   usuario: { nome: string | null } | null;
   cliente: {
     id: string;
@@ -269,6 +271,19 @@ export function TabelaContatos({
                   </td>
                   <td className="px-3 py-2">
                     <ResultadoPill resultado={c.resultado} />
+                    {/* Corrigido depois: sem isto a tela mostraria o desfecho
+                        novo como se sempre tivesse sido esse, e a contagem por
+                        resultado ficaria impossível de conferir. */}
+                    {c.atualizado_em && (
+                      <span
+                        className="ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600"
+                        title={`Corrigido em ${formatDateBR(
+                          String(c.atualizado_em).slice(0, 10)
+                        )}. Antes: ${RESULTADO_LABEL[c.resultado_inicial ?? ""] ?? c.resultado_inicial}.`}
+                      >
+                        corrigido
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <MotivoTag motivo={c.motivo} />

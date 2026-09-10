@@ -1615,6 +1615,7 @@ export type Database = {
       vendas_contatos: {
         Row: {
           adiar_ate: string | null
+          atualizado_em: string | null
           canal: string | null
           cliente_id: string
           criado_em: string
@@ -1622,10 +1623,12 @@ export type Database = {
           motivo: string | null
           observacao: string | null
           resultado: string | null
+          resultado_inicial: string | null
           usuario_id: string | null
         }
         Insert: {
           adiar_ate?: string | null
+          atualizado_em?: string | null
           canal?: string | null
           cliente_id: string
           criado_em?: string
@@ -1633,10 +1636,12 @@ export type Database = {
           motivo?: string | null
           observacao?: string | null
           resultado?: string | null
+          resultado_inicial?: string | null
           usuario_id?: string | null
         }
         Update: {
           adiar_ate?: string | null
+          atualizado_em?: string | null
           canal?: string | null
           cliente_id?: string
           criado_em?: string
@@ -1644,6 +1649,7 @@ export type Database = {
           motivo?: string | null
           observacao?: string | null
           resultado?: string | null
+          resultado_inicial?: string | null
           usuario_id?: string | null
         }
         Relationships: [

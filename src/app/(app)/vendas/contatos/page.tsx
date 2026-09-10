@@ -17,6 +17,7 @@ export default async function ContatosPage() {
       .from("vendas_contatos")
       .select(
         `id, canal, resultado, motivo, observacao, adiar_ate, criado_em,
+         resultado_inicial, atualizado_em,
          usuario:profiles(nome),
          cliente:vendas_clientes(id, nome, ultima_compra, ticket_medio)`
       )

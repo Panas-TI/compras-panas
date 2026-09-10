@@ -5,6 +5,7 @@ import {
   EstadoPill,
   Telefone,
   ResultadoPill,
+  RESULTADO_LABEL,
   MotivoTag,
   FrequenciaPill,
   diasTexto,
@@ -12,6 +13,7 @@ import {
 } from "../../ui";
 import type { ItemHabitual } from "../../ui";
 import { RegistrarContato } from "../../registrar-contato";
+import { dentroDaJanela, ddmm } from "../../contato-regras";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -39,7 +41,7 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
     supabase
       .from("vendas_contatos")
       .select(
-        "id, canal, resultado, motivo, observacao, adiar_ate, criado_em, usuario:profiles(nome)"
+        "id, canal, resultado, motivo, observacao, adiar_ate, criado_em, resultado_inicial, atualizado_em, usuario:profiles(nome)"
       )
       .eq("cliente_id", id)
       .order("criado_em", { ascending: false })
@@ -198,20 +200,55 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
             <p className="text-sm text-zinc-500">Nenhum contato registrado ainda.</p>
           ) : (
             <ul className="flex flex-col gap-1.5 text-sm">
-              {(contatos ?? []).map((c) => {
+              {(contatos ?? []).map((c, idx) => {
                 const quem = (c.usuario as { nome?: string } | null)?.nome ?? "—";
+                // Só o contato mais recente aceita correção, e só dentro da
+                // janela. O servidor confere de novo — isto aqui é só a tela
+                // não oferecer o que vai ser recusado.
+                const corrigivel = idx === 0 && podeEscrever && dentroDaJanela(String(c.criado_em));
                 return (
-                  <li key={c.id} className="border-b border-zinc-50 pb-1.5 last:border-0">
-                    <span className="text-zinc-500">
-                      {formatDateBR(String(c.criado_em).slice(0, 10))} · {quem} · {c.canal}
-                    </span>{" "}
-                    · <ResultadoPill resultado={c.resultado} />{" "}
-                    <MotivoTag motivo={c.motivo} />
-                    {c.observacao && <span className="text-zinc-600"> — “{c.observacao}”</span>}
-                    {c.adiar_ate && (
-                      <span className="ml-1 text-xs text-zinc-400">
-                        (volta em {formatDateBR(c.adiar_ate)})
-                      </span>
+                  <li key={c.id} className="flex flex-col gap-1.5 border-b border-zinc-50 pb-1.5 last:border-0">
+                    <div>
+                      <span className="text-zinc-500">
+                        {formatDateBR(String(c.criado_em).slice(0, 10))} · {quem} · {c.canal}
+                      </span>{" "}
+                      · <ResultadoPill resultado={c.resultado} />{" "}
+                      <MotivoTag motivo={c.motivo} />
+                      {c.observacao && <span className="text-zinc-600"> — “{c.observacao}”</span>}
+                      {c.adiar_ate && (
+                        <span className="ml-1 text-xs text-zinc-400">
+                          (volta em {formatDateBR(c.adiar_ate)})
+                        </span>
+                      )}
+                      {/* Corrigido: o histórico continua mostrando o que foi
+                          dito primeiro, senão a correção viraria apagamento. */}
+                      {c.atualizado_em && (
+                        <span
+                          className="ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600"
+                          title={`Registrado antes como “${
+                            RESULTADO_LABEL[c.resultado_inicial ?? ""] ?? c.resultado_inicial
+                          }” e corrigido depois.`}
+                        >
+                          corrigido em {ddmm(String(c.atualizado_em).slice(0, 10))} · antes:{" "}
+                          {RESULTADO_LABEL[c.resultado_inicial ?? ""] ?? c.resultado_inicial}
+                        </span>
+                      )}
+                    </div>
+                    {corrigivel && (
+                      <RegistrarContato
+                        clienteId={cliente.id}
+                        nome={cliente.nome}
+                        intervaloDias={cliente.intervalo_mediano_dias}
+                        contato={{
+                          id: c.id,
+                          canal: c.canal,
+                          resultado: c.resultado,
+                          motivo: c.motivo,
+                          observacao: c.observacao,
+                          adiar_ate: c.adiar_ate,
+                          criado_em: String(c.criado_em),
+                        }}
+                      />
                     )}
                   </li>
                 );

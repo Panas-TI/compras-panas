@@ -16,6 +16,8 @@ import { AlertaImportacao } from "./alerta-importacao";
 import { PlacarMeta } from "./placar-meta";
 import { montarPlanoDoDia, TAMANHO_LISTA, type ClienteDoPlano } from "./plano-do-dia";
 import { createClient } from "@/lib/supabase/server";
+import { AguardandoResposta, type EmAberto } from "./aguardando-resposta";
+import { hojeMais, rotuloQuando, TETO_BANDEJA_DIAS } from "./contato-regras";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,49 @@ export default async function VendasHojePage() {
     vistos.add(a.cliente_id);
     return true;
   });
+
+  // Bandeja "Aguardando resposta".
+  //
+  // Mostra exatamente quem está silenciado na fila por um contato sem desfecho:
+  // marcar "ainda sem resposta" agenda o retorno pra amanhã e o cliente some da
+  // lista de hoje. Enquanto essa data não vence, só a bandeja o exibe; quando
+  // vence, ele volta como "retorno combinado" logo acima e sai daqui — por isso
+  // o corte é `adiar_ate >= hoje` e não uma idade fixa, que duplicaria o cliente
+  // nas duas seções.
+  //
+  // A janela de `criado_em` serve só pra garantir que o primeiro registro de
+  // cada cliente nesta lista seja mesmo o mais recente dele.
+  const { data: recentes } = await supabase
+    .from("vendas_contatos")
+    .select(
+      `id, cliente_id, canal, resultado, observacao, criado_em, adiar_ate,
+       cliente:vendas_clientes(id, nome, ativo, telefone_e164, telefone_raw,
+                               telefone_presumido, canal_preferido)`
+    )
+    .gte("criado_em", `${hojeMais(-TETO_BANDEJA_DIAS)}T00:00:00`)
+    .order("criado_em", { ascending: false });
+
+  const jaVisto = new Set<string>();
+  const emAberto: EmAberto[] = [];
+  for (const c of recentes ?? []) {
+    if (!c.cliente_id || jaVisto.has(c.cliente_id)) continue;
+    jaVisto.add(c.cliente_id);
+    if (c.resultado !== "sem_resposta" || !c.cliente?.ativo) continue;
+    // Data de retorno vencida = já voltou pra lista como "retorno". Não repete.
+    if (!c.adiar_ate || String(c.adiar_ate) < hoje) continue;
+    emAberto.push({
+      id: c.id,
+      clienteId: c.cliente.id,
+      nome: c.cliente.nome,
+      canal: c.canal,
+      quando: rotuloQuando(String(c.criado_em)),
+      observacao: c.observacao,
+      telefone_e164: c.cliente.telefone_e164,
+      telefone_raw: c.cliente.telefone_raw,
+      telefone_presumido: c.cliente.telefone_presumido,
+      canal_preferido: c.cliente.canal_preferido,
+    });
+  }
 
   const pct = lista.length > 0 ? Math.round((trabalhados / lista.length) * 100) : 0;
   const pendentes = lista.length - trabalhados;
@@ -83,6 +128,8 @@ export default async function VendasHojePage() {
           style={{ width: `${pct}%` }}
         />
       </div>
+
+      <AguardandoResposta itens={emAberto} podeEscrever={podeEscrever} />
 
       {lista.length === 0 && (
         <Card>

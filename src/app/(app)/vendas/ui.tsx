@@ -205,7 +205,9 @@ export const RESULTADO_LABEL: Record<string, string> = {
   vai_comprar: "Vai comprar",
   comprou: "Comprou agora",
   nao_agora: "Não agora",
-  sem_resposta: "Sem resposta",
+  // "Ainda": é estado provisório, não veredito. Quem responde depois tem a
+  // bandeja do plano do dia pra corrigir este mesmo registro.
+  sem_resposta: "Ainda sem resposta",
   recusou: "Não quer mais",
 };
 

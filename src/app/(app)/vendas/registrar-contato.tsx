@@ -5,64 +5,55 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MOTIVOS_CONTATO, MOTIVO_OUTRO } from "./ui";
+import { atualizarContatoAction } from "./contato-actions";
+import {
+  RESULTADOS,
+  CANAIS,
+  calcularAdiarAte,
+  diasAteVoltar,
+  hojeMais,
+  ddmm,
+} from "./contato-regras";
 
-const RESULTADOS = [
-  { v: "vai_comprar", label: "Vai comprar", adiaDias: 2 },
-  { v: "comprou", label: "Comprou agora", adiaDias: 0 },
-  { v: "nao_agora", label: "Não agora", adiaDias: 14 },
-  { v: "sem_resposta", label: "Sem resposta", adiaDias: 1 },
-  { v: "recusou", label: "Não quer mais", adiaDias: 90 },
-] as const;
-
-const CANAIS = ["whatsapp", "telefone", "presencial", "email"] as const;
-
-/** Dias de antecedência: o vendedor precisa falar antes do estoque acabar. */
-const ANTECEDENCIA = 3;
-/**
- * Sem histórico suficiente não dá pra prever o ritmo. Presume 10 dias — mesmo
- * número usado em recalcular_metricas_vendas() pra fila do cliente novo; se
- * divergissem, o cliente voltaria pra fila em data diferente da prometida aqui.
- */
-const PADRAO_SEM_CICLO = 10;
-
-function hojeMais(dias: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + dias);
-  return d.toISOString().slice(0, 10);
-}
-
-function ddmm(iso: string): string {
-  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-}
-
-/**
- * Quando o cliente compra na hora, quem decide o retorno é o sistema, não o
- * vendedor: volta 3 dias antes da próxima compra prevista pelo ciclo dele.
- * Piso de 1 dia porque há cliente de ciclo curto (2 dias) em que o cálculo
- * cairia no passado.
- */
-function diasAteVoltar(intervalo: number | null): number {
-  if (!intervalo) return PADRAO_SEM_CICLO;
-  return Math.max(1, intervalo - ANTECEDENCIA);
-}
+/** Contato já gravado que este formulário vai corrigir em vez de criar um novo. */
+export type ContatoEditavel = {
+  id: string;
+  canal: string | null;
+  resultado: string | null;
+  motivo: string | null;
+  observacao: string | null;
+  adiar_ate: string | null;
+  criado_em: string;
+};
 
 export function RegistrarContato({
   clienteId,
   nome,
   intervaloDias = null,
+  contato = null,
+  rotulo,
 }: {
   clienteId: string;
   nome: string;
   /** Ciclo típico de recompra do cliente (vendas_clientes.intervalo_mediano_dias). */
   intervaloDias?: number | null;
+  /**
+   * Quando vem preenchido, o formulário CORRIGE este contato em vez de criar
+   * outro — é o caminho da resposta que chegou depois. Sem ele, comportamento
+   * de sempre: registra contato novo.
+   */
+  contato?: ContatoEditavel | null;
+  rotulo?: string;
 }) {
   const router = useRouter();
+  const editando = !!contato;
+
   const [aberto, setAberto] = useState(false);
-  const [canal, setCanal] = useState<string>("whatsapp");
-  const [resultado, setResultado] = useState<string>("vai_comprar");
-  const [motivo, setMotivo] = useState<string>("");
-  const [observacao, setObservacao] = useState("");
-  const [adiar, setAdiar] = useState("");
+  const [canal, setCanal] = useState<string>(contato?.canal ?? "whatsapp");
+  const [resultado, setResultado] = useState<string>(contato?.resultado ?? "vai_comprar");
+  const [motivo, setMotivo] = useState<string>(contato?.motivo ?? "");
+  const [observacao, setObservacao] = useState(contato?.observacao ?? "");
+  const [adiar, setAdiar] = useState(contato?.adiar_ate ?? "");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -81,41 +72,41 @@ export function RegistrarContato({
     setSalvando(true);
     setErro(null);
     try {
-      const sb = createClient();
-      const {
-        data: { user },
-      } = await sb.auth.getUser();
-
-      let adiarAte: string | null;
-      if (comprou) {
-        // Comprou agora: o sistema decide, ignorando qualquer data digitada.
-        // Sem isso o cliente voltaria pra fila amanhã, porque a venda só entra
-        // no sistema na importação semanal seguinte.
-        adiarAte = hojeMais(diasAteVoltar(intervaloDias));
+      if (editando) {
+        // As travas (janela e "só o mais recente") são checadas no servidor.
+        const r = await atualizarContatoAction({
+          id: contato.id,
+          resultado,
+          motivo,
+          observacao,
+          canal,
+          adiarAte: adiar || null,
+        });
+        if (r.error) throw new Error(r.error);
       } else {
-        // Sem data escolhida, usa o padrão do resultado — evita ligar de novo amanhã
-        adiarAte = adiar || null;
-        if (!adiarAte) {
-          const dias = RESULTADOS.find((r) => r.v === resultado)?.adiaDias ?? 0;
-          if (dias > 0) adiarAte = hojeMais(dias);
-        }
+        const sb = createClient();
+        const {
+          data: { user },
+        } = await sb.auth.getUser();
+
+        const { error } = await sb.from("vendas_contatos").insert({
+          cliente_id: clienteId,
+          usuario_id: user?.id ?? null,
+          canal,
+          resultado,
+          motivo: motivo || null,
+          adiar_ate: calcularAdiarAte(resultado, intervaloDias, adiar || null),
+          observacao: observacao.trim() || null,
+        });
+        if (error) throw new Error(error.message);
       }
 
-      const { error } = await sb.from("vendas_contatos").insert({
-        cliente_id: clienteId,
-        usuario_id: user?.id ?? null,
-        canal,
-        resultado,
-        motivo: motivo || null,
-        adiar_ate: adiarAte,
-        observacao: observacao.trim() || null,
-      });
-      if (error) throw new Error(error.message);
-
       setAberto(false);
-      setMotivo("");
-      setObservacao("");
-      setAdiar("");
+      if (!editando) {
+        setMotivo("");
+        setObservacao("");
+        setAdiar("");
+      }
       router.refresh();
     } catch (e) {
       setErro(e instanceof Error ? e.message : String(e));
@@ -127,14 +118,22 @@ export function RegistrarContato({
   if (!aberto) {
     return (
       <Button size="sm" variant="outline" onClick={() => setAberto(true)}>
-        Registrar contato
+        {rotulo ?? (editando ? "Corrigir resposta" : "Registrar contato")}
       </Button>
     );
   }
 
   return (
     <div className="w-full rounded-md border border-zinc-200 bg-zinc-50 p-3">
-      <p className="mb-2 text-xs font-medium text-zinc-500">Contato com {nome}</p>
+      <p className="mb-2 text-xs font-medium text-zinc-500">
+        {editando ? (
+          <>
+            Corrigindo o contato de {ddmm(String(contato.criado_em).slice(0, 10))} com {nome}
+          </>
+        ) : (
+          <>Contato com {nome}</>
+        )}
+      </p>
 
       <div className="flex flex-wrap items-center gap-2">
         <select
@@ -217,7 +216,7 @@ export function RegistrarContato({
 
       <div className="mt-2 flex gap-2">
         <Button size="sm" onClick={salvar} disabled={salvando}>
-          {salvando ? "Salvando..." : "Salvar"}
+          {salvando ? "Salvando..." : editando ? "Atualizar resposta" : "Salvar"}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setAberto(false)} disabled={salvando}>
           Cancelar
