@@ -236,6 +236,12 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
                     </div>
                     {corrigivel && (
                       <RegistrarContato
+                        // O formulário semeia o estado a partir desta prop, e
+                        // React não remonta um componente só porque a prop
+                        // mudou. Sem amarrar a chave à data de correção, quem
+                        // corrigisse e reabrisse o formulário veria de novo os
+                        // valores antigos, já substituídos no banco.
+                        key={`${c.id}-${c.atualizado_em ?? "0"}`}
                         clienteId={cliente.id}
                         nome={cliente.nome}
                         intervaloDias={cliente.intervalo_mediano_dias}
