@@ -327,6 +327,39 @@ function PreviaImport({
           )}
         </div>
 
+        {/* "Nada novo" era uma frase cinza no rodapé, ao lado do botão
+            desligado. Quem subia um arquivo esperando os pedidos de hoje lia
+            aquilo e não tinha como saber se o sistema recusou, se o arquivo
+            estava errado, ou se era o mesmo de ontem. A resposta — qual período
+            o arquivo cobre — estava na tela, mas escondida numa linha acima. */}
+        {nada && (
+          <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+            <strong>Este arquivo não traz nada novo.</strong>
+            {previa.periodo && (
+              <>
+                {" "}
+                Ele cobre{" "}
+                {previa.periodo.inicio === previa.periodo.fim ? (
+                  <strong>{formatDateBR(previa.periodo.fim)}</strong>
+                ) : (
+                  <>
+                    <strong>{formatDateBR(previa.periodo.inicio)}</strong> a{" "}
+                    <strong>{formatDateBR(previa.periodo.fim)}</strong>
+                  </>
+                )}
+                , e {previa.pedidosJaExistiam}{" "}
+                {previa.pedidosJaExistiam === 1 ? "pedido dele já está" : "pedidos dele já estão"}{" "}
+                no sistema.
+              </>
+            )}
+            <p className="mt-1">
+              Se você pediu a exportação incluindo hoje e ela veio assim, é o ERP que não mandou
+              os pedidos de hoje — eles só entram no relatório depois de finalizados. Nada a
+              corrigir aqui: importe amanhã e o dia de hoje entra junto.
+            </p>
+          </div>
+        )}
+
         {/* Dia pulado some para sempre e ninguém percebe: o sistema só enxerga o
             que chegou, nunca o que faltou. Com importação diária isso deixa de
             ser exceção e vira rotina, então precisa gritar. */}
@@ -603,11 +636,7 @@ function PreviaImport({
           <Button variant="ghost" onClick={onVoltar}>
             {rotuloVoltar}
           </Button>
-          {nada && (
-            <span className="self-center text-sm text-zinc-500">
-              Nada novo pra importar neste arquivo.
-            </span>
-          )}
+
         </div>
       </CardContent>
     </Card>
