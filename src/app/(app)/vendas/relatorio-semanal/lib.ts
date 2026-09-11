@@ -224,6 +224,122 @@ function numQueops(s: string): number | null {
 }
 
 /**
+ * Onde cada coisa está, no bloco de cliente que está sendo lido.
+ *
+ * O relatório NÃO tem um layout só. Ele repete o cabeçalho
+ * ("Pedido | Data/Hora | Atend. | Valor | Forma Pag. | … | Itens | Qtd. | Valor")
+ * antes de cada cliente, e as colunas mudam de lugar entre um cliente e outro
+ * conforme a largura do conteúdo. Num único export de 11/09 havia TRÊS layouts:
+ * 67 blocos com o valor na coluna 4, 11 blocos na 5, e 3 com a quantidade do
+ * item na 12 em vez da 13.
+ *
+ * Ler por posição fixa custava caro: 18 pedidos de 116 entravam com total zero
+ * (o dinheiro ficava parado em `forma_pag`) e 28 tinham os itens lidos errado
+ * ou nem lidos. A resposta estava no próprio arquivo — bastava ler o cabeçalho.
+ */
+export type LayoutQueops = {
+  data: number;
+  atend: number;
+  valorPedido: number;
+  forma: number;
+  itens: number;
+  qtd: number;
+  valorItem: number;
+};
+
+/** O layout mais comum — vale até o primeiro cabeçalho aparecer. */
+export const LAYOUT_PADRAO: LayoutQueops = {
+  data: 1,
+  atend: 3,
+  valorPedido: 4,
+  forma: 5,
+  itens: 11,
+  qtd: 13,
+  valorItem: 14,
+};
+
+/** É a linha de cabeçalho que abre a tabela de um cliente? */
+export function ehCabecalhoTabela(linha: unknown[]): boolean {
+  return cel(linha, 0).toLowerCase() === "pedido";
+}
+
+/**
+ * Traduz o cabeçalho em posições.
+ *
+ * "Valor" aparece DUAS vezes: a primeira é o valor do pedido, a última é o
+ * valor do item. Confundir as duas põe o preço de uma empanada no lugar do
+ * total do pedido.
+ */
+export function lerLayout(linha: unknown[]): LayoutQueops {
+  const novo: LayoutQueops = { ...LAYOUT_PADRAO };
+  let viuValor = false;
+  for (let c = 0; c < linha.length; c++) {
+    const t = cel(linha, c).toLowerCase().replace(/\./g, "").trim();
+    if (!t) continue;
+    if (t === "valor") {
+      if (viuValor) novo.valorItem = c;
+      else {
+        novo.valorPedido = c;
+        viuValor = true;
+      }
+    } else if (t.startsWith("data")) novo.data = c;
+    else if (t.startsWith("atend")) novo.atend = c;
+    else if (t.startsWith("forma")) novo.forma = c;
+    else if (t === "itens") novo.itens = c;
+    else if (t === "qtd") novo.qtd = c;
+  }
+  return novo;
+}
+
+/** "4:50:09 PM", "16:22", "6:46:28" — coluna de horário, nunca produto. */
+function ehHora(s: string): boolean {
+  return /^\d{1,2}:\d{2}(:\d{2})?(\s*[AP]\.?M\.?)?$/i.test(s.trim());
+}
+
+/**
+ * Lê a linha de item ancorando no NOME do produto, não em coluna fixa.
+ *
+ * O cabeçalho do bloco não basta: no mesmo bloco, a linha do pedido pode ter o
+ * valor na coluna que o cabeçalho indicou e os itens uma coluna adiante. As
+ * duas metades da linha deslizam de forma independente.
+ *
+ * O nome do produto é a única coisa reconhecível sem ambiguidade — é texto num
+ * trecho só de números. Achado ele, quantidade e valor são os dois próximos
+ * números da linha. Ler por posição fazia 28 de 116 pedidos não fecharem com a
+ * soma dos próprios itens, e um deles entrava sem item nenhum.
+ */
+export function lerItem(
+  linha: unknown[],
+  layout: LayoutQueops
+): { produto: string; qtd: number; valor: number | null } | null {
+  const inicio = Math.max(0, layout.itens - 1);
+  let cProduto = -1;
+  for (let c = inicio; c <= layout.itens + 2; c++) {
+    const v = cel(linha, c);
+    // Hora não é produto. As colunas de Produção/Entrega/Tempo ficam logo
+    // antes das de item e trazem "4:50:09 PM" — texto, como o nome de um
+    // produto. Sem esta guarda o horário virava o item, com a quantidade do
+    // produto de verdade colada nele, e o produto real era descartado.
+    if (v && numQueops(v) === null && !ehHora(v)) {
+      cProduto = c;
+      break;
+    }
+  }
+  if (cProduto < 0) return null;
+
+  const nums: number[] = [];
+  for (let c = cProduto + 1; c <= cProduto + 4 && nums.length < 2; c++) {
+    const n = numQueops(cel(linha, c));
+    if (n !== null) nums.push(n);
+  }
+  return {
+    produto: cel(linha, cProduto),
+    qtd: nums[0] ?? 1,
+    valor: nums.length >= 2 ? nums[1] : null,
+  };
+}
+
+/**
  * Lê valor, atendente e forma de pagamento da linha do pedido.
  *
  * O relatório documenta col 3 = atendente, col 4 = valor, col 5 = forma de
@@ -241,13 +357,28 @@ function numQueops(s: string): number | null {
  * que é onde ele deveria estar. O texto à esquerda dele é o atendente; o à
  * direita, a forma de pagamento.
  */
-export function lerCabecalhoPedido(linha: unknown[]): {
+export function lerCabecalhoPedido(
+  linha: unknown[],
+  layout: LayoutQueops = LAYOUT_PADRAO
+): {
   total: number | null;
   atendente: string | null;
   formaPag: string | null;
 } {
-  const FAIXA = [3, 4, 5, 6];
-  const ESPERADA = 4;
+  // Caminho normal: o cabeçalho do bloco diz onde está cada coluna.
+  const direto = numQueops(cel(linha, layout.valorPedido));
+  if (direto !== null) {
+    return {
+      total: direto,
+      atendente: normalizarAtendente(cel(linha, layout.atend)),
+      formaPag: cel(linha, layout.forma) || null,
+    };
+  }
+
+  // Rede de segurança: a coluna que o cabeçalho aponta veio vazia. Procura o
+  // número em volta em vez de gravar zero e apagar a venda do sistema.
+  const FAIXA = [layout.valorPedido - 1, layout.valorPedido, layout.valorPedido + 1, layout.valorPedido + 2];
+  const ESPERADA = layout.valorPedido;
 
   const numeros = FAIXA.map((c) => ({ c, v: numQueops(cel(linha, c)) })).filter(
     (x): x is { c: number; v: number } => x.v !== null
@@ -260,8 +391,8 @@ export function lerCabecalhoPedido(linha: unknown[]): {
   if (!achado) {
     return {
       total: null,
-      atendente: normalizarAtendente(cel(linha, 3)),
-      formaPag: cel(linha, 5) || null,
+      atendente: normalizarAtendente(cel(linha, layout.atend)),
+      formaPag: cel(linha, layout.forma) || null,
     };
   }
 
@@ -285,6 +416,8 @@ export function parseQueops(m: Matriz): {
   let cliente: string | null = null;
   let clienteCodigo: string | null = null;
   let atual: PedidoNormalizado | null = null;
+  // Vale até o próximo cabeçalho. Cada cliente pode trazer o seu.
+  let layout: LayoutQueops = LAYOUT_PADRAO;
 
   m.forEach((linha, i) => {
     const num = i + 1;
@@ -304,9 +437,15 @@ export function parseQueops(m: Matriz): {
       return;
     }
 
+    // O cabeçalho da tabela deste cliente diz onde estão as colunas.
+    if (ehCabecalhoTabela(linha)) {
+      layout = lerLayout(linha);
+      return;
+    }
+
     if (/^\d{6,}$/.test(c0)) {
-      const data = dataQueops(cel(linha, 1));
-      const { total, atendente, formaPag } = lerCabecalhoPedido(linha);
+      const data = dataQueops(cel(linha, layout.data));
+      const { total, atendente, formaPag } = lerCabecalhoPedido(linha, layout);
       if (!cliente) {
         rejeitadas.push({ linha: num, motivo: `pedido ${c0} sem cliente acima` });
         atual = null;
@@ -330,17 +469,9 @@ export function parseQueops(m: Matriz): {
       pedidos.push(atual);
     }
 
-    // Linha de item. "Itens" é o título da coluna, não produto.
-    const produto = cel(linha, 11);
-    if (produto && produto.toLowerCase() !== "itens" && atual) {
-      const nums = [12, 13, 14]
-        .map((c) => numQueops(cel(linha, c)))
-        .filter((v): v is number => v !== null);
-      atual.itens.push({
-        produto,
-        qtd: nums[0] ?? 1,
-        valor: nums.length >= 2 ? nums[1] : null,
-      });
+    const item = atual ? lerItem(linha, layout) : null;
+    if (item && atual) {
+      atual.itens.push(item);
     }
   });
 
