@@ -7,7 +7,7 @@ import { AlertaImportacao } from "../alerta-importacao";
 export const dynamic = "force-dynamic";
 
 const CAMPOS =
-  "id, nome, status, telefone_e164, telefone_raw, telefone_presumido, canal_preferido, ultima_compra, intervalo_mediano_dias, frequencia_compras, ticket_medio, total_vendas, receita_anual_risco, itens_habituais, verificar, frequencia_classe";
+  "id, nome, status, telefone_e164, telefone_raw, telefone_presumido, canal_preferido, ultima_compra, intervalo_mediano_dias, frequencia_compras, ticket_medio, total_vendas, receita_anual_risco, itens_habituais, verificar, frequencia_classe, rota, dia_pedido_habitual";
 
 export default async function InativosPage() {
   const { supabase } = await guardVendas();

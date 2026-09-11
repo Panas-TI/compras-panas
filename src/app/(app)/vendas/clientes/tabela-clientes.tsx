@@ -22,6 +22,8 @@ import {
 } from "../ui";
 import type { ItemHabitual } from "../ui";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
+import { SeletorRota } from "../seletor-rota";
+import { rotinaDoCliente, ROTAS, type Rota } from "../rota-regras";
 
 export type UltimoContato = {
   resultado: string | null;
@@ -46,6 +48,8 @@ export type LinhaCliente = {
   frequencia_classe: string | null;
   itens_habituais: ItemHabitual[] | null;
   verificar: boolean;
+  rota: string | null;
+  dia_pedido_habitual: number | null;
 };
 
 type Ordem = "total" | "risco" | "recencia" | "nome" | "ticket";
@@ -80,6 +84,7 @@ export function TabelaClientes({
   const [ordem, setOrdem] = useState<Ordem>(estadoInicial === "inativo" ? "risco" : "total");
   const [soSemContato, setSoSemContato] = useState(false);
   const [freq, setFreq] = useState("todas");
+  const [rota, setRota] = useState("todas");
 
   const filtrados = useMemo(() => {
     const q = semAcento(busca);
@@ -95,6 +100,7 @@ export function TabelaClientes({
       if (estado !== "todos" && c.status !== estado) return false;
       if (soSemContato && ultimoContato[c.id]) return false;
       if (freq !== "todas" && c.frequencia_classe !== freq) return false;
+      if (rota !== "todas" && (c.rota ?? "poa") !== rota) return false;
       if (!q) return true;
       return (
         semAcento(c.nome).includes(q) ||
@@ -114,9 +120,12 @@ export function TabelaClientes({
       }
     });
     return out;
-  }, [clientes, busca, estado, ordem, soSemContato, freq, ultimoContato]);
+  }, [clientes, busca, estado, ordem, soSemContato, freq, rota, ultimoContato]);
 
   const semContato = clientes.filter((c) => !ultimoContato[c.id]).length;
+  // Rota indefinida = promessa de entrega possivelmente errada no telefone.
+  // Some da vista se ninguém contar, porque são poucos numa carteira de 463.
+  const semRota = clientes.filter((c) => c.rota === "a_definir").length;
 
   const somaRisco = filtrados.reduce((s, c) => s + Number(c.receita_anual_risco ?? 0), 0);
 
@@ -153,6 +162,18 @@ export function TabelaClientes({
           ))}
         </select>
         <select
+          value={rota}
+          onChange={(e) => setRota(e.target.value)}
+          className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm"
+        >
+          <option value="todas">Toda rota</option>
+          {(Object.keys(ROTAS) as Rota[]).map((k) => (
+            <option key={k} value={k}>
+              {ROTAS[k].rotulo}
+            </option>
+          ))}
+        </select>
+        <select
           value={ordem}
           onChange={(e) => setOrdem(e.target.value as Ordem)}
           className="h-9 rounded-md border border-zinc-300 bg-white px-2 text-sm"
@@ -172,6 +193,20 @@ export function TabelaClientes({
           </label>
         )}
       </div>
+
+      {semRota > 0 && rota !== "a_definir" && (
+        <button
+          type="button"
+          onClick={() => setRota("a_definir")}
+          className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-900 transition-colors hover:bg-amber-100"
+        >
+          <strong>
+            {semRota} {semRota === 1 ? "cliente" : "clientes"} sem rota definida
+          </strong>{" "}
+          — pode estar recebendo promessa de entrega errada no telefone
+          <span className="ml-1 text-xs opacity-70">(clique pra ver)</span>
+        </button>
+      )}
 
       <p className="text-xs text-zinc-500">
         {filtrados.length} de {clientes.length} clientes
@@ -204,7 +239,12 @@ export function TabelaClientes({
               return (
                 <tr key={c.id} className="border-b border-zinc-50 last:border-0 hover:bg-zinc-50">
                   <td className="px-3 py-2">
-                    <LinkCliente id={c.id} nome={c.nome} />
+                    <LinkCliente id={c.id} nome={c.nome} />{" "}
+                    <SeletorRota
+                      clienteId={c.id}
+                      rota={(c.rota ?? "poa") as Rota}
+                      podeEscrever={podeEscrever}
+                    />
                     {c.verificar && (
                       <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800">
                         verificar
@@ -212,6 +252,11 @@ export function TabelaClientes({
                     )}
                     {c.itens_habituais?.[0] && (
                       <div className="text-xs text-zinc-400">{c.itens_habituais[0].produto}</div>
+                    )}
+                    {rotinaDoCliente(c.dia_pedido_habitual) && (
+                      <div className="text-xs text-zinc-400">
+                        {rotinaDoCliente(c.dia_pedido_habitual)}
+                      </div>
                     )}
                   </td>
                   <td className="px-3 py-2"><EstadoPill status={c.status} /></td>

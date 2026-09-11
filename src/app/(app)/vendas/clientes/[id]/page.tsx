@@ -13,7 +13,9 @@ import {
 } from "../../ui";
 import type { ItemHabitual } from "../../ui";
 import { RegistrarContato } from "../../registrar-contato";
-import { dentroDaJanela, ddmm } from "../../contato-regras";
+import { dentroDaJanela, ddmm, diaEmSP } from "../../contato-regras";
+import { SeletorRota } from "../../seletor-rota";
+import { recadoDoDia, rotinaDoCliente, type Rota } from "../../rota-regras";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -64,6 +66,11 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold">{cliente.nome}</h1>
+          <SeletorRota
+            clienteId={cliente.id}
+            rota={(cliente.rota ?? "poa") as Rota}
+            podeEscrever={podeEscrever}
+          />
           <EstadoPill status={cliente.status} />
           <FrequenciaPill classe={cliente.frequencia_classe} />
           {cliente.verificar && (
@@ -73,6 +80,25 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
           )}
         </div>
         {cliente.endereco && <p className="text-sm text-zinc-600">{cliente.endereco}</p>}
+        {/* O que prometer se ele fechar hoje — a mesma conta do plano do dia. */}
+        {(() => {
+          const hoje = diaEmSP(new Date());
+          const rec = recadoDoDia((cliente.rota ?? "poa") as Rota, hoje);
+          const rotina = rotinaDoCliente(cliente.dia_pedido_habitual);
+          return (
+            <p
+              className={`w-fit rounded border px-2 py-1 text-sm ${
+                rec.bom
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  : "border-amber-300 bg-amber-50 text-amber-900"
+              }`}
+            >
+              {rec.bom ? "📦 " : "⚠ "}
+              {rec.texto}
+              {rotina && <span className="opacity-80"> · {rotina}</span>}
+            </p>
+          );
+        })()}
         <div className="text-sm">
           <Telefone
             e164={cliente.telefone_e164}

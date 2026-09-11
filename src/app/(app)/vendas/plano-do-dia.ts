@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { diaEmSP, inicioDoDiaSP } from "./contato-regras";
 import type { ItemHabitual } from "./ui";
+import type { Rota } from "./rota-regras";
 
 /**
  * Tamanho alvo da lista diária.
@@ -25,6 +26,10 @@ export type ClienteDoPlano = {
   intervalo_mediano_dias: number | null;
   ticket_medio: number;
   itens_habituais: ItemHabitual[] | null;
+  /** Em que dias este cliente recebe — decide o que prometer no telefone. */
+  rota: Rota;
+  /** Dia da semana em que ele concentra os pedidos (1=seg…5=sex), se houver. */
+  dia_pedido_habitual: number | null;
   /** De onde veio na composição do dia. */
   faixa: "escolhido" | "retorno" | "vencido" | "previsto" | "novo" | "reativacao";
   /** Só na faixa "escolhido": por que alguém puxou este cliente. */
@@ -38,7 +43,7 @@ export type ClienteDoPlano = {
 };
 
 const CAMPOS =
-  "id, nome, status, motivo_contato, telefone_e164, telefone_raw, telefone_presumido, canal_preferido, ultima_compra, intervalo_mediano_dias, ticket_medio, receita_anual_risco, itens_habituais";
+  "id, nome, status, motivo_contato, telefone_e164, telefone_raw, telefone_presumido, canal_preferido, ultima_compra, intervalo_mediano_dias, ticket_medio, receita_anual_risco, itens_habituais, rota, dia_pedido_habitual";
 
 /**
  * Monta o plano do dia.

@@ -17,6 +17,9 @@ import { PlacarMeta } from "./placar-meta";
 import { montarPlanoDoDia, TAMANHO_LISTA, type ClienteDoPlano } from "./plano-do-dia";
 import { createClient } from "@/lib/supabase/server";
 import { AguardandoResposta, type EmAberto } from "./aguardando-resposta";
+import { SeletorRota } from "./seletor-rota";
+import { RotasHoje } from "./rotas-hoje";
+import { recadoDoDia, rotinaDoCliente, hojeEhODia, type Rota } from "./rota-regras";
 import { hojeMais, rotuloQuando, diaEmSP, inicioDoDiaSP, TETO_BANDEJA_DIAS } from "./contato-regras";
 
 export const dynamic = "force-dynamic";
@@ -135,6 +138,7 @@ export default async function VendasHojePage() {
     <div className="flex flex-col gap-4">
       <AlertaImportacao />
       <PlacarMeta />
+      <RotasHoje hoje={hoje} />
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -190,6 +194,11 @@ export default async function VendasHojePage() {
                     </span>
                     <EstadoPill status={c.status} />
                     <LinkCliente id={c.id} nome={c.nome} />
+                    <SeletorRota
+                      clienteId={c.id}
+                      rota={(c.rota ?? "poa") as Rota}
+                      podeEscrever={podeEscrever}
+                    />
                     {c.trabalhado && (
                       <span className="text-xs font-medium text-emerald-700">✓ falado hoje</span>
                     )}
@@ -215,6 +224,36 @@ export default async function VendasHojePage() {
                     ? ` · última ${formatDateBR(c.ultima_compra)} (${diasTexto(rec)})`
                     : ""}
                 </p>
+
+                {/* O que prometer no telefone.
+                    Antes, saber que a Serra só recebe quinta e que o pedido
+                    fecha 1 a 2 dias antes era memória de quem estava há tempo
+                    na casa. Quem sentasse aqui pela primeira vez prometia
+                    entrega que não existia. Agora a frase vem pronta. */}
+                {(() => {
+                  const rec = recadoDoDia(c.rota ?? "poa", hoje);
+                  const rotina = rotinaDoCliente(c.dia_pedido_habitual);
+                  const naJanela = hojeEhODia(c.dia_pedido_habitual, hoje);
+                  return (
+                    <p
+                      className={`rounded border px-2 py-1 text-sm ${
+                        rec.bom
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                          : "border-amber-300 bg-amber-50 text-amber-900"
+                      }`}
+                    >
+                      {rec.bom ? "📦 " : "⚠ "}
+                      {rec.texto}
+                      {rotina && (
+                        <span className={rec.bom ? "text-emerald-700/80" : "text-amber-800/80"}>
+                          {" · "}
+                          {rotina}
+                          {naJanela && <strong> — hoje é o dia</strong>}
+                        </span>
+                      )}
+                    </p>
+                  );
+                })()}
 
                 {/* A munição: o que ele comprava e parou. É o argumento que
                     transforma "faz tempo que não compra" em algo respondível. */}

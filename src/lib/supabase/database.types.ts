@@ -1522,6 +1522,8 @@ export type Database = {
       vendas_clientes: {
         Row: {
           ativo: boolean
+          dia_pedido_habitual: number | null
+          rota: string
           atualizado_em: string
           canal_preferido: string | null
           codigo_cliente: string
@@ -1552,6 +1554,8 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          dia_pedido_habitual?: number | null
+          rota?: string
           atualizado_em?: string
           canal_preferido?: string | null
           codigo_cliente: string
@@ -1582,6 +1586,8 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          dia_pedido_habitual?: number | null
+          rota?: string
           atualizado_em?: string
           canal_preferido?: string | null
           codigo_cliente?: string
