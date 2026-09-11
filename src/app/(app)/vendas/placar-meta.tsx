@@ -87,12 +87,17 @@ export async function PlacarMeta() {
           {cobertura.ate && (
             <p className="text-xs text-zinc-500">
               dados até <strong className="text-zinc-700">{formatDateBR(cobertura.ate)}</strong>
+              {/* Hoje em aberto é o normal — nota, não alarme. Dia anterior
+                  faltando é atraso de verdade, e aí sim chama atenção. */}
+              {cobertura.faltaHoje && cobertura.diasEmFalta.length === 0 && (
+                <span className="text-zinc-400"> · a venda de hoje entra amanhã</span>
+              )}
               {cobertura.diasEmFalta.length > 0 && (
                 <span className="text-amber-700">
                   {" "}
                   · {cobertura.diasEmFalta.length === 1
-                    ? `${formatDateBR(cobertura.diasEmFalta[0])} ainda não entrou`
-                    : `${cobertura.diasEmFalta.length} dias úteis ainda não entraram`}
+                    ? `${formatDateBR(cobertura.diasEmFalta[0])} não entrou`
+                    : `${cobertura.diasEmFalta.length} dias úteis não entraram`}
                 </span>
               )}
             </p>

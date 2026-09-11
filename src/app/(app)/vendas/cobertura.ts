@@ -4,8 +4,10 @@ import { diaEmSP } from "./contato-regras";
 export type Cobertura = {
   /** Último dia que os números do sistema realmente cobrem. */
   ate: string | null;
-  /** Dias úteis entre a cobertura e hoje — o que ainda não entrou. */
+  /** Dias úteis ANTERIORES a hoje que não entraram — isso sim é atraso. */
   diasEmFalta: string[];
+  /** Hoje ainda não entrou. Normal: a exportação só traz pedido finalizado. */
+  faltaHoje: boolean;
   importadoEm: string | null;
   importadoPor: string | null;
 };
@@ -50,9 +52,18 @@ export async function coberturaVendas(): Promise<Cobertura> {
   const bruto = maxPeriodo?.periodo_fim ?? null;
   const ate = bruto && bruto > hoje ? hoje : bruto;
 
+  // Hoje NÃO conta como atraso.
+  //
+  // A exportação do ERP só traz pedido finalizado, e o do dia ainda está em
+  // aberto: o arquivo termina em ontem todo santo dia. Tratar isso como falha
+  // faria o aviso disparar sempre — e aviso que grita todo dia vira parede,
+  // ninguém lê no dia em que importa de verdade.
+  const semCobertura = ate ? diasUteisEntre(ate, hoje) : [];
+
   return {
     ate,
-    diasEmFalta: ate ? diasUteisEntre(ate, hoje) : [],
+    diasEmFalta: semCobertura.filter((d) => d < hoje),
+    faltaHoje: semCobertura.includes(hoje),
     importadoEm: ultima?.importado_em ?? null,
     importadoPor: ultima?.importado_por ?? null,
   };

@@ -13,6 +13,13 @@ import {
 } from "./lib";
 
 // Teto pra não estourar memória nem o payload da server action.
+/** Ontem, no fuso de Porto Alegre — o último dia que a exportação alcança. */
+function ontemEmSP(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+}
+
 const MAX_LINHAS = 20000;
 const LOTE = 400;
 
@@ -246,8 +253,10 @@ export async function analisarImportacaoAction(
       })),
       cobertura: coberturaPorDia(pedidos),
       diasFaltando: datas.length ? diasFaltando(ultimaNoSistema, datas[0]) : [],
+      // Até ONTEM, não até hoje: a exportação só traz pedido finalizado, então
+      // o arquivo termina em ontem sempre. Avisar disso todo dia seria parede.
       diasNaoCobertos: datas.length
-        ? diasAposArquivo(datas[datas.length - 1], new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }))
+        ? diasAposArquivo(datas[datas.length - 1], ontemEmSP())
         : [],
       ultimaNoSistema,
       porAtendente: Array.from(atend.entries())
