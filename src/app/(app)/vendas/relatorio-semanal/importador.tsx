@@ -358,12 +358,12 @@ function PreviaImport({
         {conferencia && (
           <div
             className={`rounded-md border px-3 py-2 text-sm ${
-              conferencia.divergem.length === 0
+              conferencia.divergem.length === 0 && conferencia.zeradosComItens.length === 0
                 ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                 : "border-red-200 bg-red-50 text-red-800"
             }`}
           >
-            {conferencia.divergem.length === 0 ? (
+            {conferencia.divergem.length === 0 && conferencia.zeradosComItens.length === 0 ? (
               <>
                 ✓ <strong>Conferência bateu:</strong> em {conferencia.conferem} pedidos a soma dos
                 itens é exatamente o total do pedido
@@ -388,6 +388,29 @@ function PreviaImport({
                   ))}
                 </ul>
               </>
+            )}
+
+            {/* Zero com itens somando dinheiro NÃO é cortesia — é o valor lido
+                da coluna errada. Some da conferência antiga e leva a venda
+                junto, porque eh_valido exige total > 0. */}
+            {conferencia.zeradosComItens.length > 0 && (
+              <div className={conferencia.divergem.length > 0 ? "mt-2" : ""}>
+                <strong>
+                  ⚠ {conferencia.zeradosComItens.length}{" "}
+                  {conferencia.zeradosComItens.length === 1
+                    ? "pedido veio com valor zero mas tem itens"
+                    : "pedidos vieram com valor zero mas têm itens"}
+                </strong>{" "}
+                — o valor do pedido caiu numa coluna vizinha. Se importar assim, estas vendas não
+                contam para a última compra do cliente nem para a meta:
+                <ul className="ml-4 mt-1 list-disc">
+                  {conferencia.zeradosComItens.slice(0, 8).map((d) => (
+                    <li key={d.pedido}>
+                      {d.pedido} · {d.cliente} — itens somam {formatCurrencyBRL(d.itens)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}

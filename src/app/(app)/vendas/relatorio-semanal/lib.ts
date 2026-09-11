@@ -223,6 +223,59 @@ function numQueops(s: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Lê valor, atendente e forma de pagamento da linha do pedido.
+ *
+ * O relatório documenta col 3 = atendente, col 4 = valor, col 5 = forma de
+ * pagto — mas as colunas DESLIZAM, do mesmo jeito que já era sabido nas linhas
+ * de item. Números saem alinhados à direita: um valor mais largo começa antes
+ * e cai na célula anterior, e uma coluna vazia empurra tudo pro lado.
+ *
+ * Ler col 4 fixo custou 7 vendas de 08 e 09/09 — R$ 3.405,90 gravados como
+ * total zero, com o dinheiro parado em `forma_pag` ("646.25") ou em
+ * `atendente` ("1254.15"). Como `eh_valido` é `total > 0`, essas vendas
+ * sumiram da última compra, do placar e da carteira: a HEMELI comprou R$ 476
+ * em 09/09 e seguia marcada como inativa desde julho.
+ *
+ * Agora procura o número na faixa 3–6 e fica com o mais próximo da coluna 4,
+ * que é onde ele deveria estar. O texto à esquerda dele é o atendente; o à
+ * direita, a forma de pagamento.
+ */
+export function lerCabecalhoPedido(linha: unknown[]): {
+  total: number | null;
+  atendente: string | null;
+  formaPag: string | null;
+} {
+  const FAIXA = [3, 4, 5, 6];
+  const ESPERADA = 4;
+
+  const numeros = FAIXA.map((c) => ({ c, v: numQueops(cel(linha, c)) })).filter(
+    (x): x is { c: number; v: number } => x.v !== null
+  );
+  numeros.sort((a, b) => Math.abs(a.c - ESPERADA) - Math.abs(b.c - ESPERADA));
+  const achado = numeros[0] ?? null;
+
+  // Sem número na faixa: cortesia e consumo interno saem sem valor no ERP.
+  // Mantém a leitura por posição, que é a que sempre funcionou nesses casos.
+  if (!achado) {
+    return {
+      total: null,
+      atendente: normalizarAtendente(cel(linha, 3)),
+      formaPag: cel(linha, 5) || null,
+    };
+  }
+
+  const textos = FAIXA.map((c) => ({ c, v: cel(linha, c) })).filter(
+    (x) => x.v !== "" && numQueops(x.v) === null
+  );
+
+  return {
+    total: achado.v,
+    atendente: normalizarAtendente(textos.find((t) => t.c < achado.c)?.v ?? ""),
+    formaPag: textos.find((t) => t.c > achado.c)?.v ?? null,
+  };
+}
+
 export function parseQueops(m: Matriz): {
   pedidos: PedidoNormalizado[];
   rejeitadas: Rejeitada[];
@@ -253,7 +306,7 @@ export function parseQueops(m: Matriz): {
 
     if (/^\d{6,}$/.test(c0)) {
       const data = dataQueops(cel(linha, 1));
-      const total = numQueops(cel(linha, 4));
+      const { total, atendente, formaPag } = lerCabecalhoPedido(linha);
       if (!cliente) {
         rejeitadas.push({ linha: num, motivo: `pedido ${c0} sem cliente acima` });
         atual = null;
@@ -270,8 +323,8 @@ export function parseQueops(m: Matriz): {
         clienteNome: cliente,
         codigoCliente: clienteCodigo,
         total: total ?? 0,
-        formaPag: cel(linha, 5) || null,
-        atendente: normalizarAtendente(cel(linha, 3)),
+        formaPag,
+        atendente,
         itens: [],
       };
       pedidos.push(atual);
@@ -303,16 +356,40 @@ export function conferirSomas(pedidos: PedidoNormalizado[]): {
   conferem: number;
   semValor: number;
   divergem: { pedido: string; cliente: string; total: number; itens: number }[];
+  /** Valor zero MAS com itens somando dinheiro — é coluna deslizada, não cortesia. */
+  zeradosComItens: { pedido: string; cliente: string; itens: number }[];
 } {
   let conferem = 0;
   let semValor = 0;
   const divergem: { pedido: string; cliente: string; total: number; itens: number }[] = [];
+  const zeradosComItens: { pedido: string; cliente: string; itens: number }[] = [];
   for (const p of pedidos) {
     if (p.itens.length === 0) continue;
     // Cortesia, consumo interno, degustação e descarte saem com valor zero no
     // ERP de propósito. Não são erro de leitura — só não entram na conferência.
+    //
+    // Mas zero COM itens somando dinheiro não é cortesia: é o valor lido da
+    // coluna errada. Esta conferência existe pra pegar coluna deslizada e
+    // passava reto justamente quando o deslize zerava o total — o caso que ela
+    // deveria pegar era o único que ela ignorava. Foi assim que 7 vendas de
+    // 08 e 09/09 entraram como R$ 0,00 e sumiram da carteira.
     if (p.total === 0) {
-      semValor++;
+      // "Cortesia" é a marca explícita do ERP pra brinde, degustação e consumo
+      // interno: total zero com itens precificados é o normal deles, e são
+      // dezenas. Sem esta exceção o aviso dispararia em toda importação e
+      // viraria ruído — aviso que grita sempre não é lido quando importa.
+      // É o mesmo critério do eh_valido no banco.
+      const cortesia = (p.formaPag ?? "") === "Cortesia";
+      const soma = p.itens.reduce((s, i) => s + (i.valor ?? 0), 0);
+      if (!cortesia && soma > 0.02) {
+        zeradosComItens.push({
+          pedido: p.pedido,
+          cliente: p.clienteNome,
+          itens: Number(soma.toFixed(2)),
+        });
+      } else {
+        semValor++;
+      }
       continue;
     }
     const soma = p.itens.reduce((s, i) => s + (i.valor ?? 0), 0);
@@ -325,7 +402,7 @@ export function conferirSomas(pedidos: PedidoNormalizado[]): {
         itens: Number(soma.toFixed(2)),
       });
   }
-  return { conferem, semValor, divergem };
+  return { conferem, semValor, divergem, zeradosComItens };
 }
 
 
