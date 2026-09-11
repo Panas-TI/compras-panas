@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { formatCurrencyBRL } from "@/lib/utils";
+import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
+import { coberturaVendas } from "./cobertura";
 
 /** Meta semanal da empresa — conta toda venda, não só a provocada por contato. */
 const META_SEMANAL = 45000;
@@ -24,6 +25,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
  */
 export async function PlacarMeta() {
   const supabase = await createClient();
+  const cobertura = await coberturaVendas();
   const hoje = new Date();
   const inicio = segundaDa(hoje);
   const fim = new Date(inicio);
@@ -78,6 +80,23 @@ export async function PlacarMeta() {
               de {formatCurrencyBRL(META_SEMANAL)}
             </span>
           </p>
+          {/* Sem isto o placar anuncia o total da semana como se a semana
+              estivesse inteira aqui. Quem comparasse com o ERP acharia que o
+              sistema perde venda — foi o que aconteceu: R$ 32.449,95 lá contra
+              R$ 22.774,45 aqui, e a diferença era um dia que nunca chegou. */}
+          {cobertura.ate && (
+            <p className="text-xs text-zinc-500">
+              dados até <strong className="text-zinc-700">{formatDateBR(cobertura.ate)}</strong>
+              {cobertura.diasEmFalta.length > 0 && (
+                <span className="text-amber-700">
+                  {" "}
+                  · {cobertura.diasEmFalta.length === 1
+                    ? `${formatDateBR(cobertura.diasEmFalta[0])} ainda não entrou`
+                    : `${cobertura.diasEmFalta.length} dias úteis ainda não entraram`}
+                </span>
+              )}
+            </p>
+          )}
         </div>
         <div className="text-right text-sm">
           {bateu ? (

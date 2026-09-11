@@ -330,6 +330,24 @@ function PreviaImport({
         {/* Dia pulado some para sempre e ninguém percebe: o sistema só enxerga o
             que chegou, nunca o que faltou. Com importação diária isso deixa de
             ser exceção e vira rotina, então precisa gritar. */}
+        {/* O arquivo não alcança hoje. Pedir "de terça até hoje" e receber um
+            arquivo de um dia só era invisível: importava, dizia "16 novos", e
+            o placar ficava abaixo do ERP sem ninguém saber por quê. */}
+        {previa.diasNaoCobertos.length > 0 && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <strong>
+              ⚠ Este arquivo não traz{" "}
+              {previa.diasNaoCobertos.map((d) => formatDateBR(d)).join(", ")}
+            </strong>{" "}
+            — ele termina em {formatDateBR(previa.periodo!.fim)}.
+            <p className="mt-1">
+              Pode ser normal, se a venda desse dia ainda não foi lançada no ERP. Mas se você
+              pediu a exportação até hoje, o arquivo veio curto: o placar da semana vai ficar
+              abaixo do que o ERP mostra.
+            </p>
+          </div>
+        )}
+
         {previa.diasFaltando.length > 0 && (
           <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
             <strong>

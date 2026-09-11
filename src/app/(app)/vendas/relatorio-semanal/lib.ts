@@ -451,3 +451,25 @@ export function diasFaltando(ultimaNoSistema: string | null, inicioDoArquivo: st
   }
   return faltando;
 }
+
+/**
+ * Dias úteis que o arquivo NÃO cobre, do fim dele até hoje.
+ *
+ * `diasFaltando` olha o buraco ANTES do arquivo — dia que ninguém importou. O
+ * buraco depois é outro erro e passava em branco: pedir "de terça até hoje" no
+ * ERP e receber um arquivo de um dia só. A importação dizia "16 novos", tudo
+ * verde, e o placar da semana ficava R$ 9.675,50 abaixo do ERP sem explicação.
+ */
+export function diasAposArquivo(fimDoArquivo: string, hoje: string): string[] {
+  if (fimDoArquivo >= hoje) return [];
+  const out: string[] = [];
+  const d = new Date(fimDoArquivo + "T12:00:00Z");
+  const fim = new Date(hoje + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + 1);
+  while (d <= fim) {
+    const w = d.getUTCDay();
+    if (w !== 0 && w !== 6) out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
+}

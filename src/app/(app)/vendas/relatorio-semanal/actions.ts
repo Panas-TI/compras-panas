@@ -6,6 +6,7 @@ import { PAPEIS_ESCRITA } from "../guard";
 import {
   coberturaPorDia,
   diasFaltando,
+  diasAposArquivo,
   normalizar,
   type PedidoNormalizado,
   type Rejeitada,
@@ -34,6 +35,8 @@ export type ResultadoImport = {
     cobertura: { data: string; pedidos: number; valor: number }[];
     /** Dias úteis entre a última venda registrada e o início do arquivo. */
     diasFaltando: string[];
+    /** Dias úteis entre o fim do arquivo e hoje — o que o arquivo não traz. */
+    diasNaoCobertos: string[];
     ultimaNoSistema: string | null;
     porAtendente: { atendente: string; pedidos: number; valor: number }[];
   };
@@ -243,6 +246,9 @@ export async function analisarImportacaoAction(
       })),
       cobertura: coberturaPorDia(pedidos),
       diasFaltando: datas.length ? diasFaltando(ultimaNoSistema, datas[0]) : [],
+      diasNaoCobertos: datas.length
+        ? diasAposArquivo(datas[datas.length - 1], new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }))
+        : [],
       ultimaNoSistema,
       porAtendente: Array.from(atend.entries())
         .map(([atendente, d]) => ({ atendente, ...d }))

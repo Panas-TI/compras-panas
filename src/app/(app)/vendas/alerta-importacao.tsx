@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { coberturaVendas } from "./cobertura";
+import { formatDateBR } from "@/lib/utils";
 
 /** A partir desta hora, a venda de ontem já devia estar no sistema. */
 const HORA_LIMITE = 10;
@@ -26,6 +28,11 @@ export async function AlertaImportacao() {
     .maybeSingle();
 
   if (!ultima?.importado_em) return null;
+
+  // A hora da importação não diz até onde os dados vão: o arquivo de hoje pode
+  // cobrir só ontem. Sem a cobertura, importar às 12h com um arquivo de um dia
+  // só deixava o aviso quieto e o placar pela metade.
+  const cobertura = await coberturaVendas();
 
   const agora = new Date();
   const quando = new Date(ultima.importado_em);
@@ -60,6 +67,18 @@ export async function AlertaImportacao() {
       </strong>{" "}
       — última importação em {dataBR} às {horaBR}
       {ultima.importado_por ? ` por ${ultima.importado_por}` : ""}.
+      {cobertura.ate && (
+        <p className="mt-1">
+          Os números vão até <strong>{formatDateBR(cobertura.ate)}</strong>
+          {cobertura.diasEmFalta.length > 0 && (
+            <>
+              {" "}
+              — faltam {cobertura.diasEmFalta.map((d) => formatDateBR(d)).join(", ")}
+            </>
+          )}
+          .
+        </p>
+      )}
       <p className="mt-1">
         A fila de hoje está apontando cliente que já comprou, e o placar da meta está
         incompleto.{" "}
