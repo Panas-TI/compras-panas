@@ -37,7 +37,16 @@ export type ResultadoImport = {
     itensNovos: number;
     periodo: { inicio: string; fim: string } | null;
     valorTotal: number;
-    amostra: { pedido: string; data: string; cliente: string; total: number; novo: boolean }[];
+    /** Os pedidos que vão entrar, um por um — pra conferir cliente a cliente antes de gravar. */
+    novosLista: {
+      pedido: string;
+      data: string;
+      cliente: string;
+      clienteNovo: boolean;
+      atendente: string | null;
+      formaPag: string | null;
+      total: number;
+    }[];
     /** Pedidos e valor por dia — pra ver de bate-pronto se algum dia veio torto. */
     cobertura: { data: string; pedidos: number; valor: number }[];
     /** Dias úteis entre a última venda registrada e o início do arquivo. */
@@ -264,13 +273,20 @@ export async function analisarImportacaoAction(
       itensNovos: novos.reduce((s, p) => s + p.itens.length, 0),
       periodo: datas.length ? { inicio: datas[0], fim: datas[datas.length - 1] } : null,
       valorTotal: novos.reduce((s, p) => s + p.total, 0),
-      amostra: pedidos.slice(0, 8).map((p) => ({
-        pedido: p.pedido,
-        data: p.data,
-        cliente: p.clienteNome,
-        total: p.total,
-        novo: !existentes.has(p.pedido),
-      })),
+      // Teto só pra não estourar a resposta num arquivo gigante; a importação do
+      // dia a dia traz algumas dezenas. O total real vai em pedidosNovos.
+      novosLista: [...novos]
+        .sort((a, b) => a.data.localeCompare(b.data) || a.pedido.localeCompare(b.pedido))
+        .slice(0, 500)
+        .map((p) => ({
+          pedido: p.pedido,
+          data: p.data,
+          cliente: p.clienteNome,
+          clienteNovo: !acharCliente(p, idx),
+          atendente: p.atendente,
+          formaPag: p.formaPag,
+          total: p.total,
+        })),
       cobertura: coberturaPorDia(pedidos),
       diasFaltando: datas.length ? diasFaltando(ultimaNoSistema, datas[0]) : [],
       // Até ONTEM, não até hoje: a exportação só traz pedido finalizado, então

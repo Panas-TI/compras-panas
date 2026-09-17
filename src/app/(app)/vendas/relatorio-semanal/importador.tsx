@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { TabelaPedidosNovos } from "./tabela-pedidos-novos";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import {
   CAMPOS_IMPORT,
@@ -473,6 +474,22 @@ function PreviaImport({
           <Kpi rotulo="Valor dos novos" valor={formatCurrencyBRL(previa.valorTotal)} />
         </div>
 
+        {/* Logo abaixo do "Pedidos novos": o número e a lista que o compõe lado
+            a lado, pra conferir antes de confirmar. */}
+        {previa.novosLista.length > 0 && (
+          <details open className="flex flex-col gap-2">
+            <summary className="cursor-pointer text-sm font-medium text-zinc-800">
+              Quais são os {previa.pedidosNovos} pedidos novos{" "}
+              <span className="font-normal text-zinc-500">
+                — confira se são os que você esperava antes de confirmar
+              </span>
+            </summary>
+            <div className="mt-2">
+              <TabelaPedidosNovos linhas={previa.novosLista} totalPedidos={previa.pedidosNovos} />
+            </div>
+          </details>
+        )}
+
         {previa.cobertura.length > 0 && (
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
@@ -588,42 +605,6 @@ function PreviaImport({
             </p>
           </div>
         )}
-
-        <div>
-          <p className="mb-1 text-xs font-medium text-zinc-500">Amostra do que foi lido</p>
-          <div className="overflow-x-auto rounded-md border border-zinc-200">
-            <table className="w-full text-sm">
-              <thead className="bg-zinc-50 text-left text-xs text-zinc-500">
-                <tr>
-                  <th className="px-2 py-1.5">Pedido</th>
-                  <th className="px-2 py-1.5">Data</th>
-                  <th className="px-2 py-1.5">Cliente</th>
-                  <th className="px-2 py-1.5 text-right">Total</th>
-                  <th className="px-2 py-1.5">Situação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {previa.amostra.map((a) => (
-                  <tr key={a.pedido} className="border-t border-zinc-100">
-                    <td className="px-2 py-1.5 font-mono text-xs">{a.pedido}</td>
-                    <td className="whitespace-nowrap px-2 py-1.5">{formatDateBR(a.data)}</td>
-                    <td className="px-2 py-1.5">{a.cliente}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums">
-                      {formatCurrencyBRL(a.total)}
-                    </td>
-                    <td className="px-2 py-1.5 text-xs">
-                      {a.novo ? (
-                        <span className="text-emerald-700">novo</span>
-                      ) : (
-                        <span className="text-zinc-400">já existe</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
         <div className="flex flex-wrap gap-2">
           <Button onClick={onConfirmar} disabled={pendente || nada}>

@@ -3,6 +3,7 @@ import { Importador } from "./importador";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateBR } from "@/lib/utils";
 import type { Mapeamento } from "./lib";
+import { TabelaPedidosNovos, type LinhaPedidoNovo } from "./tabela-pedidos-novos";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,40 @@ export default async function RelatorioSemanalPage() {
     : null;
   const ultimaVenda = ultimoPedido?.data ?? null;
 
+  // Pedidos novos da ÚLTIMA importação. Não há tabela nova: cada pedido já é
+  // gravado com o id da importação que o trouxe (pedido atualizado mantém o id
+  // de origem, então só entram aqui os que ela de fato criou). Por isso a lista
+  // é sempre só da última, sem acumular histórico.
+  let novosDaUltima: LinhaPedidoNovo[] = [];
+  if (ultimaImportacao) {
+    const { data: ped } = await supabase
+      .from("vendas_pedidos")
+      .select("pedido, data, total, forma_pag, atendente, eh_valido, cliente:vendas_clientes(id, nome)")
+      .eq("importacao_id", ultimaImportacao.id)
+      .order("data")
+      .order("pedido")
+      .limit(1000);
+    novosDaUltima = (ped ?? []).map((p) => ({
+      pedido: String(p.pedido),
+      data: String(p.data),
+      cliente: p.cliente?.nome ?? "(cliente não encontrado)",
+      clienteId: p.cliente?.id ?? null,
+      atendente: p.atendente,
+      formaPag: p.forma_pag,
+      total: Number(p.total),
+      conta: !!p.eh_valido,
+    }));
+  }
+  const quandoUltima = ultimaImportacao
+    ? new Date(ultimaImportacao.importado_em).toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -92,6 +127,34 @@ export default async function RelatorioSemanalPage() {
             Só admin e vendas podem importar. Você pode consultar o histórico abaixo.
           </CardContent>
         </Card>
+      )}
+
+      {ultimaImportacao && (
+        <div className="flex flex-col gap-2">
+          <div>
+            <h2 className="text-sm font-semibold">Pedidos novos da última importação</h2>
+            <p className="text-xs text-zinc-500">
+              {quandoUltima}
+              {ultimaImportacao.importado_por ? ` por ${ultimaImportacao.importado_por}` : ""}
+              {ultimaImportacao.arquivo_nome ? ` · ${ultimaImportacao.arquivo_nome}` : ""}
+              {/* Sem "já existiam": o registro guarda só os que ficaram iguais
+                  (pedidos_ignorados), não os que foram corrigidos. Na importação
+                  de 17/09 a prévia disse "17 já existiam" e o registro tinha 5 —
+                  as duas certas, medindo coisas diferentes. Mostrar o 5 aqui
+                  desmentiria a prévia que a pessoa acabou de conferir. */}
+            </p>
+          </div>
+          {novosDaUltima.length > 0 ? (
+            <TabelaPedidosNovos
+              linhas={novosDaUltima}
+              totalPedidos={ultimaImportacao.pedidos_novos ?? undefined}
+            />
+          ) : (
+            <p className="rounded-md border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-500">
+              A última importação não trouxe pedido novo — só conferiu ou corrigiu os que já existiam.
+            </p>
+          )}
+        </div>
       )}
 
       <div>
