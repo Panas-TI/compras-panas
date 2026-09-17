@@ -97,6 +97,19 @@ async function pedidosExistentes(
   return achados;
 }
 
+/**
+ * A leitura nova zeraria uma venda que hoje conta?
+ *
+ * Reimportar serve pra corrigir pedido que mudou no ERP — nunca pra apagar
+ * venda. Em 15/09 um arquivo com o valor fora de lugar regravou o 22311604
+ * (R$ 1.254,15) como zero por cima de uma correção feita à mão, e a venda
+ * sumiu da carteira de novo. Valor zero legítimo é cortesia, e cortesia vem
+ * marcada.
+ */
+function zeraVenda(velho: PedidoGravado, novo: PedidoNormalizado): boolean {
+  return velho.total > 0 && novo.total === 0 && (novo.formaPag ?? "") !== "Cortesia";
+}
+
 /** Centavos batem? Comparação de dinheiro nunca por igualdade de float. */
 const mesmoValor = (a: number, b: number) => Math.round(a * 100) === Math.round(b * 100);
 
@@ -216,6 +229,13 @@ export async function analisarImportacaoAction(
   for (const p of pedidos) {
     const velho = existentes.get(p.pedido);
     if (!velho) continue;
+    if (zeraVenda(velho, p)) {
+      rejeitadas.push({
+        linha: 0,
+        motivo: `pedido ${p.pedido}: o arquivo traz valor zero para uma venda de R$ ${velho.total.toFixed(2)} — mantido como está`,
+      });
+      continue;
+    }
     const d = diferencas(velho, p);
     if (d.length > 0) {
       pedidosAlterados.push({ pedido: p.pedido, de: d.join(" · "), para: "" });
@@ -294,10 +314,19 @@ export async function gravarImportacaoAction(
 
   // Pedido em aberto muda de valor até fechar. Reimportar o mesmo dia corrige
   // o que mudou em vez de deixar congelado o número da primeira leitura.
-  const aAtualizar = pedidos.filter((p) => {
+  const aAtualizar: PedidoNormalizado[] = [];
+  for (const p of pedidos) {
     const velho = existentes.get(p.pedido);
-    return velho && diferencas(velho, p).length > 0;
-  });
+    if (!velho) continue;
+    if (zeraVenda(velho, p)) {
+      rejeitadas.push({
+        linha: 0,
+        motivo: `pedido ${p.pedido}: o arquivo traz valor zero para uma venda de R$ ${velho.total.toFixed(2)} — mantido como está`,
+      });
+      continue;
+    }
+    if (diferencas(velho, p).length > 0) aAtualizar.push(p);
+  }
 
   if (novos.length === 0 && aAtualizar.length === 0) {
     return { error: "Todos os pedidos do arquivo já estavam no sistema, sem nenhuma alteração." };
@@ -354,7 +383,10 @@ export async function gravarImportacaoAction(
   }
 
   // 2) Registro da importação — vem antes pra cada pedido já nascer vinculado.
-  const datas = (novos.length > 0 ? novos : aAtualizar).map((p) => p.data).sort();
+  // Todos os pedidos que a importação vai TOCAR, não só os novos. Em 15/09 o
+  // registro disse "11 a 15/09" enquanto o mesmo arquivo reescrevia pedidos de
+  // 09/09 — e ninguém tinha como saber que semanas passadas foram mexidas.
+  const datas = [...novos, ...aAtualizar].map((p) => p.data).sort();
   const { data: imp, error: impErr } = await supabase
     .from("vendas_importacoes")
     .insert({
@@ -442,7 +474,19 @@ export async function gravarImportacaoAction(
     // Os itens do pedido são regravados: se o valor mudou, a composição mudou
     // junto, e item velho sobrando estragaria o "costuma levar".
     if (p.itens.length > 0) {
-      await supabase.from("vendas_itens").delete().eq("pedido", p.pedido);
+      const { error: dErr } = await supabase.from("vendas_itens").delete().eq("pedido", p.pedido);
+      if (dErr) return abortar(`Erro apagando os itens antigos do pedido ${p.pedido}: ${dErr.message}`);
+      // Delete bloqueado por RLS não dá erro — apaga zero linhas em silêncio. Foi
+      // assim que 38 pedidos acumularam itens em dobro. Confere antes de gravar.
+      const { count: sobraram } = await supabase
+        .from("vendas_itens")
+        .select("id", { count: "exact", head: true })
+        .eq("pedido", p.pedido);
+      if ((sobraram ?? 0) > 0) {
+        return abortar(
+          `Não foi possível substituir os itens do pedido ${p.pedido}: gravar por cima duplicaria os produtos. Nada foi alterado neste pedido.`
+        );
+      }
       const itens = p.itens.map((it) => ({
         pedido: p.pedido,
         produto: it.produto,

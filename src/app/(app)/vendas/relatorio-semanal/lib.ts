@@ -291,6 +291,14 @@ export function lerLayout(linha: unknown[]): LayoutQueops {
   return novo;
 }
 
+/** Cabeçalho que o relatório repete a cada página. Não é pedido nem item. */
+function ehLinhaDePagina(linha: unknown[]): boolean {
+  const c0 = cel(linha, 0).toLowerCase();
+  if (/^(sistema que|relat[oó]rio|filtros)/.test(c0)) return true;
+  // "Data/Hora" sem dois-pontos é título de coluna da tabela — esse fica.
+  return linha.some((_, c) => /^(p[aá]gina\s+\d+|data\/hora\s*:)/i.test(cel(linha, c)));
+}
+
 /** "4:50:09 PM", "16:22", "6:46:28" — coluna de horário, nunca produto. */
 function ehHora(s: string): boolean {
   return /^\d{1,2}:\d{2}(:\d{2})?(\s*[AP]\.?M\.?)?$/i.test(s.trim());
@@ -377,7 +385,15 @@ export function lerCabecalhoPedido(
 
   // Rede de segurança: a coluna que o cabeçalho aponta veio vazia. Procura o
   // número em volta em vez de gravar zero e apagar a venda do sistema.
-  const FAIXA = [layout.valorPedido - 1, layout.valorPedido, layout.valorPedido + 1, layout.valorPedido + 2];
+  //
+  // A faixa vai da coluna 2 até a "Vlr." (forma + 2), não só uma casa pra cada
+  // lado. Em 15/09 o pedido 22311604 veio com o valor na coluna 3 num bloco cujo
+  // cabeçalho dizia coluna 5 — duas casas pra trás. A faixa curta não alcançava,
+  // e a venda de R$ 1.254,15 foi regravada como zero por cima da correção.
+  // Para antes de Produção/Entrega/Tempo, que são horários, e muito antes dos
+  // itens — senão a quantidade de um item viraria o total do pedido.
+  const FAIXA: number[] = [];
+  for (let c = 2; c <= layout.forma + 2; c++) FAIXA.push(c);
   const ESPERADA = layout.valorPedido;
 
   const numeros = FAIXA.map((c) => ({ c, v: numQueops(cel(linha, c)) })).filter(
@@ -397,7 +413,7 @@ export function lerCabecalhoPedido(
   }
 
   const textos = FAIXA.map((c) => ({ c, v: cel(linha, c) })).filter(
-    (x) => x.v !== "" && numQueops(x.v) === null
+    (x) => x.v !== "" && numQueops(x.v) === null && !ehHora(x.v)
   );
 
   return {
@@ -422,6 +438,13 @@ export function parseQueops(m: Matriz): {
   m.forEach((linha, i) => {
     const num = i + 1;
     const c0 = cel(linha, 0);
+
+    // Quebra de página no meio dos itens de um pedido. O relatório reimprime
+    // "Sistema Queóps … Data/Hora :15/09/2026" e "Relatório Histórico … Página 5",
+    // e o texto dessas linhas cai justo na coluna de produto: entravam como
+    // itens do pedido que estava sendo lido. Pula sem mexer em nada — o pedido
+    // continua na página seguinte.
+    if (ehLinhaDePagina(linha)) return;
 
     if (c0.toUpperCase().startsWith("CLIENTE")) {
       // col 2 traz "50.695.322 FULANO DE TAL" ou só "EMPRESA LTDA".
