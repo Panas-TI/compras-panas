@@ -21,10 +21,17 @@ export function RotasHoje({ hoje }: { hoje: string }) {
   const fimDeSemana = dia > 5;
 
   const linhas: { rota: Rota; texto: string; bom: boolean }[] = (
-    ["poa", "caminho_serra", "serra"] as Rota[]
+    ["poa", "caminho_serra", "serra", "litoral"] as Rota[]
   ).map((r) => {
     const rec = recadoDoDia(r, hoje);
-    return { rota: r, texto: rec.texto.replace("fechando hoje, chega ", ""), bom: rec.bom };
+    return {
+      rota: r,
+      // Rota sem dia fixo não entra na frase "fechando hoje chega X".
+      texto: ROTAS[r].sobDemanda
+        ? "a combinar"
+        : rec.texto.replace("fechando hoje, chega ", ""),
+      bom: rec.bom,
+    };
   });
 
   return (
@@ -90,7 +97,7 @@ export function RotasHoje({ hoje }: { hoje: string }) {
         </div>
 
         <ul className="flex flex-col gap-1 text-zinc-600">
-          {(["poa", "caminho_serra", "serra"] as Rota[]).map((r) => (
+          {(["poa", "caminho_serra", "serra", "litoral"] as Rota[]).map((r) => (
             <li key={r}>
               <span
                 className={`mr-1 inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${ROTAS[r].classe}`}
@@ -99,7 +106,9 @@ export function RotasHoje({ hoje }: { hoje: string }) {
               </span>
               <strong className="text-zinc-800">{ROTAS[r].rotulo}</strong> — {ROTAS[r].desc}
               <span className="ml-1 text-xs text-zinc-400">
-                ({ROTAS[r].dias.map((d) => DIAS_CURTO[d]).join(", ")})
+                ({ROTAS[r].sobDemanda
+                  ? "sem dia fixo"
+                  : ROTAS[r].dias.map((d) => DIAS_CURTO[d]).join(", ")})
               </span>
             </li>
           ))}

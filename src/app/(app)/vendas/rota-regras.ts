@@ -7,11 +7,19 @@
  * recalcula prazo por conta própria.
  */
 
-export type Rota = "poa" | "caminho_serra" | "serra" | "a_definir";
+export type Rota = "poa" | "caminho_serra" | "serra" | "litoral" | "a_definir";
 
 export const ROTAS: Record<
   Rota,
-  { rotulo: string; curto: string; desc: string; dias: number[]; classe: string }
+  {
+    rotulo: string;
+    curto: string;
+    desc: string;
+    dias: number[];
+    classe: string;
+    /** Não há dia fixo: a data se combina pedido a pedido. */
+    sobDemanda?: boolean;
+  }
 > = {
   poa: {
     rotulo: "Porto Alegre",
@@ -33,6 +41,16 @@ export const ROTAS: Record<
     desc: "só quinta-feira — Gramado, Canela e região",
     dias: [4],
     classe: "bg-violet-100 text-violet-900 border-violet-300",
+  },
+  litoral: {
+    rotulo: "Litoral",
+    curto: "Litoral",
+    desc: "sem dia fixo — a viagem é combinada pedido a pedido",
+    // Dias úteis só para o cálculo não cair em sábado; a data real é combinada,
+    // e por isso a tela não promete dia nenhum (ver `sobDemanda`).
+    dias: [1, 2, 3, 4, 5],
+    sobDemanda: true,
+    classe: "bg-cyan-50 text-cyan-900 border-cyan-200",
   },
   a_definir: {
     rotulo: "Rota a definir",
@@ -129,6 +147,18 @@ export type Recado = {
  */
 export function recadoDoDia(rota: Rota, hoje: string): Recado {
   const entrega = proximaEntrega(rota, hoje);
+
+  // Rota sem dia fixo não pode virar promessa. Dizer "chega amanhã" para o
+  // Litoral seria inventar uma viagem que só existe quando é combinada — pior
+  // do que não informar, porque o cliente ouve isso no telefone.
+  if (ROTAS[rota].sobDemanda) {
+    return {
+      entrega,
+      emDias: 0,
+      bom: true,
+      texto: "entrega no Litoral é sob demanda — combine a data ao fechar o pedido",
+    };
+  }
   const emDias = Math.round(
     (comoData(entrega).getTime() - comoData(hoje).getTime()) / 86_400_000
   );
