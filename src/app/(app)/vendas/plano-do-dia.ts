@@ -162,7 +162,14 @@ export async function montarPlanoDoDia(): Promise<{
   // só na sexta, e no rodapé "fora da lista" dizendo "volta em quinta". Toda
   // promessa nascia um dia atrasada.
   const idsRetorno = Array.from(ultimoCombinado.entries())
-    .filter(([, v]) => v.adiar_ate <= hoje)
+    // Quem foi falado HOJE não volta hoje.
+    //
+    // Um contato registrado hoje com retorno marcado para hoje caía nas duas
+    // pontas: silenciado na fila natural e trazido de volta como "retorno
+    // combinado", no mesmo dia da conversa. O cartão aparecia com o selo
+    // "✓ falado hoje" pedindo para ligar de novo. A data de retorno diz quando
+    // voltar; nunca pode significar "agora de novo".
+    .filter(([, v]) => v.adiar_ate <= hoje && diaEmSP(v.criado_em) !== hoje)
     .map(([id]) => id);
 
   const retornos: ClienteDoPlano[] = [];

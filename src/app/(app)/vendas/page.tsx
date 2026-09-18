@@ -79,7 +79,6 @@ export default async function VendasHojePage() {
                                telefone_presumido, canal_preferido)`
     )
     .eq("resultado", "sem_resposta")
-    .gt("adiar_ate", hoje)
     .gte("criado_em", inicioDoDiaSP(hojeMais(-TETO_BANDEJA_DIAS)))
     .order("criado_em", { ascending: false })
     .limit(200);
@@ -105,6 +104,11 @@ export default async function VendasHojePage() {
     const jaVisto = new Set<string>();
     for (const c of candidatos) {
       if (!c.cliente_id || jaVisto.has(c.cliente_id) || !c.cliente?.ativo) continue;
+      // Fica na bandeja enquanto o retorno não vence OU enquanto for de hoje.
+      // O filtro era só `adiar_ate > hoje`: um contato feito hoje com retorno
+      // marcado para hoje não caía aqui nem na fila — sumia das duas.
+      const deHoje = diaEmSP(String(c.criado_em)) === hoje;
+      if (!deHoje && String(c.adiar_ate ?? "") <= hoje) continue;
       jaVisto.add(c.cliente_id);
       if (maisNovo.get(c.cliente_id) !== String(c.criado_em)) continue;
       emAberto.push({
