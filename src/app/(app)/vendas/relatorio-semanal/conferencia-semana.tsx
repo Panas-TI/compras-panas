@@ -56,7 +56,8 @@ export async function ConferenciaSemana() {
       <div className="border-b border-zinc-100 px-4 py-3">
         <h2 className="text-sm font-semibold">Conferência com o Queóps</h2>
         <p className="text-xs text-zinc-500">
-          Semana de {formatDateBR(inicio)} a {formatDateBR(fim)}
+          Semana de {formatDateBR(inicio)} a {formatDateBR(fim)} · por{" "}
+          <strong className="font-medium text-zinc-700">data de lançamento</strong> do pedido
         </p>
       </div>
 
@@ -104,7 +105,8 @@ export async function ConferenciaSemana() {
 
       <div className="border-t border-zinc-100 px-4 py-3 text-sm">
         <p className="text-zinc-700">
-          Para conferir, filtre no Queóps de <strong>{formatDateBR(inicio)}</strong> a{" "}
+          Para conferir, filtre no Queóps <strong>por data de lançamento</strong>, de{" "}
+          <strong>{formatDateBR(inicio)}</strong> a{" "}
           <strong>{formatDateBR(ultimoDia ?? inicio)}</strong>. Deve dar{" "}
           <strong className="tabular-nums">{formatCurrencyBRL(totalValor)}</strong>
           {foraDaConta > 0 && (
@@ -116,10 +118,19 @@ export async function ConferenciaSemana() {
           )}
           .
         </p>
+        {/* A régua é outra, e é isso que explica a maior parte das diferenças:
+            o relatório do Queóps só traz a data de lançamento, nunca a de
+            entrega. Pedido lançado numa semana e entregue na seguinte conta em
+            semanas diferentes conforme quem está olhando. */}
+        <p className="mt-1 text-zinc-500">
+          Se o Queóps for filtrado por <strong>data de entrega</strong>, o valor vai ser outro:
+          pedido lançado semana passada para entregar nesta semana conta lá, e aqui entra na semana
+          do lançamento. A exportação não traz a data de entrega, só a de lançamento.
+        </p>
         {cobertura.faltaHoje && (
           <p className="mt-1 text-zinc-500">
-            Se você comparar incluindo <strong>hoje</strong>, o Queóps vai mostrar mais: os pedidos
-            de hoje só entram no relatório depois de finalizados, e chegam na importação de amanhã.
+            Pedidos lançados <strong>hoje</strong> entram na importação de amanhã, porque a
+            exportação só traz pedido finalizado.
           </p>
         )}
         {cobertura.diasEmFalta.length > 0 && (

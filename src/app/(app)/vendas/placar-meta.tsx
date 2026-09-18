@@ -86,7 +86,8 @@ export async function PlacarMeta() {
               R$ 22.774,45 aqui, e a diferença era um dia que nunca chegou. */}
           {cobertura.ate && (
             <p className="text-xs text-zinc-500">
-              dados até <strong className="text-zinc-700">{formatDateBR(cobertura.ate)}</strong>
+              por data de lançamento · até{" "}
+              <strong className="text-zinc-700">{formatDateBR(cobertura.ate)}</strong>
               {/* Hoje em aberto é o normal — nota, não alarme. Dia anterior
                   faltando é atraso de verdade, e aí sim chama atenção. */}
               {cobertura.faltaHoje && cobertura.diasEmFalta.length === 0 && (
