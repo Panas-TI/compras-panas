@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import { coberturaVendas } from "./cobertura";
+import { diaEmSP } from "./contato-regras";
 
 /** Meta semanal da empresa — conta toda venda, não só a provocada por contato. */
 const META_SEMANAL = 45000;
@@ -31,12 +32,56 @@ export async function PlacarMeta() {
   const fim = new Date(inicio);
   fim.setDate(fim.getDate() + 6);
 
-  const { data } = await supabase
-    .from("vendas_pedidos")
-    .select("total, data, atendente")
-    .gte("data", iso(inicio))
-    .lte("data", iso(fim))
-    .eq("eh_valido", true);
+  /**
+   * O mês fecha a leitura que a semana sozinha não dá.
+   *
+   * A semana oscila com feriado e com pedido grande que cai numa quarta; o
+   * acumulado do mês contra o mesmo período do mês anterior mostra se o
+   * movimento é tendência ou oscilação. Comparar com o mês INTEIRO anterior
+   * seria injusto no dia 18 — por isso o corte é no mesmo dia.
+   */
+  const hojeSP = diaEmSP(hoje);
+  const [ano, mes, diaDoMes] = hojeSP.split("-").map(Number);
+  const dd = (n: number) => String(n).padStart(2, "0");
+  const inicioMes = `${ano}-${dd(mes)}-01`;
+  const anteriorEm = new Date(Date.UTC(ano, mes - 2, 1));
+  const anoAnt = anteriorEm.getUTCFullYear();
+  const mesAnt = anteriorEm.getUTCMonth() + 1;
+  const ultimoDiaAnt = new Date(Date.UTC(anoAnt, mesAnt, 0)).getUTCDate();
+  const inicioAnt = `${anoAnt}-${dd(mesAnt)}-01`;
+  const fimAnt = `${anoAnt}-${dd(mesAnt)}-${dd(Math.min(diaDoMes, ultimoDiaAnt))}`;
+
+  const [{ data }, { data: doMes }, { data: doMesAnterior }] = await Promise.all([
+    supabase
+      .from("vendas_pedidos")
+      .select("total, data, atendente")
+      .gte("data", iso(inicio))
+      .lte("data", iso(fim))
+      .eq("eh_valido", true),
+    supabase
+      .from("vendas_pedidos")
+      .select("total")
+      .gte("data", inicioMes)
+      .lte("data", hojeSP)
+      .eq("eh_valido", true)
+      .limit(5000),
+    supabase
+      .from("vendas_pedidos")
+      .select("total")
+      .gte("data", inicioAnt)
+      .lte("data", fimAnt)
+      .eq("eh_valido", true)
+      .limit(5000),
+  ]);
+
+  const vendidoMes = (doMes ?? []).reduce((s, p) => s + Number(p.total ?? 0), 0);
+  const vendidoMesAnterior = (doMesAnterior ?? []).reduce((s, p) => s + Number(p.total ?? 0), 0);
+  const variacao =
+    vendidoMesAnterior > 0
+      ? Math.round(((vendidoMes - vendidoMesAnterior) / vendidoMesAnterior) * 100)
+      : null;
+  const nomeDoMes = (m: number, a: number) =>
+    new Date(Date.UTC(a, m - 1, 1)).toLocaleDateString("pt-BR", { month: "long", timeZone: "UTC" });
 
   const vendido = (data ?? []).reduce((s, p) => s + Number(p.total ?? 0), 0);
   const falta = Math.max(0, META_SEMANAL - vendido);
@@ -106,15 +151,18 @@ export async function PlacarMeta() {
         </div>
         <div className="text-right text-sm">
           {bateu ? (
-            <p className="font-medium text-emerald-700">✓ Meta batida</p>
+            <p className="font-medium text-emerald-700">Meta semanal atingida</p>
           ) : (
             <>
               <p className="text-zinc-600">
-                faltam <strong className="tabular-nums text-zinc-900">{formatCurrencyBRL(falta)}</strong>
+                Faltam{" "}
+                <strong className="tabular-nums text-zinc-900">{formatCurrencyBRL(falta)}</strong>{" "}
+                para a meta semanal
               </p>
               <p className="text-xs text-zinc-500">
-                {uteis} {uteis === 1 ? "dia útil" : "dias úteis"} · ~
-                {formatCurrencyBRL(porDia)}/dia · ~{pedidosPorDia} pedidos/dia
+                {uteis} {uteis === 1 ? "dia útil restante" : "dias úteis restantes"} · ritmo
+                necessário de {formatCurrencyBRL(porDia)} por dia, cerca de {pedidosPorDia}{" "}
+                {pedidosPorDia === 1 ? "pedido" : "pedidos"}
               </p>
             </>
           )}
@@ -128,6 +176,29 @@ export async function PlacarMeta() {
           }`}
           style={{ width: `${pct}%` }}
         />
+      </div>
+
+      {/* Acumulado do mês. Vem depois da semana porque a decisão do dia é
+          semanal; o mês serve para saber se o mês está no rumo. */}
+      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-zinc-100 pt-3">
+        <p className="text-sm text-zinc-600">
+          Acumulado de {nomeDoMes(mes, ano)}{" "}
+          <strong className="tabular-nums text-zinc-900">{formatCurrencyBRL(vendidoMes)}</strong>
+          <span className="text-zinc-400"> · {(doMes ?? []).length} pedidos</span>
+        </p>
+        {vendidoMesAnterior > 0 && (
+          <p className="text-xs text-zinc-500">
+            Mesmo período de {nomeDoMes(mesAnt, anoAnt)}: {formatCurrencyBRL(vendidoMesAnterior)}
+            {variacao !== null && (
+              <strong
+                className={variacao >= 0 ? "ml-1 text-emerald-700" : "ml-1 text-amber-700"}
+              >
+                {variacao >= 0 ? "+" : ""}
+                {variacao}%
+              </strong>
+            )}
+          </p>
+        )}
       </div>
 
       {ranking.length > 0 && (
