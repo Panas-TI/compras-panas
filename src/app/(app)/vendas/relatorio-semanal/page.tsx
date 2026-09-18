@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatDateBR } from "@/lib/utils";
 import type { Mapeamento } from "./lib";
 import { TabelaPedidosNovos, type LinhaPedidoNovo } from "./tabela-pedidos-novos";
+import { ConferenciaSemana } from "./conferencia-semana";
 
 export const dynamic = "force-dynamic";
 
@@ -128,6 +129,8 @@ export default async function RelatorioSemanalPage() {
           </CardContent>
         </Card>
       )}
+
+      <ConferenciaSemana />
 
       {ultimaImportacao && (
         <div className="flex flex-col gap-2">
