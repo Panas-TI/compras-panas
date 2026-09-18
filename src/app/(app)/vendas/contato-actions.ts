@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 import { MOTIVO_OUTRO } from "./ui";
-import { calcularAdiarAte, JANELA_EDICAO_DIAS, dentroDaJanela, RESULTADOS } from "./contato-regras";
+import {
+  calcularAdiarAte,
+  JANELA_EDICAO_DIAS,
+  dentroDaJanela,
+  hojeMais,
+  RESULTADOS,
+} from "./contato-regras";
 
 const PAPEIS = ["aprovador", "vendas"];
 
@@ -149,5 +155,50 @@ export async function atualizarContatoAction(input: {
     revalidatePath(`/vendas/prospects/${atual.prospect_id}`);
   }
   revalidatePath("/vendas/contatos");
+  return {};
+}
+
+
+/**
+ * Registrar contato em um clique, sem formulário.
+ *
+ * O fluxo real é: digita a mensagem, manda pro cliente, segue pro próximo. Quem
+ * está mandando vinte mensagens não quer preencher canal, resultado e motivo em
+ * cada uma — e aos 90% que não respondem na hora não há nada a classificar
+ * ainda. O contato nasce como "ainda sem resposta" e o cliente cai na bandeja;
+ * a classificação acontece lá, conforme as respostas chegam.
+ */
+export async function registrarContatoRapidoAction(
+  clienteId: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const g = await guard(supabase);
+  if (g.erro) return { error: g.erro };
+
+  // Clicar duas vezes no mesmo cliente não pode virar dois contatos: o placar
+  // do dia conta cliente falado, e o histórico viraria conversa em duplicata.
+  const { data: jaHoje } = await supabase
+    .from("vendas_contatos")
+    .select("id")
+    .eq("cliente_id", clienteId)
+    .eq("resultado", "sem_resposta")
+    .gte("criado_em", `${hojeMais(0)}T00:00:00-03:00`)
+    .limit(1)
+    .maybeSingle();
+  if (jaHoje) return {};
+
+  const { error } = await supabase.from("vendas_contatos").insert({
+    cliente_id: clienteId,
+    usuario_id: g.userId,
+    // Canal e motivo ficam pra bandeja: aqui ainda não há o que classificar.
+    canal: null,
+    resultado: "sem_resposta",
+    adiar_ate: calcularAdiarAte("sem_resposta", null, null),
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/vendas");
+  revalidatePath("/vendas/clientes");
+  revalidatePath(`/vendas/clientes/${clienteId}`);
   return {};
 }

@@ -9,7 +9,7 @@ import {
   diasTexto,
   recenciaDias,
 } from "./ui";
-import { RegistrarContato } from "./registrar-contato";
+import { RegistrarRapido } from "./registrar-rapido";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertaImportacao } from "./alerta-importacao";
@@ -74,7 +74,7 @@ export default async function VendasHojePage() {
   const { data: candidatos } = await supabase
     .from("vendas_contatos")
     .select(
-      `id, cliente_id, canal, observacao, criado_em,
+      `id, cliente_id, canal, resultado, motivo, observacao, adiar_ate, criado_em,
        cliente:vendas_clientes(id, nome, ativo, telefone_e164, telefone_raw,
                                telefone_presumido, canal_preferido)`
     )
@@ -112,6 +112,10 @@ export default async function VendasHojePage() {
         clienteId: c.cliente.id,
         nome: c.cliente.nome,
         canal: c.canal,
+        resultado: c.resultado ?? "sem_resposta",
+        motivo: c.motivo,
+        adiarAte: c.adiar_ate,
+        criadoEm: String(c.criado_em),
         quando: rotuloQuando(String(c.criado_em)),
         observacao: c.observacao,
         telefone_e164: c.cliente.telefone_e164,
@@ -278,13 +282,11 @@ export default async function VendasHojePage() {
                     presumido={c.telefone_presumido}
                     canal={c.canal_preferido}
                   />
-                  {podeEscrever && (
-                    <RegistrarContato
-                      clienteId={c.id}
-                      nome={c.nome}
-                      intervaloDias={c.intervalo_mediano_dias}
-                    />
-                  )}
+                  {/* Um clique: grava "ainda sem resposta" e manda o cliente
+                      pra bandeja. Classificar canal, resultado e motivo agora,
+                      antes de o cliente responder, era pedir informação que
+                      ainda não existe. */}
+                  {podeEscrever && <RegistrarRapido clienteId={c.id} />}
                 </div>
               </CardContent>
             </Card>

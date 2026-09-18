@@ -250,7 +250,10 @@ export async function montarPlanoDoDia(): Promise<{
 
   return {
     lista,
-    trabalhados: lista.filter((c) => c.trabalhado).length,
+    // Conta quem foi falado hoje, não quem sobrou na lista. Registrar contato
+    // agenda o retorno e tira o cliente da lista — contando pela lista, o
+    // placar ficava em "0 de 55" mesmo depois de um dia inteiro de trabalho.
+    trabalhados: trabalhadosHoje.size,
     totalReativacao: totalReativacao ?? 0,
   };
 }

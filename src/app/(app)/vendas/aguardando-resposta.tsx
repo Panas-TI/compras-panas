@@ -4,12 +4,19 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LinkCliente, Telefone } from "./ui";
 import { atualizarContatoAction } from "./contato-actions";
+import { RegistrarContato } from "./registrar-contato";
+import { CANAIS } from "./contato-regras";
 
 export type EmAberto = {
   id: string;
   clienteId: string;
   nome: string;
   canal: string | null;
+  /** Resultado atual — sempre "sem_resposta" enquanto está na bandeja. */
+  resultado: string;
+  motivo: string | null;
+  adiarAte: string | null;
+  criadoEm: string;
   /** Já formatado no servidor, no fuso de Porto Alegre. */
   quando: string;
   observacao: string | null;
@@ -49,6 +56,17 @@ export function AguardandoResposta({
 
   if (itens.length === 0) return null;
 
+  const mudarCanal = (i: EmAberto, canal: string) => {
+    setErro(null);
+    setMexendo(`${i.id}:canal`);
+    startTransition(async () => {
+      const r = await atualizarContatoAction({ id: i.id, resultado: i.resultado, canal });
+      setMexendo(null);
+      if (r.error) setErro(r.error);
+      else router.refresh();
+    });
+  };
+
   const marcar = (id: string, resultado: string) => {
     setErro(null);
     setMexendo(`${id}:${resultado}`);
@@ -68,8 +86,7 @@ export function AguardandoResposta({
           {itens.length} em aberto
         </span>
         <span className="text-xs text-amber-800/80">
-          respondeu depois? marque aqui — corrige o registro, não cria outro. Dá pra refazer na
-          ficha do cliente.
+          conforme as respostas chegam, classifique aqui — corrige o mesmo registro, não cria outro
         </span>
       </div>
 
@@ -98,8 +115,29 @@ export function AguardandoResposta({
               canal={i.canal_preferido}
             />
 
+            {/* Canal fica aqui porque no momento do disparo não há o que
+                classificar — e depois vira um toque só. Trocar o canal não
+                marca o registro como corrigido: o gatilho só carimba quando o
+                RESULTADO muda. */}
             {podeEscrever && (
-              <div className="flex flex-wrap gap-1.5">
+              <select
+                value={i.canal ?? ""}
+                disabled={pendente && (mexendo?.startsWith(`${i.id}:`) ?? false)}
+                onChange={(e) => mudarCanal(i, e.target.value)}
+                className="h-7 rounded-md border border-amber-300 bg-white px-1.5 text-xs text-zinc-700 disabled:opacity-50"
+                title="Por onde você falou com o cliente"
+              >
+                <option value="">canal…</option>
+                {CANAIS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {podeEscrever && (
+              <div className="flex flex-wrap items-center gap-1.5">
                 {RAPIDOS.map((r) => {
                   // Só o botão clicado vira "salvando", e só a linha dele
                   // trava. Antes os três diziam "..." ao mesmo tempo e todas as
@@ -119,6 +157,22 @@ export function AguardandoResposta({
                     </button>
                   );
                 })}
+                {/* Motivo e observação, quando houver. Abre o mesmo formulário
+                    de sempre, já preenchido, e grava por cima deste contato. */}
+                <RegistrarContato
+                  clienteId={i.clienteId}
+                  nome={i.nome}
+                  rotulo="Detalhar…"
+                  contato={{
+                    id: i.id,
+                    canal: i.canal,
+                    resultado: i.resultado,
+                    motivo: i.motivo,
+                    observacao: i.observacao,
+                    adiar_ate: i.adiarAte,
+                    criado_em: i.criadoEm,
+                  }}
+                />
               </div>
             )}
           </li>
