@@ -159,8 +159,12 @@ export function RegistrarContato({
     <div className="w-full rounded-md border border-zinc-200 bg-zinc-50 p-3">
       <p className="mb-2 text-xs font-medium text-zinc-500">
         {editando ? (
+          // "Contato de", não "Corrigindo": o mesmo formulário serve para
+          // concluir um contato que está aguardando resposta e para corrigir um
+          // desfecho errado. Chamar os dois de correção confunde quem está só
+          // completando o que faltava.
           <>
-            Corrigindo o contato de {ddmm(String(contato.criado_em).slice(0, 10))} com {nome}
+            Contato de {ddmm(String(contato.criado_em).slice(0, 10))} com {nome}
           </>
         ) : (
           <>Contato com {nome}</>
@@ -257,7 +261,7 @@ export function RegistrarContato({
 
       <div className="mt-2 flex gap-2">
         <Button size="sm" onClick={salvar} disabled={salvando}>
-          {salvando ? "Salvando..." : editando ? "Atualizar resposta" : "Salvar"}
+          {salvando ? "Salvando..." : "Salvar"}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setAberto(false)} disabled={salvando}>
           Cancelar
