@@ -21,9 +21,15 @@ export default async function ContatosPage() {
          usuario:profiles(nome),
          cliente:vendas_clientes(id, nome, ultima_compra, ticket_medio)`
       )
+      // Só contatos de CLIENTE. Contato de prospect vive no funil, e apareceria
+      // aqui como "(cliente removido)" — a tela não sabe nada de prospect.
+      .not("cliente_id", "is", null)
       .order("criado_em", { ascending: false })
       .limit(TETO + 1),
-    supabase.from("vendas_contatos").select("id", { count: "exact", head: true }),
+    supabase
+      .from("vendas_contatos")
+      .select("id", { count: "exact", head: true })
+      .not("cliente_id", "is", null),
   ]);
 
   const linhas = (data ?? []).slice(0, TETO) as unknown as LinhaContato[];

@@ -66,7 +66,7 @@ export async function atualizarContatoAction(input: {
 
   const { data: atual, error: errBusca } = await supabase
     .from("vendas_contatos")
-    .select("id, cliente_id, resultado, criado_em")
+    .select("id, cliente_id, prospect_id, resultado, criado_em")
     .eq("id", input.id)
     .maybeSingle();
   if (errBusca) return { error: errBusca.message };
@@ -79,12 +79,19 @@ export async function atualizarContatoAction(input: {
     };
   }
 
-  // Só o mais recente do cliente. Corrigir um contato que já foi sucedido por
+  // O contato agora pode ser de um cliente OU de um prospect — nunca dos dois,
+  // garantido por constraint no banco. A regra do "mais recente" vale para o
+  // dono do contato, seja ele qual for.
+  const alvo: { coluna: "cliente_id" | "prospect_id"; id: string } = atual.cliente_id
+    ? { coluna: "cliente_id", id: atual.cliente_id }
+    : { coluna: "prospect_id", id: atual.prospect_id! };
+
+  // Só o mais recente do dono. Corrigir um contato que já foi sucedido por
   // outro deixaria o histórico contando duas versões da mesma conversa.
   const { data: maisRecente, error: errRecente } = await supabase
     .from("vendas_contatos")
     .select("id")
-    .eq("cliente_id", atual.cliente_id)
+    .eq(alvo.coluna, alvo.id)
     .order("criado_em", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -96,14 +103,20 @@ export async function atualizarContatoAction(input: {
     return { error: "Não deu pra confirmar se este é o contato mais recente. Tente de novo." };
   }
   if (maisRecente.id !== atual.id) {
-    return { error: "Já existe um contato mais novo com este cliente. Corrija aquele." };
+    return {
+      error: `Já existe um contato mais novo com este ${alvo.coluna === "cliente_id" ? "cliente" : "prospect"}. Corrija aquele.`,
+    };
   }
 
-  const { data: cliente } = await supabase
-    .from("vendas_clientes")
-    .select("intervalo_mediano_dias")
-    .eq("id", atual.cliente_id)
-    .maybeSingle();
+  // Ciclo de recompra só existe para quem já comprou. Prospect não tem, e aí o
+  // retorno cai no prazo padrão do resultado em vez de um ciclo inventado.
+  const { data: cliente } = atual.cliente_id
+    ? await supabase
+        .from("vendas_clientes")
+        .select("intervalo_mediano_dias")
+        .eq("id", atual.cliente_id)
+        .maybeSingle()
+    : { data: null };
 
   const patch: Database["public"]["Tables"]["vendas_contatos"]["Update"] = {
     resultado: input.resultado,
@@ -128,8 +141,13 @@ export async function atualizarContatoAction(input: {
   if (error) return { error: error.message };
 
   revalidatePath("/vendas");
-  revalidatePath("/vendas/clientes");
-  revalidatePath(`/vendas/clientes/${atual.cliente_id}`);
+  if (atual.cliente_id) {
+    revalidatePath("/vendas/clientes");
+    revalidatePath(`/vendas/clientes/${atual.cliente_id}`);
+  } else {
+    revalidatePath("/vendas/prospects");
+    revalidatePath(`/vendas/prospects/${atual.prospect_id}`);
+  }
   revalidatePath("/vendas/contatos");
   return {};
 }

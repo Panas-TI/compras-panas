@@ -1623,9 +1623,10 @@ export type Database = {
           adiar_ate: string | null
           atualizado_em: string | null
           canal: string | null
-          cliente_id: string
+          cliente_id: string | null
           corrigido_por: string | null
           criado_em: string
+          prospect_id: string | null
           id: string
           motivo: string | null
           observacao: string | null
@@ -1637,9 +1638,10 @@ export type Database = {
           adiar_ate?: string | null
           atualizado_em?: string | null
           canal?: string | null
-          cliente_id: string
+          cliente_id?: string | null
           corrigido_por?: string | null
           criado_em?: string
+          prospect_id?: string | null
           id?: string
           motivo?: string | null
           observacao?: string | null
@@ -1651,9 +1653,10 @@ export type Database = {
           adiar_ate?: string | null
           atualizado_em?: string | null
           canal?: string | null
-          cliente_id?: string
+          cliente_id?: string | null
           corrigido_por?: string | null
           criado_em?: string
+          prospect_id?: string | null
           id?: string
           motivo?: string | null
           observacao?: string | null
@@ -1831,6 +1834,78 @@ export type Database = {
             referencedColumns: ["pedido"]
           },
         ]
+      }
+      vendas_prospects: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          bairro: string | null
+          cidade: string | null
+          cliente_id: string | null
+          contato_nome: string | null
+          criado_em: string
+          criado_por: string | null
+          endereco: string | null
+          etapa: string
+          ganho_em: string | null
+          id: string
+          motivo_perda: string | null
+          nome: string
+          observacoes: string | null
+          origem: string | null
+          responsavel_id: string | null
+          rota: string
+          telefone_raw: string | null
+          tipo: string | null
+          valor_estimado: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          bairro?: string | null
+          cidade?: string | null
+          cliente_id?: string | null
+          contato_nome?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          endereco?: string | null
+          etapa?: string
+          ganho_em?: string | null
+          id?: string
+          motivo_perda?: string | null
+          nome: string
+          observacoes?: string | null
+          origem?: string | null
+          responsavel_id?: string | null
+          rota?: string
+          telefone_raw?: string | null
+          tipo?: string | null
+          valor_estimado?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          bairro?: string | null
+          cidade?: string | null
+          cliente_id?: string | null
+          contato_nome?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          endereco?: string | null
+          etapa?: string
+          ganho_em?: string | null
+          id?: string
+          motivo_perda?: string | null
+          nome?: string
+          observacoes?: string | null
+          origem?: string | null
+          responsavel_id?: string | null
+          rota?: string
+          telefone_raw?: string | null
+          tipo?: string | null
+          valor_estimado?: number | null
+        }
+        Relationships: []
       }
       vendas_pedidos: {
         Row: {
