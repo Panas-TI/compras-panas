@@ -79,7 +79,7 @@ export async function montarPlanoDoDia(): Promise<{
         .gte("criado_em", inicioDoDiaSP(hoje)),
       supabase
         .from("vendas_contatos")
-        .select("cliente_id, resultado, adiar_ate, observacao, criado_em, atualizado_em")
+        .select("cliente_id, resultado, adiar_ate, observacao, criado_em, atualizado_em, concluido_em")
         .not("adiar_ate", "is", null)
         .order("criado_em", { ascending: false }),
     ]);
@@ -137,7 +137,18 @@ export async function montarPlanoDoDia(): Promise<{
   // era só quem por acaso caía de novo na fila natural. Cliente que disse
   // "me liga amanhã" e não estava vencido pelo ciclo simplesmente sumia, e a
   // promessa morria sem ninguém saber.
-  const ultimoCombinado = new Map<string, { resultado: string; adiar_ate: string; observacao: string | null; criado_em: string; combinadoEm: string }>();
+  const ultimoCombinado = new Map<
+    string,
+    {
+      resultado: string;
+      adiar_ate: string;
+      observacao: string | null;
+      criado_em: string;
+      combinadoEm: string;
+      /** Null = ainda na bandeja, ninguém fechou o assunto. */
+      concluidoEm: string | null;
+    }
+  >();
   for (const c of todosContatos ?? []) {
     // Vem ordenado do mais recente pro mais antigo: o primeiro de cada cliente
     // é o que vale. Combinado antigo não ressuscita.
@@ -150,6 +161,7 @@ export async function montarPlanoDoDia(): Promise<{
         // Quando o combinado foi de fato firmado. Num contato corrigido, é a
         // data da correção — foi aí que o cliente disse o que disse.
         combinadoEm: String(c.atualizado_em ?? c.criado_em),
+        concluidoEm: c.concluido_em,
       });
     }
   }
@@ -162,14 +174,19 @@ export async function montarPlanoDoDia(): Promise<{
   // só na sexta, e no rodapé "fora da lista" dizendo "volta em quinta". Toda
   // promessa nascia um dia atrasada.
   const idsRetorno = Array.from(ultimoCombinado.entries())
-    // Quem foi falado HOJE não volta hoje.
+    // Contato de hoje só não volta hoje enquanto ninguém o concluiu.
     //
-    // Um contato registrado hoje com retorno marcado para hoje caía nas duas
-    // pontas: silenciado na fila natural e trazido de volta como "retorno
-    // combinado", no mesmo dia da conversa. O cartão aparecia com o selo
-    // "✓ falado hoje" pedindo para ligar de novo. A data de retorno diz quando
-    // voltar; nunca pode significar "agora de novo".
-    .filter(([, v]) => v.adiar_ate <= hoje && diaEmSP(v.criado_em) !== hoje)
+    // A regra nasceu contra o retorno automático: registrar contato agenda a
+    // volta sozinho, e um vencimento no mesmo dia trazia de volta quem você
+    // acabou de falar, com o selo "✓ falado hoje" pedindo pra ligar de novo.
+    //
+    // Mas quando VOCÊ conclui e marca o retorno pra hoje — "ele pediu pra
+    // ligar de tarde" — é decisão sua, e o cliente precisa aparecer. Sem essa
+    // diferença ele sumia das duas pontas: fora da bandeja por estar
+    // concluído, fora da lista por ser de hoje.
+    .filter(
+      ([, v]) => v.adiar_ate <= hoje && (v.concluidoEm !== null || diaEmSP(v.criado_em) !== hoje)
+    )
     .map(([id]) => id);
 
   const retornos: ClienteDoPlano[] = [];
