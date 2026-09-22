@@ -174,22 +174,28 @@ export async function atualizarContatoAction(input: {
  */
 export async function registrarContatoRapidoAction(
   clienteId: string
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; jaAberto?: boolean }> {
   const supabase = await createClient();
   const g = await guard(supabase);
   if (g.erro) return { error: g.erro };
 
   // Clicar duas vezes no mesmo cliente não pode virar dois contatos: o placar
   // do dia conta cliente falado, e o histórico viraria conversa em duplicata.
+  //
+  // Só vale para contato EM ABERTO. Depois de concluído, falar de novo com o
+  // mesmo cliente no mesmo dia é normal — ele respondeu, ficou de voltar à
+  // tarde, você manda outra mensagem. Sem o recorte, o botão simplesmente não
+  // fazia nada e sem explicar por quê.
   const { data: jaHoje } = await supabase
     .from("vendas_contatos")
     .select("id")
     .eq("cliente_id", clienteId)
     .eq("resultado", "sem_resposta")
+    .is("concluido_em", null)
     .gte("criado_em", `${hojeMais(0)}T00:00:00-03:00`)
     .limit(1)
     .maybeSingle();
-  if (jaHoje) return {};
+  if (jaHoje) return { jaAberto: true };
 
   const { error } = await supabase.from("vendas_contatos").insert({
     cliente_id: clienteId,
