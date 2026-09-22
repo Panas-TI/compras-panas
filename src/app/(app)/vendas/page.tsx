@@ -195,7 +195,14 @@ export default async function VendasHojePage() {
           const rec = recenciaDias(c.ultima_compra);
           const f = FAIXA[c.faixa];
           return (
-            <Card key={c.id} className={c.trabalhado ? "opacity-60" : undefined}>
+            // Apagar o cartão significa "já resolvido hoje". Retorno combinado
+            // para hoje não está resolvido: você falou de manhã, ficou de
+            // voltar à tarde, e é agora. Apagado e com "✓ falado hoje" o
+            // cartão dizia o contrário do que precisa ser feito.
+            <Card
+              key={c.id}
+              className={c.trabalhado && c.faixa !== "retorno" ? "opacity-60" : undefined}
+            >
               <CardContent className="flex flex-col gap-2 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -212,7 +219,13 @@ export default async function VendasHojePage() {
                       podeEscrever={podeEscrever}
                     />
                     {c.trabalhado && (
-                      <span className="text-xs font-medium text-emerald-700">✓ falado hoje</span>
+                      <span
+                        className={`text-xs font-medium ${
+                          c.faixa === "retorno" ? "text-amber-700" : "text-emerald-700"
+                        }`}
+                      >
+                        {c.faixa === "retorno" ? "↻ falado hoje · volta agora" : "✓ falado hoje"}
+                      </span>
                     )}
                   </div>
                   <div className="text-sm text-zinc-600">
