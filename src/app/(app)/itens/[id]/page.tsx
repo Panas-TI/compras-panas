@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ItemForm } from "../item-form";
+import { FotoItem } from "../foto-item";
 import { updateItemAction, type ItemFormState } from "../actions";
 
 export default async function EditarItemPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,6 +20,14 @@ export default async function EditarItemPage({ params }: { params: Promise<{ id:
 
   if (!item) notFound();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: perfil } = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
+    : { data: null };
+  const podeEditarFoto = ["aprovador", "comprador", "gestor_producao"].includes(perfil?.role ?? "");
+
   const bound = async (prev: ItemFormState, fd: FormData) => {
     "use server";
     return updateItemAction(id, prev, fd);
@@ -31,7 +40,8 @@ export default async function EditarItemPage({ params }: { params: Promise<{ id:
         <CardHeader>
           <CardTitle className="text-base">{item.nome}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-6">
+          <FotoItem itemId={id} fotoPath={item.foto_path} podeEditar={podeEditarFoto} />
           <ItemForm
             action={bound}
             defaults={{

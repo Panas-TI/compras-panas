@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { FotoProduto } from "@/components/foto-produto";
 import { useRouter } from "next/navigation";
 import {
   addLinhaAction,
@@ -26,6 +27,7 @@ export type Linha = {
   item_id: string;
   nome_item: string;
   codigo_queops: string | null;
+  foto_path: string | null;
   classificacao_nome: string | null;
   unidade_nome: string | null;
   embalagem_nome: string | null;
@@ -398,7 +400,12 @@ function LinhaTr({
   return (
     <tr className="border-b border-zinc-100 last:border-0">
       <td className="px-2 py-1.5">
-        <div className="flex flex-col">
+        <div className="flex items-start gap-2">
+          {/* Miniatura clicável: quem confere nem sempre reconhece "ACEM" ou
+              "LOMBO CANADENSE" pelo nome, e sair da lista pra ver a foto faria
+              perder o lugar na conferência. */}
+          <FotoProduto fotoPath={linha.foto_path} nome={linha.nome_item} />
+          <div className="flex min-w-0 flex-col">
           <span className="truncate font-medium" title={linha.nome_item}>{linha.nome_item}</span>
           <span className="flex items-center gap-2 text-xs text-zinc-500">
             {linha.codigo_queops ? (
@@ -418,6 +425,7 @@ function LinhaTr({
               💬 {linha.observacoes}
             </span>
           )}
+        </div>
         </div>
       </td>
       <td className="px-1 py-1.5">

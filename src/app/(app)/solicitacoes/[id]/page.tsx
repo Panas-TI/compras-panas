@@ -42,7 +42,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
       id, item_id, volume_estoque, volume_solicitado, preco, valor,
       fornecedor_id, forma_pagto_id, prazo, status, alteracao_confirmada, observacoes,
       preco_corrigido_em, preco_corrigido_por,
-      item:itens(nome, codigo_queops, preco_referencia, embalagem_compra_nome, qtd_por_embalagem,
+      item:itens(nome, codigo_queops, foto_path, preco_referencia, embalagem_compra_nome, qtd_por_embalagem,
         classificacao:classificacoes(nome),
         unidade:unidades_medida(nome)
       )
@@ -91,6 +91,7 @@ export default async function SolicitacaoDetailPage({ params }: { params: Promis
       item_id: l.item_id,
       nome_item: l.item?.nome ?? "(item removido)",
       codigo_queops: l.item?.codigo_queops ?? null,
+      foto_path: l.item?.foto_path ?? null,
       classificacao_nome: l.item?.classificacao?.nome ?? null,
       unidade_nome: l.item?.unidade?.nome ?? null,
       embalagem_nome: l.item?.embalagem_compra_nome ?? null,

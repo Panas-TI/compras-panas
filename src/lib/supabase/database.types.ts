@@ -611,6 +611,7 @@ export type Database = {
           embalagem_compra_nome: string | null
           fator_conversao_ficha: number | null
           forma_pagto_padrao_id: string | null
+          foto_path: string | null
           fornecedor_padrao_id: string | null
           id: string
           merged_into_id: string | null
@@ -631,6 +632,7 @@ export type Database = {
           embalagem_compra_nome?: string | null
           fator_conversao_ficha?: number | null
           forma_pagto_padrao_id?: string | null
+          foto_path?: string | null
           fornecedor_padrao_id?: string | null
           id?: string
           merged_into_id?: string | null
@@ -651,6 +653,7 @@ export type Database = {
           embalagem_compra_nome?: string | null
           fator_conversao_ficha?: number | null
           forma_pagto_padrao_id?: string | null
+          foto_path?: string | null
           fornecedor_padrao_id?: string | null
           id?: string
           merged_into_id?: string | null

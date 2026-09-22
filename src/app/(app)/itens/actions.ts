@@ -74,3 +74,100 @@ export async function toggleItemAtivoAction(id: string, novoStatus: boolean) {
   if (error) throw new Error(error.message);
   revalidatePath("/itens");
 }
+
+/** Papéis que administram o catálogo — mesmos da política do bucket. */
+const PAPEIS_CATALOGO = ["aprovador", "comprador", "gestor_producao"];
+
+async function guardCatalogo(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Não autenticado." };
+  const { data: p } = await supabase
+    .from("profiles")
+    .select("role, ativo")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!p?.ativo || !PAPEIS_CATALOGO.includes(p.role)) return { erro: "Sem permissão." };
+  return {};
+}
+
+/**
+ * Foto do item.
+ *
+ * O nome do cadastro nem sempre diz o que a coisa é: "ACEM", "LOMBO CANADENSE",
+ * "REQUEIJÃO CATUPIRY BISNAGA 1,8kg" são claros pra quem lida todo dia e opacos
+ * pra quem está chegando. A foto tira a dúvida na conferência sem precisar
+ * perguntar pra alguém.
+ *
+ * O arquivo entra com nome novo a cada envio (timestamp) e a foto antiga é
+ * apagada depois que o cadastro já aponta pra nova — se apagasse antes e o
+ * update falhasse, o item ficaria apontando pra um arquivo inexistente.
+ */
+export async function salvarFotoItemAction(
+  itemId: string,
+  base64: string,
+  mediaType: string
+): Promise<{ error?: string; path?: string }> {
+  const supabase = await createClient();
+  const g = await guardCatalogo(supabase);
+  if (g.erro) return { error: g.erro };
+
+  if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) {
+    return { error: "Formato não aceito. Use JPG, PNG ou WEBP." };
+  }
+  const buffer = Buffer.from(base64, "base64");
+  if (buffer.byteLength > 5 * 1024 * 1024) {
+    return { error: "Imagem maior que 5 MB mesmo depois de comprimida." };
+  }
+
+  const { data: item } = await supabase
+    .from("itens")
+    .select("foto_path")
+    .eq("id", itemId)
+    .maybeSingle();
+  const anterior = item?.foto_path ?? null;
+
+  const ext = mediaType === "image/png" ? "png" : mediaType === "image/webp" ? "webp" : "jpg";
+  const path = `${itemId}/${Date.now()}.${ext}`;
+
+  const { error: upErr } = await supabase.storage
+    .from("fotos-itens")
+    .upload(path, buffer, { contentType: mediaType, upsert: false });
+  if (upErr) return { error: `Não consegui enviar a foto: ${upErr.message}` };
+
+  const { error: updErr } = await supabase.from("itens").update({ foto_path: path }).eq("id", itemId);
+  if (updErr) {
+    await supabase.storage.from("fotos-itens").remove([path]);
+    return { error: updErr.message };
+  }
+
+  if (anterior && anterior !== path) {
+    await supabase.storage.from("fotos-itens").remove([anterior]);
+  }
+
+  revalidatePath(`/itens/${itemId}`);
+  revalidatePath("/itens");
+  return { path };
+}
+
+export async function removerFotoItemAction(itemId: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const g = await guardCatalogo(supabase);
+  if (g.erro) return { error: g.erro };
+
+  const { data: item } = await supabase
+    .from("itens")
+    .select("foto_path")
+    .eq("id", itemId)
+    .maybeSingle();
+  if (!item?.foto_path) return {};
+
+  const { error } = await supabase.from("itens").update({ foto_path: null }).eq("id", itemId);
+  if (error) return { error: error.message };
+  await supabase.storage.from("fotos-itens").remove([item.foto_path]);
+
+  revalidatePath(`/itens/${itemId}`);
+  revalidatePath("/itens");
+  return {};
+}
