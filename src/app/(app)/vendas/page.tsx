@@ -79,6 +79,10 @@ export default async function VendasHojePage() {
                                telefone_presumido, canal_preferido)`
     )
     .eq("resultado", "sem_resposta")
+    // Concluído sai da bandeja. Marcar "ainda sem resposta" com data de retorno
+    // é uma decisão tomada — fica combinado voltar tal dia —, e o cliente volta
+    // como "retorno combinado" naquela data, não fica pendurado aqui.
+    .is("concluido_em", null)
     .gte("criado_em", inicioDoDiaSP(hojeMais(-TETO_BANDEJA_DIAS)))
     .order("criado_em", { ascending: false })
     .limit(200);

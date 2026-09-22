@@ -1626,6 +1626,7 @@ export type Database = {
           adiar_ate: string | null
           atualizado_em: string | null
           canal: string | null
+          concluido_em: string | null
           cliente_id: string | null
           corrigido_por: string | null
           criado_em: string
@@ -1641,6 +1642,7 @@ export type Database = {
           adiar_ate?: string | null
           atualizado_em?: string | null
           canal?: string | null
+          concluido_em?: string | null
           cliente_id?: string | null
           corrigido_por?: string | null
           criado_em?: string
@@ -1656,6 +1658,7 @@ export type Database = {
           adiar_ate?: string | null
           atualizado_em?: string | null
           canal?: string | null
+          concluido_em?: string | null
           cliente_id?: string | null
           corrigido_por?: string | null
           criado_em?: string

@@ -126,6 +126,10 @@ export async function atualizarContatoAction(input: {
 
   const patch: Database["public"]["Tables"]["vendas_contatos"]["Update"] = {
     resultado: input.resultado,
+    // Salvar pelo formulário é o ato de fechar o assunto: o cliente sai da
+    // bandeja e passa a voltar pela data de retorno. Mesmo com "ainda sem
+    // resposta", houve decisão — combinou-se voltar em tal dia.
+    concluido_em: new Date().toISOString(),
     adiar_ate: calcularAdiarAte(
       input.resultado,
       cliente?.intervalo_mediano_dias ?? null,
