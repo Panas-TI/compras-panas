@@ -51,7 +51,8 @@ export function AguardandoResposta({
         </span>
         <span className="text-xs text-amber-800/80">
           respondeu? clique em Concluir e registre canal, desfecho e o que ele disse — corrige o
-          mesmo contato, não cria outro
+          mesmo contato, não cria outro. Marcando data de retorno, o cliente sai daqui e volta como
+          retorno combinado naquele dia
         </span>
       </div>
 
