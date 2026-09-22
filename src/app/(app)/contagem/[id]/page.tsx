@@ -48,6 +48,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
          item:itens(
            nome,
            codigo_queops,
+           foto_path,
            unidade:unidades_medida(nome),
            preco_referencia,
            fornecedor_padrao:fornecedores(nome)
@@ -72,6 +73,7 @@ export default async function ContagemDetailPage({ params }: { params: Promise<{
     // — foi assim que "Água C/ gás:" virou "AGUA C/GAS 2 L" no pedido. Agora o
     // item aparece já na contagem, onde dá pra corrigir antes de virar compra.
     itemNome: l.item?.nome ?? null,
+    fotoPath: l.item?.foto_path ?? null,
     itemCodigo: l.item?.codigo_queops ?? null,
     quantidade: l.quantidade,
     observacao: l.observacao,

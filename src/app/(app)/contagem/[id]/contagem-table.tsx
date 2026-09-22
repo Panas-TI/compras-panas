@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { FotoProduto } from "@/components/foto-produto";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,8 @@ export type LinhaC = {
   /** Nome do item de compra vinculado — o que vai sair no pedido. */
   itemNome: string | null;
   itemCodigo: string | null;
+  /** Foto do item no cadastro — some quando a linha é de produto fabricado. */
+  fotoPath: string | null;
   quantidade: number | null;
   observacao: string | null;
   /** Justificativa da compra — de quem solicita, não do estoquista. */
@@ -535,6 +538,11 @@ function LinhaRow({
     <tr className={`border-b border-zinc-100 last:border-0 ${jaEnviado ? "bg-emerald-50/40" : ""}`}>
       <td className="px-2 py-1.5 text-right text-xs text-zinc-400 tabular-nums">{linha.ordem}</td>
       <td className="px-2 py-1.5">
+        {/* Quem conta está com o item na mão. A foto responde "é este mesmo?"
+            sem sair da contagem — sair perderia o lugar na lista. */}
+        <span className="mr-2 inline-flex align-middle">
+          <FotoProduto fotoPath={linha.fotoPath} nome={linha.itemNome ?? linha.texto} />
+        </span>
         {linha.texto}
         {mostrarItem(linha.texto, linha.itemNome) &&
           (conflitoDeVolume(linha.texto, linha.itemNome) ? (
