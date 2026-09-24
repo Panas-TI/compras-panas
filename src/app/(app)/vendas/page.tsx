@@ -19,7 +19,13 @@ import { createClient } from "@/lib/supabase/server";
 import { AguardandoResposta, type EmAberto } from "./aguardando-resposta";
 import { SeletorRota } from "./seletor-rota";
 import { RotasHoje } from "./rotas-hoje";
-import { recadoDoDia, rotinaDoCliente, hojeEhODia, type Rota } from "./rota-regras";
+import {
+  recadoDoDia,
+  rotinaDoCliente,
+  hojeEhODia,
+  rotuloAgenda,
+  type Rota,
+} from "./rota-regras";
 import {
   hojeMais,
   rotuloQuando,
@@ -34,6 +40,7 @@ export const dynamic = "force-dynamic";
 const FAIXA: Record<ClienteDoPlano["faixa"], { rotulo: string; classe: string }> = {
   escolhido: { rotulo: "puxado à mão", classe: "bg-fuchsia-100 text-fuchsia-900 border-fuchsia-300" },
   retorno: { rotulo: "retorno combinado", classe: "bg-emerald-100 text-emerald-900 border-emerald-300" },
+  agenda: { rotulo: "dia marcado", classe: "bg-sky-100 text-sky-900 border-sky-300" },
   vencido: { rotulo: "vencido", classe: "bg-amber-100 text-amber-900 border-amber-200" },
   previsto: { rotulo: "vence agora", classe: "bg-blue-50 text-blue-800 border-blue-200" },
   novo: { rotulo: "cliente novo", classe: "bg-violet-50 text-violet-800 border-violet-200" },
@@ -237,6 +244,10 @@ export default async function VendasHojePage() {
                     : c.faixa === "retorno" && c.combinado
                     ? `combinado para ${formatDateBR(c.combinado.adiarAte)}${
                         c.combinado.observacao ? ` — “${c.combinado.observacao}”` : ""
+                      }`
+                    : c.faixa === "agenda"
+                    ? `você marcou ${rotuloAgenda(c.dias_contato)} para este cliente${
+                        c.motivo_contato ? ` · ${c.motivo_contato}` : ""
                       }`
                     : (c.motivo_contato ?? (c.faixa === "reativacao" ? "parado além do ritmo dele" : ""))}
                   {c.intervalo_mediano_dias ? ` · compra a cada ${c.intervalo_mediano_dias} dias` : ""}

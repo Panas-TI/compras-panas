@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { diaEmSP, inicioDoDiaSP } from "./contato-regras";
+import { temAgenda, hojeEhDiaDeContato } from "./rota-regras";
 import type { ItemHabitual } from "./ui";
 import type { Rota } from "./rota-regras";
 
@@ -30,8 +31,9 @@ export type ClienteDoPlano = {
   rota: Rota;
   /** Dia da semana em que ele concentra os pedidos (1=seg…5=sex), se houver. */
   dia_pedido_habitual: number | null;
+  dias_contato: number[] | null;
   /** De onde veio na composição do dia. */
-  faixa: "escolhido" | "retorno" | "vencido" | "previsto" | "novo" | "reativacao";
+  faixa: "escolhido" | "retorno" | "agenda" | "vencido" | "previsto" | "novo" | "reativacao";
   /** Só na faixa "escolhido": por que alguém puxou este cliente. */
   motivoManual?: string | null;
   /** Só na faixa "retorno": o combinado que venceu. */
@@ -43,7 +45,7 @@ export type ClienteDoPlano = {
 };
 
 const CAMPOS =
-  "id, nome, status, motivo_contato, telefone_e164, telefone_raw, telefone_presumido, canal_preferido, ultima_compra, intervalo_mediano_dias, ticket_medio, receita_anual_risco, itens_habituais, rota, dia_pedido_habitual";
+  "id, nome, status, motivo_contato, telefone_e164, telefone_raw, telefone_presumido, canal_preferido, ultima_compra, intervalo_mediano_dias, ticket_medio, receita_anual_risco, itens_habituais, rota, dia_pedido_habitual, dias_contato";
 
 /**
  * Monta o plano do dia.
@@ -68,9 +70,23 @@ export async function montarPlanoDoDia(): Promise<{
   // no meio do expediente da noite. Bug que já existia; aparecia todo dia.
   const hoje = diaEmSP(new Date());
 
-  const [{ data: fila }, { data: oport }, { data: contatosHoje }, { data: ultimos }] =
-    await Promise.all([
+  const [
+    { data: fila },
+    { data: comAgenda },
+    { data: oport },
+    { data: contatosHoje },
+    { data: ultimos },
+  ] = await Promise.all([
       supabase.from("vendas_clientes").select(CAMPOS).eq("contatar_3dias", true).eq("ativo", true),
+      // Consulta própria, não um filtro sobre `fila`: quem tem dia marcado
+      // aparece nesse dia mesmo com o ciclo de compra em dia — é justamente o
+      // sentido de marcar o dia. Vindo de `fila` (contatar_3dias = true), a
+      // banca da Plínio só apareceria na segunda quando já estivesse atrasada.
+      supabase
+        .from("vendas_clientes")
+        .select(CAMPOS)
+        .not("dias_contato", "is", null)
+        .eq("ativo", true),
       supabase.rpc("vendas_oportunidades"),
       supabase
         .from("vendas_contatos")
@@ -242,9 +258,35 @@ export async function montarPlanoDoDia(): Promise<{
 
   const jaEmRetorno = new Set(retornos.map((c) => c.id));
 
-  // 2) Fila natural, sem quem combinou de voltar depois e sem repetir retorno.
+  // 2) Agenda: clientes com dia marcado pelo vendedor.
+  //
+  // "A banca da Plínio eu falo segunda, terça e quinta." Esse combinado existia
+  // só na cabeça de quem atende; o sistema decidia pelo ciclo de compra e
+  // mostrava o cliente em qualquer dia menos nos que importavam.
+  //
+  // Quem tem agenda sai do ciclo: aparece nos dias dela e não aparece nos
+  // outros — senão marcar os dias não muda nada. O que passa por cima é
+  // promessa (retorno combinado) e o silêncio de quem acabou de responder:
+  // ninguém liga na terça pra quem disse "não agora" na segunda.
+  const agendados = (comAgenda ?? [])
+    .filter(
+      (c) =>
+        hojeEhDiaDeContato(c.dias_contato, hoje) &&
+        !silenciados.has(c.id) &&
+        !jaEmRetorno.has(c.id) &&
+        !jaEscolhido.has(c.id)
+    )
+    .sort((a, b) => Number(b.ticket_medio ?? 0) - Number(a.ticket_medio ?? 0))
+    .map((c) => monta(c as Bruto, "agenda"));
+
+  // 3) Fila natural: o ciclo de compra decide. Sem quem combinou de voltar
+  //    depois, sem repetir retorno e sem quem tem agenda própria.
   const disponiveis = (fila ?? []).filter(
-    (c) => !silenciados.has(c.id) && !jaEmRetorno.has(c.id) && !jaEscolhido.has(c.id)
+    (c) =>
+      !temAgenda(c.dias_contato) &&
+      !silenciados.has(c.id) &&
+      !jaEmRetorno.has(c.id) &&
+      !jaEscolhido.has(c.id)
   );
 
   const vencidos = disponiveis
@@ -261,9 +303,9 @@ export async function montarPlanoDoDia(): Promise<{
     .filter((c) => c.motivo_contato?.startsWith("cliente novo"))
     .map((c) => monta(c as Bruto, "novo"));
 
-  const base = [...escolhidos, ...retornos, ...vencidos, ...previstos, ...novos];
+  const base = [...escolhidos, ...retornos, ...agendados, ...vencidos, ...previstos, ...novos];
 
-  // 3) Cota de reativação: completa até o alvo, do maior valor em risco pro
+  // 4) Cota de reativação: completa até o alvo, do maior valor em risco pro
   //    menor. Sem isso o backlog de inativos nunca é tocado.
   const faltam = Math.max(0, TAMANHO_LISTA - base.length);
   const jaNaLista = new Set(base.map((c) => c.id));
@@ -284,7 +326,14 @@ export async function montarPlanoDoDia(): Promise<{
     .limit(faltam + silenciados.size + jaNaLista.size + 20);
 
   const reativacao = (inativos ?? [])
-    .filter((c) => !jaNaLista.has(c.id) && !silenciados.has(c.id) && !jaEscolhido.has(c.id))
+    .filter(
+      (c) =>
+        !jaNaLista.has(c.id) &&
+        !silenciados.has(c.id) &&
+        !jaEscolhido.has(c.id) &&
+        // Quem tem dia marcado não volta pela porta dos fundos numa terça.
+        !temAgenda(c.dias_contato)
+    )
     .slice(0, faltam)
     .map((c) => monta(c as Bruto, "reativacao"));
 

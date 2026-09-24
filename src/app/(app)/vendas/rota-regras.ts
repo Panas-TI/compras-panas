@@ -188,6 +188,49 @@ export function rotinaDoCliente(diaHabitual: number | null): string | null {
   return `costuma pedir ${DIAS[diaHabitual]} · ligar ${DIAS[a]} ou ${DIAS[b]}`;
 }
 
+/**
+ * Agenda de contato do cliente — os dias que o VENDEDOR escolheu.
+ *
+ * Não confundir com dia_pedido_habitual, logo acima: aquele é inferido do
+ * histórico ("costuma pedir na quinta") e serve de dica. Este é combinação
+ * ("a banca da Plínio eu falo segunda, terça e quinta") e manda na lista: o
+ * cliente aparece nesses dias e não aparece nos outros.
+ *
+ * 1 = segunda … 7 = domingo, a mesma convenção de diaDaSemana().
+ */
+export function temAgenda(dias: number[] | null | undefined): dias is number[] {
+  return Array.isArray(dias) && dias.length > 0;
+}
+
+export function hojeEhDiaDeContato(
+  dias: number[] | null | undefined,
+  hoje: string
+): boolean {
+  return temAgenda(dias) && dias.includes(diaDaSemana(hoje));
+}
+
+/** "seg · ter · qui", na ordem da semana — {4,1,2} não pode virar "qui·seg·ter". */
+export function rotuloAgenda(dias: number[] | null | undefined): string | null {
+  if (!temAgenda(dias)) return null;
+  return [...dias].sort((a, b) => a - b).map((d) => DIAS_CURTO[d]).join(" · ");
+}
+
+/**
+ * Próximo dia da agenda a partir de hoje, pra explicar a ausência de quem não
+ * aparece: "fora da agenda — volta terça". Some sem explicação é o que fazia
+ * a lista parecer quebrada.
+ */
+export function proximoDiaDaAgenda(
+  dias: number[] | null | undefined,
+  hoje: string
+): string | null {
+  if (!temAgenda(dias)) return null;
+  const atual = diaDaSemana(hoje);
+  const ordenados = [...dias].sort((a, b) => a - b);
+  const prox = ordenados.find((d) => d > atual) ?? ordenados[0];
+  return DIAS[prox];
+}
+
 /** Hoje é um dos dias de ligar pra quem pede no dia habitual dele? */
 export function hojeEhODia(diaHabitual: number | null, hoje: string): boolean {
   if (!diaHabitual) return false;

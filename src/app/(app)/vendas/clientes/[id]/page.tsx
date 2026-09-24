@@ -13,6 +13,7 @@ import {
 } from "../../ui";
 import type { ItemHabitual } from "../../ui";
 import { RegistrarContato } from "../../registrar-contato";
+import { SeletorAgenda } from "../../seletor-agenda";
 import {
   dentroDaJanela,
   ddmm,
@@ -120,6 +121,18 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
             raw={cliente.telefone_raw}
             presumido={cliente.telefone_presumido}
             canal={cliente.canal_preferido}
+          />
+        </div>
+
+        {/* Dias de contato: combinação do vendedor, não dedução do histórico.
+            Fica no cadastro, junto do telefone e da rota, porque é da mesma
+            natureza — como se fala com este cliente. */}
+        <div className="flex flex-col gap-1 rounded-md border border-zinc-200 bg-zinc-50/60 p-3">
+          <span className="text-xs font-medium text-zinc-700">Falar com ele em</span>
+          <SeletorAgenda
+            clienteId={cliente.id}
+            dias={cliente.dias_contato}
+            podeEscrever={podeEscrever}
           />
         </div>
         {outrosNomes.length > 0 && (

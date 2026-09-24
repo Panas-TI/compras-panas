@@ -23,7 +23,7 @@ import {
 import type { ItemHabitual } from "../ui";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import { SeletorRota } from "../seletor-rota";
-import { rotinaDoCliente, ROTAS, type Rota } from "../rota-regras";
+import { rotinaDoCliente, rotuloAgenda, ROTAS, type Rota } from "../rota-regras";
 
 export type UltimoContato = {
   resultado: string | null;
@@ -50,6 +50,7 @@ export type LinhaCliente = {
   verificar: boolean;
   rota: string | null;
   dia_pedido_habitual: number | null;
+  dias_contato: number[] | null;
 };
 
 type Ordem = "total" | "risco" | "recencia" | "nome" | "ticket";
@@ -253,10 +254,18 @@ export function TabelaClientes({
                     {c.itens_habituais?.[0] && (
                       <div className="text-xs text-zinc-400">{c.itens_habituais[0].produto}</div>
                     )}
-                    {rotinaDoCliente(c.dia_pedido_habitual) && (
-                      <div className="text-xs text-zinc-400">
-                        {rotinaDoCliente(c.dia_pedido_habitual)}
+                    {/* A agenda do vendedor manda na lista do dia, então vem
+                        antes e com mais peso que a rotina deduzida. */}
+                    {rotuloAgenda(c.dias_contato) ? (
+                      <div className="text-xs font-medium text-sky-700">
+                        falar {rotuloAgenda(c.dias_contato)}
                       </div>
+                    ) : (
+                      rotinaDoCliente(c.dia_pedido_habitual) && (
+                        <div className="text-xs text-zinc-400">
+                          {rotinaDoCliente(c.dia_pedido_habitual)}
+                        </div>
+                      )
                     )}
                   </td>
                   <td className="px-3 py-2"><EstadoPill status={c.status} /></td>

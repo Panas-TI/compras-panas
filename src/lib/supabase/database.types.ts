@@ -1526,6 +1526,7 @@ export type Database = {
         Row: {
           ativo: boolean
           dia_pedido_habitual: number | null
+          dias_contato: number[] | null
           rota: string
           atualizado_em: string
           canal_preferido: string | null
@@ -1558,6 +1559,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           dia_pedido_habitual?: number | null
+          dias_contato?: number[] | null
           rota?: string
           atualizado_em?: string
           canal_preferido?: string | null
@@ -1590,6 +1592,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           dia_pedido_habitual?: number | null
+          dias_contato?: number[] | null
           rota?: string
           atualizado_em?: string
           canal_preferido?: string | null
