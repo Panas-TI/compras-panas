@@ -11,6 +11,7 @@ import {
   CANAIS,
   calcularAdiarAte,
   diasAteVoltar,
+  diasDoNaoAgora,
   hojeMais,
   ddmm,
 } from "./contato-regras";
@@ -30,6 +31,7 @@ export function RegistrarContato({
   clienteId,
   nome,
   intervaloDias = null,
+  naoAgoraSeguidos = 0,
   contato = null,
   rotulo,
 }: {
@@ -37,6 +39,12 @@ export function RegistrarContato({
   nome: string;
   /** Ciclo típico de recompra do cliente (vendas_clientes.intervalo_mediano_dias). */
   intervaloDias?: number | null;
+  /**
+   * Quantos "não agora" seguidos o cliente já deu antes deste contato. Define
+   * o degrau da escada de retorno — 3, 6, 12 ou 24 dias. Vem pronto do
+   * servidor: o formulário não tem o histórico pra contar sozinho.
+   */
+  naoAgoraSeguidos?: number;
   /**
    * Quando vem preenchido, o formulário CORRIGE este contato em vez de criar
    * outro — é o caminho da resposta que chegou depois. Sem ele, comportamento
@@ -70,6 +78,7 @@ export function RegistrarContato({
   const [erro, setErro] = useState<string | null>(null);
 
   const comprou = resultado === "comprou";
+  const naoAgora = resultado === "nao_agora";
   const retornoPrevisto = hojeMais(diasAteVoltar(intervaloDias));
   /**
    * A data que vai ser gravada.
@@ -85,7 +94,7 @@ export function RegistrarContato({
   const adiarEfetivo = dataTocada
     ? adiar
     : resultadoMudou
-      ? (calcularAdiarAte(resultado, intervaloDias, null) ?? "")
+      ? (calcularAdiarAte(resultado, intervaloDias, null, naoAgoraSeguidos) ?? "")
       : (contato?.adiar_ate ?? "");
 
   const precisaDetalhar = motivo === MOTIVO_OUTRO && !observacao.trim();
@@ -126,7 +135,12 @@ export function RegistrarContato({
           canal,
           resultado,
           motivo: motivo || null,
-          adiar_ate: calcularAdiarAte(resultado, intervaloDias, dataTocada ? adiar || null : null),
+          adiar_ate: calcularAdiarAte(
+            resultado,
+            intervaloDias,
+            dataTocada ? adiar || null : null,
+            naoAgoraSeguidos
+          ),
           observacao: observacao.trim() || null,
         });
         if (error) throw new Error(error.message);
@@ -225,6 +239,18 @@ export function RegistrarContato({
               }}
               className="h-8 rounded border border-zinc-300 bg-white px-2 text-sm"
             />
+            {/* Mesma cortesia do "comprou": a data automática diz de onde
+                veio. Sem isso o campo é um número que aparece sozinho, e
+                ninguém confia no que não sabe explicar. */}
+            {naoAgora && !dataTocada && (
+              <span className="text-zinc-400">
+                ({diasDoNaoAgora(naoAgoraSeguidos)} dias —{" "}
+                {naoAgoraSeguidos === 0
+                  ? "primeira vez que ele diz isso"
+                  : `${naoAgoraSeguidos + 1}º “não agora” seguido`}
+                )
+              </span>
+            )}
           </label>
         )}
       </div>

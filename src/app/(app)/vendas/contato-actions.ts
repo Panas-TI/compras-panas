@@ -6,6 +6,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import { MOTIVO_OUTRO } from "./ui";
 import {
   calcularAdiarAte,
+  contarNaoAgoraSeguidos,
   JANELA_EDICAO_DIAS,
   dentroDaJanela,
   hojeMais,
@@ -124,6 +125,24 @@ export async function atualizarContatoAction(input: {
         .maybeSingle()
     : { data: null };
 
+  // Quantos "não agora" seguidos vieram ANTES deste contato — o degrau da
+  // escada de retorno. Conta aqui e não no formulário: a tela manda a data
+  // junto, e se ela mandasse também a contagem bastaria adulterar o pedido
+  // pra silenciar um cliente por 24 dias. Oito linhas cobrem qualquer
+  // sequência real; o teto da escada chega no quarto.
+  let naoAgoraSeguidos = 0;
+  if (input.resultado === "nao_agora" && !input.adiarAte) {
+    const { data: anteriores } = await supabase
+      .from("vendas_contatos")
+      .select("id, resultado, criado_em")
+      .eq(alvo.coluna, alvo.id)
+      .order("criado_em", { ascending: false })
+      .limit(8);
+    naoAgoraSeguidos = contarNaoAgoraSeguidos(
+      (anteriores ?? []).filter((c) => c.id !== atual.id).map((c) => c.resultado)
+    );
+  }
+
   const patch: Database["public"]["Tables"]["vendas_contatos"]["Update"] = {
     resultado: input.resultado,
     // Salvar pelo formulário é o ato de fechar o assunto: o cliente sai da
@@ -133,7 +152,8 @@ export async function atualizarContatoAction(input: {
     adiar_ate: calcularAdiarAte(
       input.resultado,
       cliente?.intervalo_mediano_dias ?? null,
-      input.adiarAte
+      input.adiarAte,
+      naoAgoraSeguidos
     ),
     // atualizado_em, resultado_inicial e corrigido_por são carimbados pelo
     // trigger no banco — não aqui. Assim o rastro existe por qualquer caminho,

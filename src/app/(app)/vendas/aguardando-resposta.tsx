@@ -13,6 +13,8 @@ export type EmAberto = {
   criadoEm: string;
   /** Já formatado no servidor, no fuso de Porto Alegre. */
   quando: string;
+  /** Degrau da escada do "não agora": quantos seguidos vieram antes deste. */
+  naoAgoraSeguidos: number;
   observacao: string | null;
   telefone_e164: string | null;
   telefone_raw: string | null;
@@ -82,6 +84,7 @@ export function AguardandoResposta({
                 clienteId={i.clienteId}
                 nome={i.nome}
                 rotulo="Concluir"
+                naoAgoraSeguidos={i.naoAgoraSeguidos}
                 contato={{
                   id: i.id,
                   canal: i.canal,

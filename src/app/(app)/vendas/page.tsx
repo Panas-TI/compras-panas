@@ -20,7 +20,14 @@ import { AguardandoResposta, type EmAberto } from "./aguardando-resposta";
 import { SeletorRota } from "./seletor-rota";
 import { RotasHoje } from "./rotas-hoje";
 import { recadoDoDia, rotinaDoCliente, hojeEhODia, type Rota } from "./rota-regras";
-import { hojeMais, rotuloQuando, diaEmSP, inicioDoDiaSP, TETO_BANDEJA_DIAS } from "./contato-regras";
+import {
+  hojeMais,
+  rotuloQuando,
+  diaEmSP,
+  inicioDoDiaSP,
+  contarNaoAgoraSeguidos,
+  TETO_BANDEJA_DIAS,
+} from "./contato-regras";
 
 export const dynamic = "force-dynamic";
 
@@ -102,16 +109,22 @@ export default async function VendasHojePage() {
     const ids = candidatos.map((c) => c.cliente_id);
     const { data: posteriores } = await supabase
       .from("vendas_contatos")
-      .select("cliente_id, criado_em")
+      .select("cliente_id, criado_em, resultado")
       .in("cliente_id", ids)
       .order("criado_em", { ascending: false })
       .limit(1000);
 
     const maisNovo = new Map<string, string>();
+    // Histórico por cliente, do mais novo pro mais velho. A mesma leitura serve
+    // pra saber qual é o contato vigente e pra contar os "não agora" seguidos
+    // que definem o degrau da escada de retorno.
+    const porCliente = new Map<string, (string | null)[]>();
     for (const p of posteriores ?? []) {
-      if (p.cliente_id && !maisNovo.has(p.cliente_id)) {
-        maisNovo.set(p.cliente_id, String(p.criado_em));
-      }
+      if (!p.cliente_id) continue;
+      if (!maisNovo.has(p.cliente_id)) maisNovo.set(p.cliente_id, String(p.criado_em));
+      const h = porCliente.get(p.cliente_id);
+      if (h) h.push(p.resultado);
+      else porCliente.set(p.cliente_id, [p.resultado]);
     }
 
     const jaVisto = new Set<string>();
@@ -134,6 +147,9 @@ export default async function VendasHojePage() {
         adiarAte: c.adiar_ate,
         criadoEm: String(c.criado_em),
         quando: rotuloQuando(String(c.criado_em)),
+        // O contato da bandeja É o mais recente do cliente, e concluí-lo
+        // reescreve ele mesmo — então a escada conta a partir do segundo.
+        naoAgoraSeguidos: contarNaoAgoraSeguidos((porCliente.get(c.cliente_id) ?? []).slice(1)),
         observacao: c.observacao,
         telefone_e164: c.cliente.telefone_e164,
         telefone_raw: c.cliente.telefone_raw,

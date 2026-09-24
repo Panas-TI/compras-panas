@@ -13,7 +13,12 @@ import {
 } from "../../ui";
 import type { ItemHabitual } from "../../ui";
 import { RegistrarContato } from "../../registrar-contato";
-import { dentroDaJanela, ddmm, diaEmSP } from "../../contato-regras";
+import {
+  dentroDaJanela,
+  ddmm,
+  diaEmSP,
+  contarNaoAgoraSeguidos,
+} from "../../contato-regras";
 import { SeletorRota } from "../../seletor-rota";
 import { recadoDoDia, rotinaDoCliente, type Rota } from "../../rota-regras";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
@@ -55,6 +60,16 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
   const outrosNomes = (apelidos ?? [])
     .map((a) => a.cadastro_original)
     .filter((n) => n !== cliente.nome);
+
+  // Degrau da escada do "não agora" — 3, 6, 12 ou 24 dias até voltar.
+  //
+  // Duas contagens porque os dois formulários da página estão em posições
+  // diferentes da história: o botão do topo cria um contato NOVO, depois de
+  // tudo o que já existe; o formulário de correção reescreve o contato mais
+  // recente e por isso não pode contar a si mesmo.
+  const historico = (contatos ?? []).map((c) => c.resultado);
+  const naoAgoraSeguidos = contarNaoAgoraSeguidos(historico);
+  const naoAgoraAntesDoTopo = contarNaoAgoraSeguidos(historico.slice(1));
 
   return (
     <div className="flex flex-col gap-4">
@@ -219,6 +234,7 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
                 clienteId={cliente.id}
                 nome={cliente.nome}
                 intervaloDias={cliente.intervalo_mediano_dias}
+                naoAgoraSeguidos={naoAgoraSeguidos}
               />
             )}
           </div>
@@ -274,6 +290,9 @@ export default async function FichaClientePage({ params }: { params: Promise<{ i
                         clienteId={cliente.id}
                         nome={cliente.nome}
                         intervaloDias={cliente.intervalo_mediano_dias}
+                        // Corrigir o contato do topo: ele não conta a si
+                        // mesmo. A escada olha só o que veio antes dele.
+                        naoAgoraSeguidos={naoAgoraAntesDoTopo}
                         contato={{
                           id: c.id,
                           canal: c.canal,

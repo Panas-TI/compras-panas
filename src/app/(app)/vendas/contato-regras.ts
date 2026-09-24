@@ -10,7 +10,9 @@
 export const RESULTADOS = [
   { v: "vai_comprar", label: "Vai comprar", adiaDias: 2 },
   { v: "comprou", label: "Comprou agora", adiaDias: 0 },
-  { v: "nao_agora", label: "Não agora", adiaDias: 14 },
+  // adiaDias 0: quem manda no "não agora" é a escada de diasDoNaoAgora(), que
+  // depende de quantas vezes seguidas o cliente já respondeu isso.
+  { v: "nao_agora", label: "Não agora", adiaDias: 0 },
   // "Ainda" de propósito: é estado provisório, não veredito. O cliente que
   // responde duas horas depois cai na bandeja e este registro é corrigido —
   // por isso a palavra não pode soar como desfecho.
@@ -124,13 +126,53 @@ export function diasAteVoltar(intervalo: number | null): number {
  * "Comprou agora" ignora qualquer data digitada: sem isso o cliente voltaria
  * pra fila amanhã, porque a venda só entra no sistema na importação seguinte.
  */
+/**
+ * A escada do "não agora".
+ *
+ * Era prazo fixo de 14 dias, e isso partia de uma premissa errada: que "não
+ * agora" é uma decisão firme. Não é — é a resposta mais fácil de dar e a mais
+ * repetida. O preço eram clientes de ciclo curto sumindo da lista por duas
+ * semanas: o Armazém 38 compra de 3 em 3 dias e ficava 13 dias fora, quatro
+ * compras sem ninguém falar com ele. Dos 49 clientes no ciclo, 15 estavam
+ * parados por este prazo.
+ *
+ * Agora um "não agora" sozinho vale pouco: volta em 3 dias. Quem repete é que
+ * está dizendo alguma coisa, e cada repetição seguida dobra a espera — 3, 6,
+ * 12, 24 — até o teto. Qualquer outro resultado no meio zera: quem comprou
+ * voltou ao ciclo dele.
+ *
+ * O vendedor não conta nada disso; quem conta é o sistema.
+ */
+export const NAO_AGORA_PRIMEIRO = 3;
+export const NAO_AGORA_TETO = 24;
+
+export function diasDoNaoAgora(seguidos: number): number {
+  return Math.min(NAO_AGORA_PRIMEIRO * 2 ** Math.max(0, seguidos), NAO_AGORA_TETO);
+}
+
+/**
+ * Quantos "não agora" seguidos o cliente já deu, do contato mais recente pro
+ * mais antigo. Recebe os resultados JÁ ordenados e JÁ sem o contato que está
+ * sendo corrigido — quem está sendo escrito agora não conta a si mesmo.
+ */
+export function contarNaoAgoraSeguidos(resultados: (string | null)[]): number {
+  let n = 0;
+  for (const r of resultados) {
+    if (r !== "nao_agora") break;
+    n++;
+  }
+  return n;
+}
+
 export function calcularAdiarAte(
   resultado: string,
   intervalo: number | null,
-  escolhida?: string | null
+  escolhida?: string | null,
+  naoAgoraSeguidos = 0
 ): string | null {
   if (resultado === "comprou") return hojeMais(diasAteVoltar(intervalo));
   if (escolhida) return escolhida;
+  if (resultado === "nao_agora") return hojeMais(diasDoNaoAgora(naoAgoraSeguidos));
   const dias = RESULTADOS.find((r) => r.v === resultado)?.adiaDias ?? 0;
   return dias > 0 ? hojeMais(dias) : null;
 }
