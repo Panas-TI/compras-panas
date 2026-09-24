@@ -1959,6 +1959,28 @@ export type Database = {
       }
     }
     Views: {
+      vendas_ultimo_contato: {
+        Row: {
+          adiar_ate: string | null
+          atualizado_em: string | null
+          cliente_id: string | null
+          concluido_em: string | null
+          contato_id: string | null
+          criado_em: string | null
+          motivo: string | null
+          observacao: string | null
+          resultado: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_contatos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "vendas_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contagens_resumo: {
         Row: {
           contagem_id: string | null

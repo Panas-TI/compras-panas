@@ -40,22 +40,31 @@ export default async function VendasHojePage() {
   // contato com retorno pra hoje ficava silenciado no plano E fora da bandeja
   // — invisível nas duas seções, à noite, que é quando se trabalha.
   const hoje = diaEmSP(new Date());
-  const { lista, trabalhados, totalReativacao } = await montarPlanoDoDia();
+  const { lista, totalReativacao } = await montarPlanoDoDia();
 
   // Quem saiu da lista por ter combinado data — some sem explicação seria pior.
   const supabase = await createClient();
+  //
+  // Pela view: uma linha por cliente, já a mais recente. A consulta anterior
+  // varria vendas_contatos inteira sem limite e, acima de mil linhas, o
+  // PostgREST cortaria em silêncio.
+  //
+  // `> hoje` e não `>= hoje`: quem está marcado pra voltar hoje não está fora
+  // da lista — está dentro dela, como retorno combinado.
   const { data: adiados } = await supabase
-    .from("vendas_contatos")
-    .select("cliente_id, adiar_ate, resultado, motivo, observacao, cliente:vendas_clientes(id, nome)")
-    .gte("adiar_ate", hoje)
-    .order("criado_em", { ascending: false });
+    .from("vendas_ultimo_contato")
+    .select("cliente_id, adiar_ate, resultado, motivo, observacao")
+    .gt("adiar_ate", hoje);
 
-  const vistos = new Set<string>();
-  const aguardando = (adiados ?? []).filter((a) => {
-    if (!a.cliente_id || vistos.has(a.cliente_id)) return false;
-    vistos.add(a.cliente_id);
-    return true;
-  });
+  const aguardando = (adiados ?? []).filter((a) => a.cliente_id);
+  const nomePorCliente = new Map<string, string>();
+  if (aguardando.length > 0) {
+    const { data: nomes } = await supabase
+      .from("vendas_clientes")
+      .select("id, nome")
+      .in("id", aguardando.map((a) => a.cliente_id!));
+    for (const n of nomes ?? []) nomePorCliente.set(n.id, n.nome);
+  }
 
   // Bandeja "Aguardando resposta".
   //
@@ -143,55 +152,25 @@ export default async function VendasHojePage() {
     (a) => !naBandeja.has(a.cliente_id!) && !naLista.has(a.cliente_id!)
   );
 
-  const pct = lista.length > 0 ? Math.round((trabalhados / lista.length) * 100) : 0;
-  const pendentes = lista.length - trabalhados;
+  // A lista do dia são duas coisas diferentes, e misturá-las apagou o sinal.
+  //
+  // "Para hoje" é o ciclo de compra: quem prometeu voltar, quem passou do
+  // ponto, quem vence agora, cliente novo. É onde está a venda. "Reativação" é
+  // backlog — cliente parado há meses que a cota preenche pra ninguém ser
+  // esquecido, útil mas sem hora marcada.
+  //
+  // Numa fila única de 50 cartões com o mesmo peso, num dia em que o ciclo
+  // rende 14, os 36 de reativação viravam a tela inteira e a barra de progresso
+  // cobrava as duas coisas igual. A leitura de quem abre é "o sistema parou de
+  // me indicar quem vai comprar" — quando na verdade ele indicou, e o sinal
+  // ficou soterrado. Separado, a primeira coisa que se lê é o número do dia.
+  const doDia = lista.filter((c) => c.faixa !== "reativacao");
+  const reativacao = lista.filter((c) => c.faixa === "reativacao");
+  const trabalhadosDoDia = doDia.filter((c) => c.trabalhado).length;
+  const pct = doDia.length > 0 ? Math.round((trabalhadosDoDia / doDia.length) * 100) : 0;
+  const pendentes = doDia.length - trabalhadosDoDia;
 
-  return (
-    <div className="flex flex-col gap-4">
-      <AlertaImportacao />
-      <PlacarMeta />
-      <RotasHoje hoje={hoje} />
-
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Plano do dia · {formatDateBR(hoje)}</h1>
-          <p className="text-sm text-zinc-600">
-            Lista fechada de {lista.length} clientes. Vencidos primeiro, depois quem vence agora, e
-            a cota de reativação completa.
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-semibold tabular-nums">
-            {trabalhados}
-            <span className="text-base font-normal text-zinc-400"> de {lista.length}</span>
-          </p>
-          <p className="text-xs text-zinc-500">
-            {pendentes > 0 ? `faltam ${pendentes}` : "lista concluída"}
-          </p>
-        </div>
-      </div>
-
-      <div className="h-2 overflow-hidden rounded-full bg-zinc-100">
-        <div
-          className={`h-full rounded-full transition-all ${
-            pct === 100 ? "bg-emerald-500" : "bg-zinc-400"
-          }`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-
-      <AguardandoResposta itens={emAberto} podeEscrever={podeEscrever} />
-
-      {lista.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center text-sm text-zinc-500">
-            Nenhum cliente para hoje.
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="flex flex-col gap-2">
-        {lista.map((c) => {
+  const cartao = (c: ClienteDoPlano) => {
           const rec = recenciaDias(c.ultima_compra);
           const f = FAIXA[c.faixa];
           return (
@@ -312,12 +291,79 @@ export default async function VendasHojePage() {
               </CardContent>
             </Card>
           );
-        })}
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <AlertaImportacao />
+      <PlacarMeta />
+      <RotasHoje hoje={hoje} />
+
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Plano do dia · {formatDateBR(hoje)}</h1>
+          <p className="text-sm text-zinc-600">
+            {doDia.length === 0
+              ? "Ninguém no ciclo de compra hoje — só reativação abaixo."
+              : `${doDia.length} ${
+                  doDia.length === 1 ? "cliente no ciclo de compra" : "clientes no ciclo de compra"
+                }: retorno combinado primeiro, depois vencidos e quem vence agora.`}
+            {reativacao.length > 0 && ` Mais ${reativacao.length} de reativação no fim da página.`}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-semibold tabular-nums">
+            {trabalhadosDoDia}
+            <span className="text-base font-normal text-zinc-400"> de {doDia.length}</span>
+          </p>
+          <p className="text-xs text-zinc-500">
+            {pendentes > 0 ? `faltam ${pendentes}` : "lista concluída"}
+          </p>
+        </div>
       </div>
 
+      <div className="h-2 overflow-hidden rounded-full bg-zinc-100">
+        <div
+          className={`h-full rounded-full transition-all ${
+            pct === 100 ? "bg-emerald-500" : "bg-zinc-400"
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      <AguardandoResposta itens={emAberto} podeEscrever={podeEscrever} />
+
+      {doDia.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center text-sm text-zinc-500">
+            Nenhum cliente no ciclo de compra hoje. Quem está esperando resposta aparece na bandeja
+            acima; quem combinou data volta no dia marcado.
+          </CardContent>
+        </Card>
+      )}
+
+      <section className="flex flex-col gap-2">
+        {doDia.map(cartao)}
+      </section>
+
+      {reativacao.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <div className="flex items-baseline gap-2 border-t border-zinc-200 pt-4">
+            <h2 className="text-sm font-semibold text-zinc-700">
+              Reativação · {reativacao.length}
+            </h2>
+            <p className="text-xs text-zinc-500">
+              parados há meses, sem hora marcada — só se sobrar tempo depois do bloco de cima
+            </p>
+          </div>
+          {reativacao.map(cartao)}
+        </section>
+      )}
+
       <p className="text-xs text-zinc-500">
-        A lista tem alvo de {TAMANHO_LISTA} clientes por dia. {totalReativacao} inativos aguardam
-        reativação — na cota atual, o backlog é percorrido por inteiro em algumas semanas.
+        A tela tem alvo de {TAMANHO_LISTA} cartões por dia; o que sobra do ciclo de compra vira
+        cota de reativação. {totalReativacao} inativos aguardam — na cota atual, o backlog é
+        percorrido por inteiro em algumas semanas.
       </p>
 
       {foraDaLista.length > 0 && (
@@ -332,7 +378,7 @@ export default async function VendasHojePage() {
             {foraDaLista.map((a) => (
               <li key={a.cliente_id} className="flex flex-wrap items-center gap-2 text-sm">
                 <ResultadoPill resultado={a.resultado} />
-                {a.cliente && <LinkCliente id={a.cliente.id} nome={a.cliente.nome} />}
+                <LinkCliente id={a.cliente_id!} nome={nomePorCliente.get(a.cliente_id!) ?? "cliente"} />
                 <span className="text-zinc-500">volta em {formatDateBR(String(a.adiar_ate))}</span>
                 <MotivoTag motivo={a.motivo} />
                 {a.observacao && <span className="text-zinc-500">— “{a.observacao}”</span>}

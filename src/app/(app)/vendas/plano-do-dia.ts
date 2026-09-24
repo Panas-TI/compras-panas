@@ -68,23 +68,41 @@ export async function montarPlanoDoDia(): Promise<{
   // no meio do expediente da noite. Bug que já existia; aparecia todo dia.
   const hoje = diaEmSP(new Date());
 
-  const [{ data: fila }, { data: adiados }, { data: oport }, { data: contatosHoje }, { data: todosContatos }] =
+  const [{ data: fila }, { data: oport }, { data: contatosHoje }, { data: ultimos }] =
     await Promise.all([
       supabase.from("vendas_clientes").select(CAMPOS).eq("contatar_3dias", true).eq("ativo", true),
-      supabase.from("vendas_contatos").select("cliente_id").gte("adiar_ate", hoje),
       supabase.rpc("vendas_oportunidades"),
       supabase
         .from("vendas_contatos")
         .select("cliente_id")
         .gte("criado_em", inicioDoDiaSP(hoje)),
+      // Uma linha por cliente, sempre a mais recente. Antes eram duas leituras
+      // da tabela inteira de contatos, sem limite nem ordem na primeira: ao
+      // passar de mil linhas o PostgREST corta em silêncio e quem ficaria de
+      // fora da fila viraria sorteio.
       supabase
-        .from("vendas_contatos")
-        .select("cliente_id, resultado, adiar_ate, observacao, criado_em, atualizado_em, concluido_em")
-        .not("adiar_ate", "is", null)
-        .order("criado_em", { ascending: false }),
+        .from("vendas_ultimo_contato")
+        .select("cliente_id, resultado, adiar_ate, observacao, criado_em, atualizado_em, concluido_em"),
     ]);
 
-  const silenciados = new Set((adiados ?? []).map((a) => a.cliente_id));
+  // Quem cala o cliente é o ÚLTIMO contato, e só se a data ainda não chegou.
+  //
+  // Antes bastava QUALQUER linha do cliente com `adiar_ate >= hoje`. Dois furos,
+  // e juntos secaram a lista — dos 49 clientes no ciclo de compra, 46 estavam
+  // silenciados e sobravam 3; o resto da tela era reativação, cliente parado há
+  // meses. Daí a sensação de que o sistema parou de indicar quem vai comprar.
+  //
+  // 1) Combinado velho nunca soltava: um "não agora, volta dia 6" de duas
+  //    semanas atrás seguia calando o cliente mesmo depois de você falar com
+  //    ele ontem. Vale o que ele disse por último.
+  // 2) `>=` prendia quem estava marcado pra voltar HOJE: a fila natural tirava
+  //    por ter data marcada, e o retorno só pegava data vencida. Quem pediu
+  //    "me liga quinta" caía no vão justamente na quinta.
+  const silenciados = new Set(
+    (ultimos ?? [])
+      .filter((u) => u.adiar_ate && String(u.adiar_ate) > hoje)
+      .map((u) => u.cliente_id)
+  );
   const trabalhadosHoje = new Set((contatosHoje ?? []).map((c) => c.cliente_id));
   const oportPorCliente = new Map(
     (oport ?? []).map((o) => [
@@ -149,10 +167,10 @@ export async function montarPlanoDoDia(): Promise<{
       concluidoEm: string | null;
     }
   >();
-  for (const c of todosContatos ?? []) {
-    // Vem ordenado do mais recente pro mais antigo: o primeiro de cada cliente
-    // é o que vale. Combinado antigo não ressuscita.
-    if (c.cliente_id && !ultimoCombinado.has(c.cliente_id)) {
+  for (const c of ultimos ?? []) {
+    // A view já entrega só o contato mais recente de cada cliente. Combinado
+    // antigo não ressuscita.
+    if (c.cliente_id && c.adiar_ate) {
       ultimoCombinado.set(c.cliente_id, {
         resultado: c.resultado ?? "",
         adiar_ate: String(c.adiar_ate),
