@@ -15,19 +15,21 @@ export default async function RecebimentoIndexPage() {
     : { data: null };
   const podeVerValor = meProfile?.role !== "estoquista";
 
-  // Busca todas as linhas elegíveis pra recebimento + as já recebidas (pra contar)
-  const { data: linhas } = await supabase
-    .from("solicitacao_linhas")
-    .select(
-      `
-      solicitacao_id, status, alteracao_confirmada, valor,
-      solicitacao:solicitacoes_semanais!solicitacao_linhas_solicitacao_id_fkey(
-        id, data_inicio, data_fim, enviada_em,
-        comprador:profiles!solicitacoes_semanais_comprador_id_fkey(nome)
-      )
-    `
-    )
-    .in("status", ["Aprovada", "Volumes ou Preço Alterados", "Aprovada & Recebida"]);
+  // Totais vêm somados do banco, não contados aqui.
+  //
+  // Antes esta tela pedia TODAS as linhas de TODAS as solicitações com status
+  // de recebimento — 1.194 — pra somar em JavaScript. O PostgREST entrega no
+  // máximo 1.000 e corta o resto EM SILÊNCIO, sem erro e sem aviso: a
+  // solicitação de 28/09 aparecia com 24 pendentes e R$ 4.366,80 quando tinha
+  // 75 e R$ 13.294,97. E como não havia ordem na consulta, quem era cortado
+  // dependia do plano do banco — as semanas antigas, já recebidas, batiam, e
+  // as recentes não.
+  //
+  // Duas consultas curtas e limitadas: ~19 resumos e os cabeçalhos deles.
+  const { data: resumos } = await supabase
+    .from("solicitacoes_resumo")
+    .select("solicitacao_id, pendentes_recebimento, recebidos, valor_pendente")
+    .gt("pendentes_recebimento", 0);
 
   type SolicAgg = {
     id: string;
@@ -41,35 +43,36 @@ export default async function RecebimentoIndexPage() {
   };
 
   const byId = new Map<string, SolicAgg>();
-  for (const l of linhas ?? []) {
-    const s = l.solicitacao;
-    if (!s) continue;
-    const cur = byId.get(s.id) ?? {
-      id: s.id,
-      data_inicio: s.data_inicio,
-      data_fim: s.data_fim,
-      enviada_em: s.enviada_em,
-      comprador_nome: s.comprador?.nome ?? null,
-      pendentes: 0,
-      recebidos: 0,
-      valor_pendente: 0,
-    };
-    if (l.status === "Aprovada & Recebida") {
-      cur.recebidos += 1;
-    } else if (
-      l.status === "Aprovada" ||
-      (l.status === "Volumes ou Preço Alterados" && l.alteracao_confirmada)
-    ) {
-      cur.pendentes += 1;
-      cur.valor_pendente += Number(l.valor ?? 0);
+  const ids = (resumos ?? []).map((r) => r.solicitacao_id).filter((x): x is string => !!x);
+
+  if (ids.length > 0) {
+    const { data: cabecalhos } = await supabase
+      .from("solicitacoes_semanais")
+      .select(
+        `id, data_inicio, data_fim, enviada_em,
+         comprador:profiles!solicitacoes_semanais_comprador_id_fkey(nome)`
+      )
+      .in("id", ids);
+
+    const resumoPorId = new Map((resumos ?? []).map((r) => [r.solicitacao_id, r]));
+    for (const c of cabecalhos ?? []) {
+      const r = resumoPorId.get(c.id);
+      if (!r) continue;
+      byId.set(c.id, {
+        id: c.id,
+        data_inicio: c.data_inicio,
+        data_fim: c.data_fim,
+        enviada_em: c.enviada_em,
+        comprador_nome: c.comprador?.nome ?? null,
+        pendentes: r.pendentes_recebimento ?? 0,
+        recebidos: r.recebidos ?? 0,
+        valor_pendente: Number(r.valor_pendente ?? 0),
+      });
     }
-    byId.set(s.id, cur);
   }
 
   // Só mostra solicitações com pelo menos 1 item pendente
-  const solics = Array.from(byId.values())
-    .filter((s) => s.pendentes > 0)
-    .sort((a, b) => b.data_inicio.localeCompare(a.data_inicio));
+  const solics = Array.from(byId.values()).sort((a, b) => b.data_inicio.localeCompare(a.data_inicio));
 
   return (
     <div className="flex flex-col gap-4">

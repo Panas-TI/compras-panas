@@ -2005,6 +2005,8 @@ export type Database = {
           linhas: number | null
           pendentes_aprovacao: number | null
           pendentes_recebimento: number | null
+          recebidos: number | null
+          valor_pendente: number | null
           solicitacao_id: string | null
           valor: number | null
         }
