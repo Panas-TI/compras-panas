@@ -12,6 +12,7 @@ import {
 import { RegistrarRapido } from "./registrar-rapido";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { CoberturaClientes } from "./cobertura-clientes";
 import { AlertaImportacao } from "./alerta-importacao";
 import { PlacarMeta } from "./placar-meta";
 import { montarPlanoDoDia, TAMANHO_LISTA, type ClienteDoPlano } from "./plano-do-dia";
@@ -323,6 +324,7 @@ export default async function VendasHojePage() {
   return (
     <div className="flex flex-col gap-4">
       <AlertaImportacao />
+      <CoberturaClientes />
       <PlacarMeta />
       <RotasHoje hoje={hoje} />
 

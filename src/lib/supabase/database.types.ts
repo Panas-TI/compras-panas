@@ -1962,6 +1962,24 @@ export type Database = {
       }
     }
     Views: {
+      vendas_cobertura_clientes: {
+        Row: {
+          adiar_ate: string | null
+          contatar_3dias: boolean | null
+          data_prevista_compra: string | null
+          dias_contato: number[] | null
+          estado: string | null
+          id: string | null
+          intervalo_mediano_dias: number | null
+          nome: string | null
+          parado_ha: number | null
+          receita_anual_risco: number | null
+          status: string | null
+          ultima_compra: string | null
+          ultimo_resultado: string | null
+        }
+        Relationships: []
+      }
       vendas_ultimo_contato: {
         Row: {
           adiar_ate: string | null

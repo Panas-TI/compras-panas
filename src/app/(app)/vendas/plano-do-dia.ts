@@ -14,6 +14,47 @@ import type { Rota } from "./rota-regras";
  */
 export const TAMANHO_LISTA = 50;
 
+/** O contato mais recente do cliente, na forma mínima que as regras usam. */
+export type UltimoContato = {
+  adiar_ate: string | null;
+  /** Null = ainda na bandeja, ninguém fechou o assunto. */
+  concluidoEm: string | null;
+  criado_em: string;
+};
+
+/**
+ * Este cliente está calado hoje por decisão dele?
+ *
+ * Duas coisas que parecem detalhe e não são:
+ *
+ * - vale o ÚLTIMO contato, não qualquer um. Quando a regra olhava qualquer
+ *   linha, um "não agora, volta dia 6" de duas semanas atrás seguia calando
+ *   cliente falado ontem. De 49 na fila, 46 ficaram silenciados.
+ * - `> hoje`, não `>= hoje`. Com `>=`, quem estava marcado pra voltar HOJE
+ *   caía num vão: a fila tirava por ter data marcada e o retorno só pegava
+ *   data vencida.
+ */
+export function silenciaHoje(ultimo: UltimoContato | null | undefined, hoje: string): boolean {
+  return !!ultimo?.adiar_ate && String(ultimo.adiar_ate) > hoje;
+}
+
+/**
+ * A data combinada chegou e o cliente tem que voltar como cobrança?
+ *
+ * Contato de hoje só não volta hoje enquanto ninguém o concluiu: registrar
+ * contato agenda a volta sozinho, e um vencimento no mesmo dia traria de volta
+ * quem você acabou de falar. Mas quando VOCÊ conclui e marca o retorno pra
+ * hoje — "ele pediu pra ligar de tarde" — é decisão sua, e ele precisa
+ * aparecer.
+ */
+export function viraRetornoHoje(ultimo: UltimoContato, hoje: string): boolean {
+  if (!ultimo.adiar_ate) return false;
+  return (
+    String(ultimo.adiar_ate) <= hoje &&
+    (ultimo.concluidoEm !== null || diaEmSP(ultimo.criado_em) !== hoje)
+  );
+}
+
 export type ClienteDoPlano = {
   id: string;
   nome: string;
@@ -116,7 +157,9 @@ export async function montarPlanoDoDia(): Promise<{
   //    "me liga quinta" caía no vão justamente na quinta.
   const silenciados = new Set(
     (ultimos ?? [])
-      .filter((u) => u.adiar_ate && String(u.adiar_ate) > hoje)
+      .filter((u) =>
+        silenciaHoje({ adiar_ate: u.adiar_ate, concluidoEm: u.concluido_em, criado_em: String(u.criado_em) }, hoje)
+      )
       .map((u) => u.cliente_id)
   );
   const trabalhadosHoje = new Set((contatosHoje ?? []).map((c) => c.cliente_id));
@@ -218,9 +261,7 @@ export async function montarPlanoDoDia(): Promise<{
     // ligar de tarde" — é decisão sua, e o cliente precisa aparecer. Sem essa
     // diferença ele sumia das duas pontas: fora da bandeja por estar
     // concluído, fora da lista por ser de hoje.
-    .filter(
-      ([, v]) => v.adiar_ate <= hoje && (v.concluidoEm !== null || diaEmSP(v.criado_em) !== hoje)
-    )
+    .filter(([, v]) => viraRetornoHoje(v, hoje))
     .map(([id]) => id);
 
   const retornos: ClienteDoPlano[] = [];
