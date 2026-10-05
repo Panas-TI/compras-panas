@@ -11,6 +11,10 @@ const TIPOS = [
 
 export default async function CadastrosPage() {
   const supabase = await createClient();
+  const { count: totalProdutos } = await supabase
+    .from("produto")
+    .select("*", { count: "exact", head: true })
+    .eq("ativo", true);
   const counts = await Promise.all(
     TIPOS.map(async (t) => {
       const { count } = await supabase
@@ -25,6 +29,19 @@ export default async function CadastrosPage() {
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold">Cadastros</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Tela própria: produto tem tipo, categoria, unidade e estoque ideal,
+            e não cabe na tabela genérica de nome + ativo. */}
+        <Link href="/cadastros/produtos">
+          <Card className="transition-shadow hover:shadow-md">
+            <CardHeader>
+              <CardDescription>Produtos</CardDescription>
+              <CardTitle className="text-2xl">{totalProdutos}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-zinc-500">O que o PCP planeja</p>
+            </CardContent>
+          </Card>
+        </Link>
         {counts.map((t) => (
           <Link key={t.slug} href={`/cadastros/${t.slug}`}>
             <Card className="transition-shadow hover:shadow-md">
