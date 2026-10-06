@@ -51,6 +51,15 @@ export async function atualizarContatoAction(input: {
   canal?: string | null;
   /** Data escolhida à mão. Ignorada quando o resultado é "comprou". */
   adiarAte?: string | null;
+  /**
+   * A data veio de uma pessoa escolhendo, ou é a que já estava gravada?
+   *
+   * Sem este sinal o servidor presumia que toda data recebida era acordo — e o
+   * formulário manda a data existente de volta quando o resultado não mudou,
+   * que é justamente o palpite calculado pelo clique de um toque. O carimbo de
+   * "combinado" ia parar em cima do chute da própria máquina.
+   */
+  dataEscolhida?: boolean;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
   const g = await guard(supabase);
@@ -158,7 +167,7 @@ export async function atualizarContatoAction(input: {
     ),
     // Houve acordo só quando uma pessoa escolheu a data. É esta linha que
     // separa "o cliente pediu pra ligar dia 12" de "o sistema chutou 12".
-    combinado_com_cliente: !!input.adiarAte,
+    combinado_com_cliente: !!input.adiarAte && input.dataEscolhida === true,
     // atualizado_em, resultado_inicial e corrigido_por são carimbados pelo
     // trigger no banco — não aqui. Assim o rastro existe por qualquer caminho,
     // inclusive numa chamada crua ao PostgREST, e a hora vem do relógio do

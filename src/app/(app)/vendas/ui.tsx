@@ -202,16 +202,22 @@ export function MotivoTag({ motivo }: { motivo: string | null }) {
 
 // Resultado do contato. Mesma ordem do formulário de registro.
 export const RESULTADO_LABEL: Record<string, string> = {
+  // O resultado do clique de um toque, e hoje o mais comum de todos. Sem ele
+  // aqui a pílula saía com a string crua ("falado"), o filtro da tela de
+  // contatos não tinha a opção, e a linha de contagens não fechava com o
+  // total — porque a tela itera este mapa pra montar as duas coisas.
+  falado: "Falei com ele",
   vai_comprar: "Vai comprar",
   comprou: "Comprou agora",
   nao_agora: "Não agora",
-  // "Ainda": é estado provisório, não veredito. Quem responde depois tem a
-  // bandeja do plano do dia pra corrigir este mesmo registro.
+  // Dos 334 registros antigos. A bandeja que o produzia não existe mais, mas
+  // o rótulo tem que continuar legível no histórico.
   sem_resposta: "Ainda sem resposta",
   recusou: "Não quer mais",
 };
 
 const RESULTADO_CLASSE: Record<string, string> = {
+  falado: "bg-sky-50 text-sky-700 border-sky-200",
   vai_comprar: "bg-blue-50 text-blue-700 border-blue-200",
   comprou: "bg-emerald-50 text-emerald-700 border-emerald-200",
   nao_agora: "bg-zinc-50 text-zinc-600 border-zinc-200",

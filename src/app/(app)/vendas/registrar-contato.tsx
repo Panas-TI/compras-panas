@@ -121,6 +121,7 @@ export function RegistrarContato({
           // estava valendo). Se o resultado mudou e ninguém tocou no campo,
           // manda null e deixa o servidor aplicar o padrão do novo resultado.
           adiarAte: dataTocada || !resultadoMudou ? adiarEfetivo || null : null,
+          dataEscolhida: dataTocada,
         });
         if (r.error) throw new Error(r.error);
       } else {
@@ -142,6 +143,13 @@ export function RegistrarContato({
             naoAgoraSeguidos
           ),
           observacao: observacao.trim() || null,
+          // Esta via — "Registrar contato" na ficha do cliente e "Registrar
+          // decisão" em Não está fechando — era a única que não carimbava o
+          // campo, e o default da coluna é false. Toda data digitada à mão
+          // nascia como palpite: o cliente pedia "me liga dia 12", você
+          // digitava, e no dia 12 ele voltava rotulado "3ª vez que você fala
+          // com ele · sem pedido até agora", no fim da lista.
+          combinado_com_cliente: dataTocada,
         });
         if (error) throw new Error(error.message);
       }
