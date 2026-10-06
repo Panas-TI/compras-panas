@@ -17,7 +17,6 @@ import { AlertaImportacao } from "./alerta-importacao";
 import { PlacarMeta } from "./placar-meta";
 import { montarPlanoDoDia, TAMANHO_LISTA, type ClienteDoPlano } from "./plano-do-dia";
 import { createClient } from "@/lib/supabase/server";
-import { AguardandoResposta, type EmAberto } from "./aguardando-resposta";
 import { SeletorRota } from "./seletor-rota";
 import { RotasHoje } from "./rotas-hoje";
 import {
@@ -27,14 +26,7 @@ import {
   rotuloAgenda,
   type Rota,
 } from "./rota-regras";
-import {
-  hojeMais,
-  rotuloQuando,
-  diaEmSP,
-  inicioDoDiaSP,
-  contarNaoAgoraSeguidos,
-  TETO_BANDEJA_DIAS,
-} from "./contato-regras";
+import { diaEmSP } from "./contato-regras";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +34,10 @@ const FAIXA: Record<ClienteDoPlano["faixa"], { rotulo: string; classe: string }>
   escolhido: { rotulo: "puxado à mão", classe: "bg-fuchsia-100 text-fuchsia-900 border-fuchsia-300" },
   retorno: { rotulo: "retorno combinado", classe: "bg-emerald-100 text-emerald-900 border-emerald-300" },
   agenda: { rotulo: "dia marcado", classe: "bg-sky-100 text-sky-900 border-sky-300" },
+  acompanhamento: {
+    rotulo: "falado, sem pedido",
+    classe: "bg-orange-50 text-orange-900 border-orange-200",
+  },
   vencido: { rotulo: "vencido", classe: "bg-amber-100 text-amber-900 border-amber-200" },
   previsto: { rotulo: "vence agora", classe: "bg-blue-50 text-blue-800 border-blue-200" },
   novo: { rotulo: "cliente novo", classe: "bg-violet-50 text-violet-800 border-violet-200" },
@@ -81,100 +77,22 @@ export default async function VendasHojePage() {
     for (const n of nomes ?? []) nomePorCliente.set(n.id, n.nome);
   }
 
-  // Bandeja "Aguardando resposta".
+  // A bandeja "Aguardando resposta" foi removida.
   //
-  // Mostra exatamente quem está silenciado na fila por um contato sem desfecho:
-  // marcar "ainda sem resposta" agenda o retorno pra amanhã e o cliente some da
-  // lista de hoje. Enquanto essa data não vence, só a bandeja o exibe; quando
-  // vence, ele volta como "retorno combinado" logo acima e sai daqui — por isso
-  // o corte é pela data de retorno e não por idade fixa, que duplicaria o
-  // cliente nas duas seções. `> hoje` e não `>= hoje`: o combinado marcado pra
-  // hoje já é retorno, e apareceria nos dois lugares.
+  // Era onde o trabalho ia morrer: o contato ficava lá esperando alguém voltar
+  // pra classificar, e em 30 dias isso não aconteceu 252 vezes de 443. Pior,
+  // enquanto não classificava, o sistema inventava uma data de retorno e
+  // chamava o próprio palpite de "retorno combinado".
   //
-  // Duas consultas, ambas limitadas de propósito. Uma varredura de todos os
-  // contatos da janela estouraria o teto de 1000 linhas do PostgREST, que
-  // trunca EM SILÊNCIO: o cliente cortado sumiria da bandeja e da lista ao
-  // mesmo tempo — de volta ao problema que esta tela resolve.
-  const { data: candidatos } = await supabase
-    .from("vendas_contatos")
-    .select(
-      `id, cliente_id, canal, resultado, motivo, observacao, adiar_ate, criado_em,
-       cliente:vendas_clientes(id, nome, ativo, telefone_e164, telefone_raw,
-                               telefone_presumido, canal_preferido)`
-    )
-    .eq("resultado", "sem_resposta")
-    // Concluído sai da bandeja. Marcar "ainda sem resposta" com data de retorno
-    // é uma decisão tomada — fica combinado voltar tal dia —, e o cliente volta
-    // como "retorno combinado" naquela data, não fica pendurado aqui.
-    .is("concluido_em", null)
-    .gte("criado_em", inicioDoDiaSP(hojeMais(-TETO_BANDEJA_DIAS)))
-    .order("criado_em", { ascending: false })
-    .limit(200);
-
-  // Dos candidatos, ficam só os que ninguém sucedeu com um contato mais novo.
-  const emAberto: EmAberto[] = [];
-  if (candidatos && candidatos.length > 0) {
-    const ids = candidatos.map((c) => c.cliente_id);
-    const { data: posteriores } = await supabase
-      .from("vendas_contatos")
-      .select("cliente_id, criado_em, resultado")
-      .in("cliente_id", ids)
-      .order("criado_em", { ascending: false })
-      .limit(1000);
-
-    const maisNovo = new Map<string, string>();
-    // Histórico por cliente, do mais novo pro mais velho. A mesma leitura serve
-    // pra saber qual é o contato vigente e pra contar os "não agora" seguidos
-    // que definem o degrau da escada de retorno.
-    const porCliente = new Map<string, (string | null)[]>();
-    for (const p of posteriores ?? []) {
-      if (!p.cliente_id) continue;
-      if (!maisNovo.has(p.cliente_id)) maisNovo.set(p.cliente_id, String(p.criado_em));
-      const h = porCliente.get(p.cliente_id);
-      if (h) h.push(p.resultado);
-      else porCliente.set(p.cliente_id, [p.resultado]);
-    }
-
-    const jaVisto = new Set<string>();
-    for (const c of candidatos) {
-      if (!c.cliente_id || jaVisto.has(c.cliente_id) || !c.cliente?.ativo) continue;
-      // Fica na bandeja enquanto o retorno não vence OU enquanto for de hoje.
-      // O filtro era só `adiar_ate > hoje`: um contato feito hoje com retorno
-      // marcado para hoje não caía aqui nem na fila — sumia das duas.
-      const deHoje = diaEmSP(String(c.criado_em)) === hoje;
-      if (!deHoje && String(c.adiar_ate ?? "") <= hoje) continue;
-      jaVisto.add(c.cliente_id);
-      if (maisNovo.get(c.cliente_id) !== String(c.criado_em)) continue;
-      emAberto.push({
-        id: c.id,
-        clienteId: c.cliente.id,
-        nome: c.cliente.nome,
-        canal: c.canal,
-        resultado: c.resultado ?? "sem_resposta",
-        motivo: c.motivo,
-        adiarAte: c.adiar_ate,
-        criadoEm: String(c.criado_em),
-        quando: rotuloQuando(String(c.criado_em)),
-        // O contato da bandeja É o mais recente do cliente, e concluí-lo
-        // reescreve ele mesmo — então a escada conta a partir do segundo.
-        naoAgoraSeguidos: contarNaoAgoraSeguidos((porCliente.get(c.cliente_id) ?? []).slice(1)),
-        observacao: c.observacao,
-        telefone_e164: c.cliente.telefone_e164,
-        telefone_raw: c.cliente.telefone_raw,
-        telefone_presumido: c.cliente.telefone_presumido,
-        canal_preferido: c.cliente.canal_preferido,
-      });
-    }
-  }
-
+  // Agora um clique é o ato inteiro: nada fica pendente, e o cliente volta
+  // sozinho pela escada de acompanhamento — 2, 4, 8 dias — com a contagem de
+  // tentativas à vista. Quem passa da quarta sai da lista do dia e aparece em
+  // "Não está fechando", que é outro tipo de decisão.
   // O bloco "fora da lista" usa o mesmo corte `adiar_ate >= hoje`, então todo
   // cliente da bandeja apareceria lá embaixo também — contado duas vezes na
   // mesma tela. A bandeja é a versão acionável; o rodapé fica com o resto.
-  const naBandeja = new Set(emAberto.map((i) => i.clienteId));
   const naLista = new Set(lista.map((c) => c.id));
-  const foraDaLista = aguardando.filter(
-    (a) => !naBandeja.has(a.cliente_id!) && !naLista.has(a.cliente_id!)
-  );
+  const foraDaLista = aguardando.filter((a) => !naLista.has(a.cliente_id!));
 
   // A lista do dia são duas coisas diferentes, e misturá-las apagou o sinal.
   //
@@ -243,9 +161,11 @@ export default async function VendasHojePage() {
                   {c.faixa === "escolhido"
                     ? (c.motivoManual ?? "alguém puxou este cliente para hoje")
                     : c.faixa === "retorno" && c.combinado
-                    ? `combinado para ${formatDateBR(c.combinado.adiarAte)}${
+                    ? `ele pediu para você voltar em ${formatDateBR(c.combinado.adiarAte)}${
                         c.combinado.observacao ? ` — “${c.combinado.observacao}”` : ""
                       }`
+                    : c.faixa === "acompanhamento" && c.combinado
+                    ? `${c.combinado.tentativas}ª vez que você fala com ele desde a última compra · sem pedido até agora`
                     : c.faixa === "agenda"
                     ? `você marcou ${rotuloAgenda(c.dias_contato)} para este cliente${
                         c.motivo_contato ? ` · ${c.motivo_contato}` : ""
@@ -360,7 +280,6 @@ export default async function VendasHojePage() {
         />
       </div>
 
-      <AguardandoResposta itens={emAberto} podeEscrever={podeEscrever} />
 
       {doDia.length === 0 && (
         <Card>

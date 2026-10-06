@@ -35,7 +35,7 @@ export function RegistrarRapido({ clienteId }: { clienteId: string }) {
             if (r.error) setErro(r.error);
             // Nada acontecer sem explicação é pior que um erro: quem clica fica
             // clicando de novo achando que a tela travou.
-            else if (r.jaAberto) setAviso("já está aguardando resposta");
+            else if (r.jaAberto) setAviso("você já falou com ele hoje");
             else router.refresh();
           });
         }}

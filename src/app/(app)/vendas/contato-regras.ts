@@ -7,7 +7,48 @@
  * contato nasceria com uma regra paralela pra manter em sincronia.
  */
 
+/**
+ * "Falei com ele." É o que um clique registra, e é tudo o que ele afirma.
+ *
+ * Existe porque o desenho antigo exigia que você voltasse depois pra dizer o
+ * que o cliente respondeu — e em 30 dias isso não aconteceu 252 vezes de 443.
+ * Pior: sem a resposta, o sistema inventava uma data de retorno e mostrava o
+ * próprio palpite como "retorno combinado". 64% dos combinados vencidos eram
+ * invenção, e passavam na frente de quem estava vencendo o ciclo de compra.
+ *
+ * Agora o clique afirma só o que é verdade — houve um contato — e o resto o
+ * sistema descobre sozinho: se o pedido entrar, deu certo; se não entrar, o
+ * cliente volta pela escada de acompanhamento.
+ */
+export const RESULTADO_FALADO = "falado";
+
+/**
+ * Escada do acompanhamento: 2, 4, 8 dias.
+ *
+ * Curta no começo porque contato sem resposta não é recusa — é silêncio, e
+ * silêncio de dois dias não quer dizer nada. Vai abrindo pra não virar
+ * perseguição de quem não está interessado.
+ */
+export const ACOMPANHAMENTO_DIAS = [2, 4, 8] as const;
+
+/**
+ * Depois desta tentativa o cliente sai da lista do dia.
+ *
+ * Ligar uma quinta vez pra quem não comprou nas quatro anteriores não é
+ * persistência, é desperdício — e entope a lista de quem ainda compraria.
+ * Hoje há cliente com 13 tentativas sem pedido. Eles vão pra tela "não está
+ * fechando", que é outro tipo de trabalho: visita, desconto ou parar.
+ */
+export const TENTATIVAS_ATE_PARAR = 4;
+
+export function diasDoAcompanhamento(tentativasAnteriores: number): number {
+  const i = Math.min(Math.max(0, tentativasAnteriores), ACOMPANHAMENTO_DIAS.length - 1);
+  return ACOMPANHAMENTO_DIAS[i];
+}
+
 export const RESULTADOS = [
+  // adiaDias 0: quem manda no "falado" é a escada de diasDoAcompanhamento().
+  { v: "falado", label: "Falei com ele", adiaDias: 0 },
   { v: "vai_comprar", label: "Vai comprar", adiaDias: 2 },
   { v: "comprou", label: "Comprou agora", adiaDias: 0 },
   // adiaDias 0: quem manda no "não agora" é a escada de diasDoNaoAgora(), que
@@ -168,10 +209,12 @@ export function calcularAdiarAte(
   resultado: string,
   intervalo: number | null,
   escolhida?: string | null,
-  naoAgoraSeguidos = 0
+  naoAgoraSeguidos = 0,
+  tentativasAnteriores = 0
 ): string | null {
   if (resultado === "comprou") return hojeMais(diasAteVoltar(intervalo));
   if (escolhida) return escolhida;
+  if (resultado === RESULTADO_FALADO) return hojeMais(diasDoAcompanhamento(tentativasAnteriores));
   if (resultado === "nao_agora") return hojeMais(diasDoNaoAgora(naoAgoraSeguidos));
   const dias = RESULTADOS.find((r) => r.v === resultado)?.adiaDias ?? 0;
   return dias > 0 ? hojeMais(dias) : null;

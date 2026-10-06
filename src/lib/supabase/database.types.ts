@@ -1629,6 +1629,7 @@ export type Database = {
           adiar_ate: string | null
           atualizado_em: string | null
           canal: string | null
+          combinado_com_cliente: boolean
           concluido_em: string | null
           cliente_id: string | null
           corrigido_por: string | null
@@ -1645,6 +1646,7 @@ export type Database = {
           adiar_ate?: string | null
           atualizado_em?: string | null
           canal?: string | null
+          combinado_com_cliente?: boolean
           concluido_em?: string | null
           cliente_id?: string | null
           corrigido_por?: string | null
@@ -1661,6 +1663,7 @@ export type Database = {
           adiar_ate?: string | null
           atualizado_em?: string | null
           canal?: string | null
+          combinado_com_cliente?: boolean
           concluido_em?: string | null
           cliente_id?: string | null
           corrigido_por?: string | null
@@ -1985,10 +1988,12 @@ export type Database = {
           adiar_ate: string | null
           atualizado_em: string | null
           cliente_id: string | null
+          combinado_com_cliente: boolean | null
           concluido_em: string | null
           contato_id: string | null
           criado_em: string | null
           motivo: string | null
+          tentativas: number | null
           observacao: string | null
           resultado: string | null
         }

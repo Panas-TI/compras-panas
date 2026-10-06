@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { diaEmSP, inicioDoDiaSP } from "./contato-regras";
+import { diaEmSP, inicioDoDiaSP, TENTATIVAS_ATE_PARAR } from "./contato-regras";
 import { temAgenda, hojeEhDiaDeContato } from "./rota-regras";
 import type { ItemHabitual } from "./ui";
 import type { Rota } from "./rota-regras";
@@ -17,10 +17,26 @@ export const TAMANHO_LISTA = 50;
 /** O contato mais recente do cliente, na forma mínima que as regras usam. */
 export type UltimoContato = {
   adiar_ate: string | null;
-  /** Null = ainda na bandeja, ninguém fechou o assunto. */
+  /** Null = ninguém informou desfecho. Não é pendência: é o caso normal. */
   concluidoEm: string | null;
   criado_em: string;
+  /** True só quando uma pessoa escolheu a data. Palpite do sistema é false. */
+  combinado: boolean;
+  /** Quantas vezes já se falou com ele desde a última compra. */
+  tentativas: number;
 };
+
+/**
+ * Já se tentou demais sem pedido nenhum?
+ *
+ * Quem passa daqui sai da lista do dia e vai pra tela "não está fechando".
+ * Ligar uma quinta vez pra quem não comprou nas quatro anteriores não é
+ * persistência — é ocupar a vaga de quem ainda compraria. Há cliente na base
+ * com 13 tentativas sem um pedido.
+ */
+export function cansouDeTentar(ultimo: UltimoContato | null | undefined): boolean {
+  return (ultimo?.tentativas ?? 0) >= TENTATIVAS_ATE_PARAR;
+}
 
 /**
  * Este cliente está calado hoje por decisão dele?
@@ -47,12 +63,37 @@ export function silenciaHoje(ultimo: UltimoContato | null | undefined, hoje: str
  * hoje — "ele pediu pra ligar de tarde" — é decisão sua, e ele precisa
  * aparecer.
  */
-export function viraRetornoHoje(ultimo: UltimoContato, hoje: string): boolean {
+export function venceuHoje(ultimo: UltimoContato, hoje: string): boolean {
   if (!ultimo.adiar_ate) return false;
   return (
     String(ultimo.adiar_ate) <= hoje &&
     (ultimo.concluidoEm !== null || diaEmSP(ultimo.criado_em) !== hoje)
   );
+}
+
+/**
+ * Retorno combinado: o cliente pediu pra você voltar numa data, e a data
+ * chegou. Só isto pode usar esse nome.
+ *
+ * Antes qualquer prazo vencido virava "retorno combinado", inclusive o que o
+ * próprio sistema tinha calculado quando ninguém classificou o contato. Dos
+ * 107 combinados vencidos num dia, 68 eram invenção — e como a faixa vem no
+ * topo da lista, elas passavam na frente de quem estava realmente vencendo o
+ * ciclo de compra. O vendedor abria a lista e via promessa que nunca houve.
+ */
+export function viraRetornoHoje(ultimo: UltimoContato, hoje: string): boolean {
+  return ultimo.combinado && venceuHoje(ultimo, hoje);
+}
+
+/**
+ * Acompanhamento: você falou, o pedido não veio, e o prazo da escada venceu.
+ *
+ * É o mesmo cliente que antes aparecia como "retorno combinado" — só que
+ * chamado pelo nome certo, e com a contagem de tentativas à mostra, que é a
+ * informação que decide se vale insistir.
+ */
+export function viraAcompanhamentoHoje(ultimo: UltimoContato, hoje: string): boolean {
+  return !ultimo.combinado && !cansouDeTentar(ultimo) && venceuHoje(ultimo, hoje);
 }
 
 export type ClienteDoPlano = {
@@ -74,11 +115,25 @@ export type ClienteDoPlano = {
   dia_pedido_habitual: number | null;
   dias_contato: number[] | null;
   /** De onde veio na composição do dia. */
-  faixa: "escolhido" | "retorno" | "agenda" | "vencido" | "previsto" | "novo" | "reativacao";
+  faixa:
+    | "escolhido"
+    | "retorno"
+    | "agenda"
+    | "vencido"
+    | "previsto"
+    | "acompanhamento"
+    | "novo"
+    | "reativacao";
   /** Só na faixa "escolhido": por que alguém puxou este cliente. */
   motivoManual?: string | null;
   /** Só na faixa "retorno": o combinado que venceu. */
-  combinado: { resultado: string; adiarAte: string; observacao: string | null } | null;
+  combinado: {
+    resultado: string;
+    adiarAte: string;
+    observacao: string | null;
+    /** Quantas vezes já se falou com ele desde a última compra dele. */
+    tentativas: number;
+  } | null;
   /** Produto que ele comprava e parou — a munição do vendedor. */
   oportunidade: { produto: string; vezes: number; dias: number } | null;
   /** Já foi trabalhado hoje? */
@@ -139,7 +194,9 @@ export async function montarPlanoDoDia(): Promise<{
       // fora da fila viraria sorteio.
       supabase
         .from("vendas_ultimo_contato")
-        .select("cliente_id, resultado, adiar_ate, observacao, criado_em, atualizado_em, concluido_em"),
+        .select(
+          "cliente_id, resultado, adiar_ate, observacao, criado_em, atualizado_em, concluido_em, combinado_com_cliente, tentativas"
+        ),
     ]);
 
   // Quem cala o cliente é o ÚLTIMO contato, e só se a data ainda não chegou.
@@ -158,7 +215,16 @@ export async function montarPlanoDoDia(): Promise<{
   const silenciados = new Set(
     (ultimos ?? [])
       .filter((u) =>
-        silenciaHoje({ adiar_ate: u.adiar_ate, concluidoEm: u.concluido_em, criado_em: String(u.criado_em) }, hoje)
+        silenciaHoje(
+          {
+            adiar_ate: u.adiar_ate,
+            concluidoEm: u.concluido_em,
+            criado_em: String(u.criado_em),
+            combinado: u.combinado_com_cliente ?? false,
+            tentativas: u.tentativas ?? 0,
+          },
+          hoje
+        )
       )
       .map((u) => u.cliente_id)
   );
@@ -222,8 +288,10 @@ export async function montarPlanoDoDia(): Promise<{
       observacao: string | null;
       criado_em: string;
       combinadoEm: string;
-      /** Null = ainda na bandeja, ninguém fechou o assunto. */
+      /** Null = ninguém informou desfecho. Não é pendência. */
       concluidoEm: string | null;
+      combinado: boolean;
+      tentativas: number;
     }
   >();
   for (const c of ultimos ?? []) {
@@ -239,6 +307,8 @@ export async function montarPlanoDoDia(): Promise<{
         // data da correção — foi aí que o cliente disse o que disse.
         combinadoEm: String(c.atualizado_em ?? c.criado_em),
         concluidoEm: c.concluido_em,
+        combinado: c.combinado_com_cliente ?? false,
+        tentativas: c.tentativas ?? 0,
       });
     }
   }
@@ -290,6 +360,7 @@ export async function montarPlanoDoDia(): Promise<{
           resultado: comb.resultado,
           adiarAte: comb.adiar_ate,
           observacao: comb.observacao,
+          tentativas: comb.tentativas,
         })
       );
     }
@@ -298,6 +369,44 @@ export async function montarPlanoDoDia(): Promise<{
   }
 
   const jaEmRetorno = new Set(retornos.map((c) => c.id));
+
+  // 1b) Acompanhamento: você falou, o pedido não veio, o prazo da escada
+  //     venceu. Antes isto aparecia como "retorno combinado" — 68 dos 107
+  //     combinados vencidos num dia eram exatamente isto, passando na frente
+  //     de quem estava vencendo o ciclo de compra. Mesmo cliente, nome certo,
+  //     e com a contagem de tentativas à vista pra decidir se vale insistir.
+  const idsAcomp = Array.from(ultimoCombinado.entries())
+    .filter(([id, v]) => viraAcompanhamentoHoje(v, hoje) && !jaEmRetorno.has(id))
+    .map(([id]) => id);
+
+  const acompanhamentos: ClienteDoPlano[] = [];
+  if (idsAcomp.length > 0) {
+    const { data: clientesAcomp } = await supabase
+      .from("vendas_clientes")
+      .select(CAMPOS)
+      .in("id", idsAcomp)
+      .eq("ativo", true);
+
+    for (const c of clientesAcomp ?? []) {
+      const u = ultimoCombinado.get(c.id)!;
+      // Comprou depois de você falar: deu certo. Quem decide isso é a venda,
+      // não alguém lembrar de marcar — era este o passo que não acontecia.
+      const compradoDepois =
+        c.ultima_compra && String(c.ultima_compra) >= u.combinadoEm.slice(0, 10);
+      if (compradoDepois || jaEscolhido.has(c.id)) continue;
+      acompanhamentos.push(
+        monta(c as Bruto, "acompanhamento", {
+          resultado: u.resultado,
+          adiarAte: u.adiar_ate,
+          observacao: u.observacao,
+          tentativas: u.tentativas,
+        })
+      );
+    }
+    // Quem foi tentado menos vezes primeiro: ainda tem mais chance de fechar.
+    acompanhamentos.sort((a, b) => (a.combinado?.tentativas ?? 0) - (b.combinado?.tentativas ?? 0));
+  }
+  const jaEmAcomp = new Set(acompanhamentos.map((c) => c.id));
 
   // 2) Agenda: clientes com dia marcado pelo vendedor.
   //
@@ -315,6 +424,7 @@ export async function montarPlanoDoDia(): Promise<{
         hojeEhDiaDeContato(c.dias_contato, hoje) &&
         !silenciados.has(c.id) &&
         !jaEmRetorno.has(c.id) &&
+        !jaEmAcomp.has(c.id) &&
         !jaEscolhido.has(c.id)
     )
     .sort((a, b) => Number(b.ticket_medio ?? 0) - Number(a.ticket_medio ?? 0))
@@ -327,6 +437,7 @@ export async function montarPlanoDoDia(): Promise<{
       !temAgenda(c.dias_contato) &&
       !silenciados.has(c.id) &&
       !jaEmRetorno.has(c.id) &&
+      !jaEmAcomp.has(c.id) &&
       !jaEscolhido.has(c.id)
   );
 
@@ -344,7 +455,18 @@ export async function montarPlanoDoDia(): Promise<{
     .filter((c) => c.motivo_contato?.startsWith("cliente novo"))
     .map((c) => monta(c as Bruto, "novo"));
 
-  const base = [...escolhidos, ...retornos, ...agendados, ...vencidos, ...previstos, ...novos];
+  // Ordem: o que foi prometido, o que o ciclo pede, e por último quem ainda
+  // não respondeu. Acompanhamento depois do ciclo de propósito — quem está na
+  // hora de comprar vale mais que quem já foi cobrado e não comprou.
+  const base = [
+    ...escolhidos,
+    ...retornos,
+    ...agendados,
+    ...vencidos,
+    ...previstos,
+    ...acompanhamentos,
+    ...novos,
+  ];
 
   // 4) Cota de reativação: completa até o alvo, do maior valor em risco pro
   //    menor. Sem isso o backlog de inativos nunca é tocado.

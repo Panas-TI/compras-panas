@@ -54,6 +54,7 @@ const VENDAS_ITEMS: NavItem[] = [
   { href: "/vendas", label: "Hoje" },
   { href: "/vendas/clientes", label: "Clientes" },
   { href: "/vendas/contatos", label: "Contatos" },
+  { href: "/vendas/sem-fechar", label: "Não está fechando" },
   { href: "/vendas/inativos", label: "Reativação" },
   { href: "/vendas/relatorio-semanal", label: "Relatório semanal" },
 ];

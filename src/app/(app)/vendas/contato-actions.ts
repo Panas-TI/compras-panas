@@ -7,6 +7,7 @@ import { MOTIVO_OUTRO } from "./ui";
 import {
   calcularAdiarAte,
   contarNaoAgoraSeguidos,
+  RESULTADO_FALADO,
   JANELA_EDICAO_DIAS,
   dentroDaJanela,
   hojeMais,
@@ -155,6 +156,9 @@ export async function atualizarContatoAction(input: {
       input.adiarAte,
       naoAgoraSeguidos
     ),
+    // Houve acordo só quando uma pessoa escolheu a data. É esta linha que
+    // separa "o cliente pediu pra ligar dia 12" de "o sistema chutou 12".
+    combinado_com_cliente: !!input.adiarAte,
     // atualizado_em, resultado_inicial e corrigido_por são carimbados pelo
     // trigger no banco — não aqui. Assim o rastro existe por qualquer caminho,
     // inclusive numa chamada crua ao PostgREST, e a hora vem do relógio do
@@ -184,13 +188,20 @@ export async function atualizarContatoAction(input: {
 
 
 /**
- * Registrar contato em um clique, sem formulário.
+ * Registrar contato em um clique. O clique é o ato inteiro.
  *
- * O fluxo real é: digita a mensagem, manda pro cliente, segue pro próximo. Quem
- * está mandando vinte mensagens não quer preencher canal, resultado e motivo em
- * cada uma — e aos 90% que não respondem na hora não há nada a classificar
- * ainda. O contato nasce como "ainda sem resposta" e o cliente cai na bandeja;
- * a classificação acontece lá, conforme as respostas chegam.
+ * O fluxo real é: digita a mensagem, manda pro cliente, segue pro próximo. Não
+ * existe um segundo momento pra voltar e classificar — em 30 dias, 252 dos 443
+ * contatos nunca receberam desfecho, e quem assumir a mesa depois também não
+ * vai preencher.
+ *
+ * Então nada fica pendente. O contato afirma só o que é verdade ("falei com
+ * ele") e o sistema descobre o resto sozinho: se o pedido entrar, o assunto se
+ * resolveu; se não entrar, o cliente volta pela escada — 2, 4, 8 dias — com a
+ * contagem de tentativas à mostra.
+ *
+ * Classificar continua existindo pra quando o cliente disser algo concreto
+ * ("me liga dia 12"), e aí deixa de ser burocracia pra ser informação.
  */
 export async function registrarContatoRapidoAction(
   clienteId: string
@@ -201,29 +212,34 @@ export async function registrarContatoRapidoAction(
 
   // Clicar duas vezes no mesmo cliente não pode virar dois contatos: o placar
   // do dia conta cliente falado, e o histórico viraria conversa em duplicata.
-  //
-  // Só vale para contato EM ABERTO. Depois de concluído, falar de novo com o
-  // mesmo cliente no mesmo dia é normal — ele respondeu, ficou de voltar à
-  // tarde, você manda outra mensagem. Sem o recorte, o botão simplesmente não
-  // fazia nada e sem explicar por quê.
   const { data: jaHoje } = await supabase
     .from("vendas_contatos")
     .select("id")
     .eq("cliente_id", clienteId)
-    .eq("resultado", "sem_resposta")
-    .is("concluido_em", null)
     .gte("criado_em", `${hojeMais(0)}T00:00:00-03:00`)
     .limit(1)
     .maybeSingle();
   if (jaHoje) return { jaAberto: true };
 
+  // Em que degrau da escada este cliente está. Conta no servidor: é a mesma
+  // informação que decide quando ele volta, e não pode vir da tela.
+  const { data: u } = await supabase
+    .from("vendas_ultimo_contato")
+    .select("tentativas")
+    .eq("cliente_id", clienteId)
+    .maybeSingle();
+  const tentativas = u?.tentativas ?? 0;
+
   const { error } = await supabase.from("vendas_contatos").insert({
     cliente_id: clienteId,
     usuario_id: g.userId,
-    // Canal e motivo ficam pra bandeja: aqui ainda não há o que classificar.
+    // Canal e motivo só existem quando há o que classificar.
     canal: null,
-    resultado: "sem_resposta",
-    adiar_ate: calcularAdiarAte("sem_resposta", null, null),
+    resultado: RESULTADO_FALADO,
+    adiar_ate: calcularAdiarAte(RESULTADO_FALADO, null, null, 0, tentativas),
+    // A data saiu de uma conta, não de um acordo. Dizer o contrário na tela foi
+    // o que encheu a lista de promessas que nunca existiram.
+    combinado_com_cliente: false,
   });
   if (error) return { error: error.message };
 

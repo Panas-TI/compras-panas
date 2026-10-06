@@ -5,13 +5,24 @@
  * caso real que o revelou.
  */
 import { describe, it, expect } from "vitest";
-import { silenciaHoje, viraRetornoHoje, type UltimoContato } from "./plano-do-dia";
+import {
+  silenciaHoje,
+  viraRetornoHoje,
+  viraAcompanhamentoHoje,
+  cansouDeTentar,
+  type UltimoContato,
+} from "./plano-do-dia";
 
 const HOJE = "2026-09-29";
 const contato = (p: Partial<UltimoContato>): UltimoContato => ({
   adiar_ate: null,
   concluidoEm: null,
   criado_em: `${HOJE}T09:00:00-03:00`,
+  // O padrão dos testes é o caso comum: data calculada pelo sistema, não
+  // acordada com o cliente. Era exatamente isto que a tela chamava de
+  // "retorno combinado".
+  combinado: false,
+  tentativas: 0,
   ...p,
 });
 
@@ -38,31 +49,68 @@ describe("quem fica calado hoje", () => {
   });
 });
 
-describe("quem volta como retorno combinado", () => {
-  it("a data chegou e o assunto foi fechado por alguém", () => {
-    expect(
-      viraRetornoHoje(contato({ adiar_ate: HOJE, concluidoEm: `${HOJE}T10:00:00-03:00` }), HOJE)
-    ).toBe(true);
-  });
-
-  it("registro automático de hoje não volta hoje", () => {
-    // Um clique registra "ainda sem resposta" e agenda a volta sozinho; sem
-    // esta regra o cliente voltava na mesma hora com o selo "falado hoje"
-    // pedindo pra ligar de novo.
-    expect(viraRetornoHoje(contato({ adiar_ate: HOJE, concluidoEm: null }), HOJE)).toBe(false);
-  });
-
-  it("promessa velha volta mesmo sem ter sido concluída", () => {
+describe("retorno combinado — só quando o cliente pediu", () => {
+  it("data acordada que venceu é retorno", () => {
     expect(
       viraRetornoHoje(
-        contato({ adiar_ate: "2026-09-20", criado_em: "2026-09-18T09:00:00-03:00" }),
+        contato({ adiar_ate: HOJE, combinado: true, concluidoEm: `${HOJE}T10:00:00-03:00` }),
         HOJE
       )
     ).toBe(true);
   });
 
-  it("data no futuro não é retorno", () => {
-    expect(viraRetornoHoje(contato({ adiar_ate: "2026-10-10" }), HOJE)).toBe(false);
+  it("palpite do sistema NUNCA é retorno combinado", () => {
+    // O bug que entupiu a lista: 68 dos 107 combinados vencidos num dia eram
+    // data que o próprio sistema calculou quando ninguém classificou o
+    // contato — e, como a faixa vem no topo, passavam na frente de quem
+    // estava vencendo o ciclo de compra.
+    expect(
+      viraRetornoHoje(
+        contato({ adiar_ate: "2026-09-20", combinado: false, criado_em: "2026-09-18T09:00:00-03:00" }),
+        HOJE
+      )
+    ).toBe(false);
+  });
+
+  it("data acordada no futuro ainda não é retorno", () => {
+    expect(viraRetornoHoje(contato({ adiar_ate: "2026-12-30", combinado: true }), HOJE)).toBe(false);
+  });
+});
+
+describe("acompanhamento — falei, não comprou, volta", () => {
+  it("prazo da escada venceu e o pedido não veio", () => {
+    expect(
+      viraAcompanhamentoHoje(
+        contato({ adiar_ate: "2026-09-27", criado_em: "2026-09-25T09:00:00-03:00" }),
+        HOJE
+      )
+    ).toBe(true);
+  });
+
+  it("o que foi acordado é retorno, não acompanhamento — nunca os dois", () => {
+    const c = contato({ adiar_ate: "2026-09-27", combinado: true, criado_em: "2026-09-25T09:00:00-03:00" });
+    expect(viraRetornoHoje(c, HOJE)).toBe(true);
+    expect(viraAcompanhamentoHoje(c, HOJE)).toBe(false);
+  });
+
+  it("registro de hoje não volta hoje", () => {
+    expect(viraAcompanhamentoHoje(contato({ adiar_ate: HOJE }), HOJE)).toBe(false);
+  });
+
+  it("passou da quarta tentativa, sai da lista do dia", () => {
+    // Há cliente na base com 13 tentativas e nenhum pedido. Insistir pela
+    // quinta vez não é persistência — é ocupar a vaga de quem compraria.
+    const c = contato({ adiar_ate: "2026-09-27", tentativas: 4, criado_em: "2026-09-25T09:00:00-03:00" });
+    expect(cansouDeTentar(c)).toBe(true);
+    expect(viraAcompanhamentoHoje(c, HOJE)).toBe(false);
+    expect(viraRetornoHoje(c, HOJE)).toBe(false);
+  });
+
+  it("até a quarta, continua na lista", () => {
+    for (const t of [0, 1, 2, 3]) {
+      const c = contato({ adiar_ate: "2026-09-27", tentativas: t, criado_em: "2026-09-25T09:00:00-03:00" });
+      expect(viraAcompanhamentoHoje(c, HOJE)).toBe(true);
+    }
   });
 });
 
@@ -87,17 +135,20 @@ describe("a propriedade que tem que valer sempre", () => {
       for (const criado_em of criados) {
         for (const concluidoEm of concluidos) {
           const c = contato({ adiar_ate, criado_em, concluidoEm });
-          const calado = silenciaHoje(c, HOJE);
-          const retorno = viraRetornoHoje(c, HOJE);
+          for (const combinado of [false, true]) {
+            const c2 = { ...c, combinado };
+            const calado = silenciaHoje(c2, HOJE);
+            const retorno = viraRetornoHoje(c2, HOJE);
+            const acomp = viraAcompanhamentoHoje(c2, HOJE);
 
-          // As duas nunca valem ao mesmo tempo: seria o cliente duplicado na
-          // tela, contado duas vezes.
-          expect(calado && retorno).toBe(false);
+            // No máximo uma vale: duas seriam o cliente duplicado na tela.
+            expect([calado, retorno, acomp].filter(Boolean).length).toBeLessThanOrEqual(1);
 
-          // E quando nenhuma vale, o cliente TEM que estar livre pra entrar
-          // pela fila natural — nunca preso fora de tudo.
-          if (!calado && !retorno) {
-            expect(String(adiar_ate) <= HOJE).toBe(true);
+            // E quando nenhuma vale, o cliente TEM que estar livre pra entrar
+            // pela fila natural — nunca preso fora de tudo.
+            if (!calado && !retorno && !acomp) {
+              expect(String(adiar_ate) <= HOJE).toBe(true);
+            }
           }
         }
       }
