@@ -51,7 +51,19 @@ export function cansouDeTentar(ultimo: UltimoContato | null | undefined): boolea
  *   data vencida.
  */
 export function silenciaHoje(ultimo: UltimoContato | null | undefined, hoje: string): boolean {
-  return !!ultimo?.adiar_ate && String(ultimo.adiar_ate) > hoje;
+  if (!ultimo?.adiar_ate) return false;
+  // Falar com alguém não pode apagar o cartão dele na sua frente.
+  //
+  // Um clique agenda a volta pra daqui a 2 dias, e isso silenciava o cliente
+  // na mesma hora: o cartão sumia da lista, o placar não subia, e quem clicou
+  // via exatamente nada acontecer. Antes a bandeja "Aguardando resposta"
+  // segurava o cliente e dava o sinal; sem ela, o silêncio começava cedo
+  // demais.
+  //
+  // O silêncio vale a partir de amanhã. Hoje o cliente fica à vista, apagado,
+  // com o selo "✓ falado hoje" — que é a confirmação de que o clique pegou.
+  if (diaEmSP(ultimo.criado_em) === hoje) return false;
+  return String(ultimo.adiar_ate) > hoje;
 }
 
 /**
@@ -122,6 +134,7 @@ export type ClienteDoPlano = {
     | "vencido"
     | "previsto"
     | "acompanhamento"
+    | "falado_hoje"
     | "novo"
     | "reativacao";
   /** Só na faixa "escolhido": por que alguém puxou este cliente. */
@@ -500,7 +513,43 @@ export async function montarPlanoDoDia(): Promise<{
     .slice(0, faltam)
     .map((c) => monta(c as Bruto, "reativacao"));
 
-  const lista = [...base, ...reativacao];
+  // Rede de segurança: quem você falou hoje não some da tela hoje.
+  //
+  // As faixas acima olham o estado DEPOIS do contato, e aí um cliente que só
+  // estava na lista por acompanhamento ou por retorno desaparece no instante
+  // em que você fala com ele — some o cartão, não sobe o placar, e o clique
+  // parece não ter funcionado. Esta faixa recolhe quem ficou de fora e o
+  // mantém à vista até amanhã, apagado e com o selo.
+  //
+  // Vem no fim de propósito: já está resolvido, não disputa o topo da lista.
+  const naListaAgora = new Set([...base, ...reativacao].map((c) => c.id));
+  const faltamFalados = Array.from(trabalhadosHoje).filter(
+    (id): id is string => !!id && !naListaAgora.has(id)
+  );
+
+  const faladosHoje: ClienteDoPlano[] = [];
+  if (faltamFalados.length > 0) {
+    const { data: cls } = await supabase
+      .from("vendas_clientes")
+      .select(CAMPOS)
+      .in("id", faltamFalados)
+      .eq("ativo", true);
+    for (const c of cls ?? []) {
+      const u = ultimoCombinado.get(c.id);
+      faladosHoje.push(
+        monta(c as Bruto, "falado_hoje", u
+          ? {
+              resultado: u.resultado,
+              adiarAte: u.adiar_ate,
+              observacao: u.observacao,
+              tentativas: u.tentativas,
+            }
+          : null)
+      );
+    }
+  }
+
+  const lista = [...base, ...reativacao, ...faladosHoje];
 
   return {
     lista,

@@ -27,8 +27,39 @@ const contato = (p: Partial<UltimoContato>): UltimoContato => ({
 });
 
 describe("quem fica calado hoje", () => {
-  it("data futura cala", () => {
-    expect(silenciaHoje(contato({ adiar_ate: "2026-10-05" }), HOJE)).toBe(true);
+  it("data futura cala, a partir do dia seguinte", () => {
+    expect(
+      silenciaHoje(
+        contato({ adiar_ate: "2026-10-05", criado_em: "2026-09-27T09:00:00-03:00" }),
+        HOJE
+      )
+    ).toBe(true);
+  });
+
+  it("falar com o cliente HOJE não apaga o cartão dele hoje", () => {
+    // O bug que o vendedor sentiu na mão: clicar em "Registrar contato"
+    // agendava a volta pra daqui a 2 dias, o cliente era silenciado na hora,
+    // o cartão sumia da tela e o placar não subia. Da cadeira dele, o clique
+    // simplesmente não fazia nada.
+    //
+    // O silêncio vale a partir de amanhã. Hoje ele fica à vista, apagado,
+    // com o selo "✓ falado hoje".
+    expect(
+      silenciaHoje(
+        contato({ adiar_ate: "2026-10-01", criado_em: `${HOJE}T14:20:00-03:00` }),
+        HOJE
+      )
+    ).toBe(false);
+  });
+
+  it("mas amanhã ele cala de verdade", () => {
+    const amanha = "2026-09-30";
+    expect(
+      silenciaHoje(
+        contato({ adiar_ate: "2026-10-01", criado_em: `${HOJE}T14:20:00-03:00` }),
+        amanha
+      )
+    ).toBe(true);
   });
 
   it("marcado pra voltar HOJE não fica calado — este era o vão", () => {
@@ -144,10 +175,14 @@ describe("a propriedade que tem que valer sempre", () => {
             // No máximo uma vale: duas seriam o cliente duplicado na tela.
             expect([calado, retorno, acomp].filter(Boolean).length).toBeLessThanOrEqual(1);
 
-            // E quando nenhuma vale, o cliente TEM que estar livre pra entrar
-            // pela fila natural — nunca preso fora de tudo.
+            // E quando nenhuma vale, o cliente tem que ter uma saída: ou a
+            // data já venceu e ele entra pela fila natural, ou você acabou de
+            // falar com ele e a faixa "falado hoje" o segura à vista. Sem
+            // isso ele fica preso fora de tudo — foi assim que o cartão sumia
+            // no instante do clique.
             if (!calado && !retorno && !acomp) {
-              expect(String(adiar_ate) <= HOJE).toBe(true);
+              const faladoHoje = c2.criado_em.slice(0, 10) === HOJE;
+              expect(String(adiar_ate) <= HOJE || faladoHoje).toBe(true);
             }
           }
         }

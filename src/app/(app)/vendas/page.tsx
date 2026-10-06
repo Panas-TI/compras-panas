@@ -34,6 +34,10 @@ const FAIXA: Record<ClienteDoPlano["faixa"], { rotulo: string; classe: string }>
   escolhido: { rotulo: "puxado à mão", classe: "bg-fuchsia-100 text-fuchsia-900 border-fuchsia-300" },
   retorno: { rotulo: "retorno combinado", classe: "bg-emerald-100 text-emerald-900 border-emerald-300" },
   agenda: { rotulo: "dia marcado", classe: "bg-sky-100 text-sky-900 border-sky-300" },
+  falado_hoje: {
+    rotulo: "✓ falado hoje",
+    classe: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  },
   acompanhamento: {
     rotulo: "falado, sem pedido",
     classe: "bg-orange-50 text-orange-900 border-orange-200",
@@ -107,6 +111,8 @@ export default async function VendasHojePage() {
   // me indicar quem vai comprar" — quando na verdade ele indicou, e o sinal
   // ficou soterrado. Separado, a primeira coisa que se lê é o número do dia.
   const doDia = lista.filter((c) => c.faixa !== "reativacao");
+  // "falado hoje" entra no total porque já foi trabalhado: tirá-lo faria o
+  // placar andar pra trás a cada clique ("3 de 12" virando "3 de 11").
   const reativacao = lista.filter((c) => c.faixa === "reativacao");
   const trabalhadosDoDia = doDia.filter((c) => c.trabalhado).length;
   const pct = doDia.length > 0 ? Math.round((trabalhadosDoDia / doDia.length) * 100) : 0;
@@ -163,6 +169,10 @@ export default async function VendasHojePage() {
                     : c.faixa === "retorno" && c.combinado
                     ? `ele pediu para você voltar em ${formatDateBR(c.combinado.adiarAte)}${
                         c.combinado.observacao ? ` — “${c.combinado.observacao}”` : ""
+                      }`
+                    : c.faixa === "falado_hoje"
+                    ? `você falou com ele hoje${
+                        c.combinado ? ` · volta em ${formatDateBR(c.combinado.adiarAte)}` : ""
                       }`
                     : c.faixa === "acompanhamento" && c.combinado
                     ? `${c.combinado.tentativas}ª vez que você fala com ele desde a última compra · sem pedido até agora`
