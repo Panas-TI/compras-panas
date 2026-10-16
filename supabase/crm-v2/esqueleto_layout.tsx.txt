@@ -1,0 +1,43 @@
+// src/app/(app)/crm/layout.tsx
+import Link from "next/link";
+
+const MENU = [
+  { href: "/crm", rotulo: "Hoje" },
+  { href: "/crm/funil", rotulo: "Funil" },
+  { href: "/crm/contas", rotulo: "Contas" },
+  { href: "/crm/atividades", rotulo: "Atividades" },
+  { href: "/crm/painel", rotulo: "Painel" },
+  { href: "/crm/importar", rotulo: "Importar" },
+  { href: "/crm/ajustes", rotulo: "Ajustes" },
+];
+
+/**
+ * Barra lateral no computador, barra inferior no celular. Mesma ordem nos
+ * dois: a primeira coisa é sempre o trabalho de hoje.
+ */
+export default function LayoutCrm({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-full md:grid md:grid-cols-[13rem_1fr]">
+      <nav className="hidden border-r border-zinc-200 bg-white px-3 py-4 md:block">
+        <p className="mb-4 px-2 text-sm font-semibold">Panas · CRM</p>
+        <ul className="flex flex-col gap-0.5">
+          {MENU.map((m) => (
+            <li key={m.href}>
+              <Link href={m.href} className="block rounded-md px-2 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100">
+                {m.rotulo}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <main className="min-w-0 px-4 pb-24 pt-4 md:px-8 md:pb-8">{children}</main>
+      <nav className="fixed inset-x-0 bottom-0 flex justify-around border-t border-zinc-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+        {MENU.slice(0, 4).map((m) => (
+          <Link key={m.href} href={m.href} className="px-3 py-3 text-xs font-medium text-zinc-700">
+            {m.rotulo}
+          </Link>
+        ))}
+      </nav>
+    </div>
+  );
+}

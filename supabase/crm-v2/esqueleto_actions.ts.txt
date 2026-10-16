@@ -1,0 +1,115 @@
+// src/app/(app)/crm/actions.ts
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+
+const ESCRITA = ["aprovador", "vendas"];
+
+export type Resposta<T = undefined> = { ok: true; dado?: T } | { ok: false; erro: string };
+
+/**
+ * Quem escreve no CRM. A trava que vale é a do banco (RLS e a checagem dentro
+ * das funções); esta existe para responder com uma frase que a pessoa entende,
+ * em vez de "violates row-level security policy".
+ */
+async function sessaoDeEscrita() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sua sessão expirou. Entre de novo." } as const;
+  const { data: perfil } = await supabase
+    .from("profiles")
+    .select("role, ativo")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!perfil?.ativo || !ESCRITA.includes(perfil.role)) {
+    return { erro: "Seu usuário não pode registrar vendas." } as const;
+  }
+  return { supabase } as const;
+}
+
+/** "Falei com ele": um clique, e o banco cuida de etapa, escada e lembrete. */
+export async function falarComClienteAction(contaId: string): Promise<Resposta<string>> {
+  const s = await sessaoDeEscrita();
+  if ("erro" in s) return { ok: false, erro: s.erro };
+  const { data, error } = await s.supabase.rpc("crm_falei_com_ele", { p_conta: contaId });
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/crm", "layout");
+  return { ok: true, dado: data as string };
+}
+
+export async function desfazerContatoAction(atividadeId: string): Promise<Resposta> {
+  const s = await sessaoDeEscrita();
+  if ("erro" in s) return { ok: false, erro: s.erro };
+  const { error } = await s.supabase.rpc("crm_desfazer_contato", { p_atividade: atividadeId });
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/crm", "layout");
+  return { ok: true };
+}
+
+/** Arrastar no quadro da Prospecção, ou "Já pediu" / "Pausar" nos funis automáticos. */
+export async function moverOportunidadeAction(
+  oportunidadeId: string,
+  etapaId: string,
+  motivo?: string
+): Promise<Resposta> {
+  const s = await sessaoDeEscrita();
+  if ("erro" in s) return { ok: false, erro: s.erro };
+  const { error } = await s.supabase.rpc("crm_mover_etapa", {
+    p_oportunidade: oportunidadeId,
+    p_etapa: etapaId,
+    p_motivo: motivo ?? null,
+  });
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/crm", "layout");
+  return { ok: true };
+}
+
+/**
+ * Agendar à mão é o que vira "combinado": o cliente pediu para voltar tal dia.
+ * Palpite do sistema nunca passa por aqui — ele grava origem = 'sistema'.
+ */
+export async function agendarAtividadeAction(input: {
+  contaId: string;
+  tipo: "whatsapp" | "ligacao" | "visita" | "amostra" | "tarefa";
+  para: string; // AAAA-MM-DD, dia de Porto Alegre
+  hora?: string;
+  observacao?: string;
+}): Promise<Resposta> {
+  const s = await sessaoDeEscrita();
+  if ("erro" in s) return { ok: false, erro: s.erro };
+  const { error } = await s.supabase.from("crm_atividades").insert({
+    conta_id: input.contaId,
+    tipo: input.tipo,
+    status: "agendada",
+    para: input.para,
+    para_hora: input.hora ?? null,
+    observacao: input.observacao?.trim() || null,
+    origem: "pessoa",
+  });
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/crm", "layout");
+  return { ok: true };
+}
+
+export async function criarProspectAction(
+  _anterior: Resposta<string> | null,
+  fd: FormData
+): Promise<Resposta<string>> {
+  const s = await sessaoDeEscrita();
+  if ("erro" in s) return { ok: false, erro: s.erro };
+  const nome = String(fd.get("nome") ?? "").trim();
+  if (!nome) return { ok: false, erro: "Informe o nome do estabelecimento." };
+  const { data, error } = await s.supabase.rpc("crm_criar_prospect", {
+    p_nome: nome,
+    p_telefone: String(fd.get("telefone") ?? ""),
+    p_segmento: (fd.get("segmento") as string) || null,
+    p_origem: (fd.get("origem") as string) || null,
+    p_rota: (fd.get("rota") as string) || "a_definir",
+  });
+  if (error) return { ok: false, erro: error.message };
+  revalidatePath("/crm", "layout");
+  return { ok: true, dado: data as string };
+}

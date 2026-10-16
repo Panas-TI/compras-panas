@@ -1,0 +1,59 @@
+// src/app/(app)/crm/falei-com-ele.tsx
+"use client";
+
+import { useState, useTransition } from "react";
+import { falarComClienteAction, desfazerContatoAction } from "./actions";
+
+/**
+ * O botão que o vendedor aperta dezenas de vezes por dia. Depois do clique o
+ * cartão continua à vista, marcado, com "desfazer" por perto — clique sem
+ * sinal visível foi o motivo de o vendedor achar que o sistema não funcionava.
+ */
+export function FaleiComEle({ contaId }: { contaId: string }) {
+  const [atividadeId, setAtividadeId] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [pendente, iniciar] = useTransition();
+
+  if (atividadeId) {
+    return (
+      <span className="inline-flex items-center gap-2 text-sm">
+        <span className="font-medium text-emerald-700">✓ Falei com ele</span>
+        <button
+          type="button"
+          disabled={pendente}
+          className="text-zinc-500 underline-offset-2 hover:underline"
+          onClick={() =>
+            iniciar(async () => {
+              const r = await desfazerContatoAction(atividadeId);
+              if (r.ok) setAtividadeId(null);
+              else setErro(r.erro);
+            })
+          }
+        >
+          desfazer
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex flex-col items-end gap-1">
+      <button
+        type="button"
+        disabled={pendente}
+        className="h-9 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white disabled:opacity-60"
+        onClick={() =>
+          iniciar(async () => {
+            setErro(null);
+            const r = await falarComClienteAction(contaId);
+            if (r.ok) setAtividadeId(r.dado ?? null);
+            else setErro(r.erro);
+          })
+        }
+      >
+        {pendente ? "Registrando…" : "Falei com ele"}
+      </button>
+      {erro && <span className="text-xs text-red-600">{erro}</span>}
+    </span>
+  );
+}

@@ -1,0 +1,25 @@
+// src/app/(app)/crm/whatsapp.ts
+
+/**
+ * Mensagem pronta. O vendedor revisa e envia — o sistema nunca manda sozinho
+ * pelo número comum: envio automático em massa arrisca o bloqueio do número.
+ */
+export const MODELO_RECOMPRA =
+  "Oi {primeiro_nome}, tudo bem? Aqui é {vendedor}, da Panas. " +
+  "Separei o de sempre pra você: {itens}. Fechando hoje, chega {entrega}. Posso mandar?";
+
+export function montarMensagem(modelo: string, dados: Record<string, string | undefined>): string {
+  return (
+    modelo
+      .replace(/\{(\w+)\}/g, (_, chave: string) => dados[chave]?.trim() ?? "")
+      // Variável vazia não pode deixar buraco: "Oi , tudo bem?" vira "Oi, tudo bem?".
+      .replace(/\s+([,.!?])/g, "$1")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
+}
+
+/** wa.me exige o número só com dígitos, com código do país. */
+export function linkWhatsApp(e164: string, texto: string): string {
+  return `https://wa.me/${e164.replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
+}

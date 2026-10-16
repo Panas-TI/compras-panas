@@ -1,0 +1,154 @@
+// src/app/(app)/crm/funil/kanban.tsx
+"use client";
+
+import { useState, useTransition } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { moverOportunidadeAction } from "../actions";
+
+export type Etapa = { id: string; nome: string; tipo: "aberta" | "ganha" | "perdida"; limite_dias: number | null };
+export type Cartao = {
+  id: string;
+  etapa_id: string;
+  conta: string;
+  valor: number;
+  etapa_desde: string;
+  proxima: "atrasada" | "hoje" | "futura" | "nenhuma";
+};
+
+const COR_PROXIMA: Record<Cartao["proxima"], string> = {
+  atrasada: "bg-red-500",
+  hoje: "bg-emerald-500",
+  futura: "bg-zinc-300",
+  nenhuma: "bg-amber-400",
+};
+const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+/**
+ * Quadro do funil. Na Prospecção, arrastar muda a etapa. Na Recompra e na
+ * Reativação quem move é o sistema (contato, pedido importado, escada) — o
+ * quadro só mostra, e as ações ficam nos botões do cartão.
+ */
+export function Kanban({
+  etapas,
+  cartoes,
+  arrastavel,
+}: {
+  etapas: Etapa[];
+  cartoes: Cartao[];
+  arrastavel: boolean;
+}) {
+  const [itens, setItens] = useState(cartoes);
+  const [erro, setErro] = useState<string | null>(null);
+  const [, iniciar] = useTransition();
+  // 6 px antes de começar a arrastar: no celular, rolar a tela não vira arraste.
+  const sensores = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  function aoSoltar(e: DragEndEvent) {
+    const id = String(e.active.id);
+    const destino = e.over ? String(e.over.id) : null;
+    const atual = itens.find((c) => c.id === id);
+    if (!destino || !atual || atual.etapa_id === destino) return;
+    const antes = itens;
+    setItens((xs) => xs.map((c) => (c.id === id ? { ...c, etapa_id: destino } : c)));
+    iniciar(async () => {
+      const r = await moverOportunidadeAction(id, destino);
+      if (!r.ok) {
+        setItens(antes); // volta o cartão e explica por quê
+        setErro(r.erro);
+      }
+    });
+  }
+
+  return (
+    <DndContext sensors={sensores} onDragEnd={aoSoltar}>
+      {erro && <p className="mb-2 text-sm text-red-600">{erro}</p>}
+      <div className="flex gap-3 overflow-x-auto pb-3">
+        {etapas.map((et) => {
+          const daEtapa = itens.filter((c) => c.etapa_id === et.id);
+          return (
+            <Coluna key={et.id} etapa={et} total={daEtapa.reduce((s, c) => s + c.valor, 0)} qtd={daEtapa.length}>
+              {daEtapa.map((c) => (
+                <CartaoArrastavel key={c.id} cartao={c} arrastavel={arrastavel} limite={et.limite_dias} />
+              ))}
+            </Coluna>
+          );
+        })}
+      </div>
+    </DndContext>
+  );
+}
+
+function Coluna({
+  etapa,
+  total,
+  qtd,
+  children,
+}: {
+  etapa: Etapa;
+  total: number;
+  qtd: number;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: etapa.id });
+  return (
+    <section
+      ref={setNodeRef}
+      className={`flex w-64 shrink-0 flex-col gap-2 rounded-lg border p-2 ${
+        isOver ? "border-zinc-400 bg-zinc-50" : "border-zinc-200 bg-white"
+      }`}
+    >
+      <header className="px-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">
+          {etapa.nome} <span className="text-zinc-400">{qtd}</span>
+        </p>
+        <p className="text-xs tabular-nums text-zinc-500">{brl(total)}</p>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function CartaoArrastavel({
+  cartao,
+  arrastavel,
+  limite,
+}: {
+  cartao: Cartao;
+  arrastavel: boolean;
+  limite: number | null;
+}) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: cartao.id,
+    disabled: !arrastavel,
+  });
+  const dias = Math.floor((Date.now() - new Date(cartao.etapa_desde).getTime()) / 86_400_000);
+  const esfriando = limite !== null && dias > limite;
+  return (
+    <article
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined}
+      className={`rounded-md border bg-white p-2 text-sm shadow-sm ${
+        esfriando ? "border-red-300" : "border-zinc-200"
+      } ${arrastavel ? "cursor-grab active:cursor-grabbing" : ""}`}
+    >
+      <p className="font-medium text-zinc-900">{cartao.conta}</p>
+      <p className="flex items-center justify-between text-xs text-zinc-500">
+        <span className="tabular-nums">{brl(cartao.valor)}</span>
+        <span className="inline-flex items-center gap-1">
+          <span className={`h-2 w-2 rounded-full ${COR_PROXIMA[cartao.proxima]}`} />
+          {esfriando ? `parado há ${dias} d` : `${dias} d na etapa`}
+        </span>
+      </p>
+    </article>
+  );
+}
