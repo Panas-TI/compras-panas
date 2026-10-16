@@ -41,5 +41,11 @@ end $$;
 -- Função nova nasce fechada. O padrão do Postgres dá EXECUTE a PUBLIC e o do
 -- Supabase estende a anon: foi assim que as funções da carteira ficaram
 -- chamáveis sem login até 16/10/2026.
-alter default privileges in schema public revoke execute on functions from public;
+--
+-- A primeira linha é GLOBAL de propósito. O EXECUTE de PUBLIC em funções é um
+-- padrão global do Postgres, e uma regra "in schema public" não consegue
+-- tirá-lo — foi o que o verificador do Supabase mostrou ao testar esta mesma
+-- regra no projeto do CRM, em 16/10/2026: com a versão por esquema, as funções
+-- continuavam chamáveis sem login. O anônimo herda de PUBLIC.
+alter default privileges revoke execute on functions from public;
 alter default privileges in schema public revoke execute on functions from anon;
