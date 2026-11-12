@@ -108,3 +108,20 @@ export async function resetarSenhaAction(profileId: string, novaSenha: string): 
   if (error) return { error: error.message };
   return {};
 }
+
+/** Email de cada conta, por id. Só pro aprovador — é dado de identificação. */
+export async function listarEmailsAction(): Promise<Record<string, string>> {
+  const guard = await assertAprovador();
+  if (!guard.ok) return {};
+
+  const admin = adminClient();
+  const porId: Record<string, string> = {};
+  // Pagina de propósito: listUsers devolve 50 por padrão e cortaria em silêncio.
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) break;
+    for (const u of data.users) if (u.email) porId[u.id] = u.email;
+    if (data.users.length < 200) break;
+  }
+  return porId;
+}

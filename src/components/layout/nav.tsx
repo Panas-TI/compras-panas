@@ -39,6 +39,20 @@ const ESTOQUE_ITEMS: NavItem[] = [
   { href: "/relatorios", label: "Relatórios" },
 ];
 
+// Menu do estoquista — plano, não dentro de dropdown.
+//
+// O menu dele é montado a partir do mesmo ESTOQUE_ITEMS, e sobravam só
+// "Início", "Movimentação ▾" e "PCP". A Contagem, que é o trabalho principal
+// dele, ficava a dois cliques de distância atrás de uma palavra que não é o
+// nome dela — e ele ainda cai em /recebimento ao entrar. Ele sempre teve
+// permissão; o que faltava era enxergar.
+const ESTOQUISTA_ITEMS: NavItem[] = [
+  { href: "/estoque", label: "Início" },
+  { href: "/recebimento", label: "Recebimento" },
+  { href: "/contagem", label: "Contagem" },
+  { href: "/pcp", label: "PCP" },
+];
+
 // Itens do módulo Entregas
 const ENTREGAS_ITEMS: NavItem[] = [
   { href: "/entregas", label: "Início" },
@@ -219,7 +233,9 @@ export function Nav({ role, nome }: { role: Role; nome: string }) {
 
   // Estoque, Entregas ou Vendas
   const allItems =
-    modulo === "entregas"
+    modulo === "estoque" && role === "estoquista"
+      ? ESTOQUISTA_ITEMS
+      : modulo === "entregas"
       ? ENTREGAS_ITEMS
       : modulo === "vendas"
         ? VENDAS_ITEMS

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { listarEmailsAction } from "./actions";
 import { UsersTable, type UserRow } from "./users-table";
 
 export default async function UsuariosPage() {
@@ -14,9 +15,16 @@ export default async function UsuariosPage() {
     .select("id, nome, role, ativo")
     .order("nome");
 
+  // O email mora em auth.users, fora do alcance do client normal — vem pela
+  // action, que usa a chave de serviço. Sem ele, duas contas com nome parecido
+  // ("comercial", "financeiro") não dá pra saber qual é qual na hora de
+  // resetar senha.
+  const emails = await listarEmailsAction();
+
   const rows: UserRow[] = (profiles ?? []).map((p) => ({
     id: p.id,
     nome: p.nome,
+    email: emails[p.id] ?? null,
     role: p.role as "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro" | "gestor_producao",
     ativo: p.ativo,
   }));

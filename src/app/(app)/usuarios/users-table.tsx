@@ -18,6 +18,8 @@ type Role = "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | 
 export type UserRow = {
   id: string;
   nome: string;
+  /** Null só se a conta de autenticação sumiu — não deveria acontecer. */
+  email: string | null;
   role: "comprador" | "aprovador" | "estoquista" | "motorista" | "vendas" | "financeiro" | "gestor_producao";
   ativo: boolean;
 };
@@ -69,6 +71,7 @@ export function UsersTable({ currentUserId, users }: { currentUserId: string; us
           <thead className="border-b border-zinc-200 bg-zinc-50 text-left">
             <tr>
               <th className="px-3 py-2 font-medium">Nome</th>
+              <th className="px-3 py-2 font-medium">Email</th>
               <th className="px-3 py-2 font-medium">Perfil</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2"></th>
@@ -119,6 +122,16 @@ function UserTr({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
       <td className="px-3 py-2 font-medium">
         {user.nome}
         {isSelf && <span className="ml-2 text-xs text-zinc-500">(você)</span>}
+      </td>
+      {/* É por aqui que a pessoa entra: sem o email na tela, "comercial" e
+          "financeiro" são só rótulos e não dá pra conferir quem é quem antes
+          de resetar uma senha. */}
+      <td className="px-3 py-2">
+        {user.email ? (
+          <span className="select-all font-mono text-xs text-zinc-700">{user.email}</span>
+        ) : (
+          <span className="text-xs text-amber-700">sem conta de acesso</span>
+        )}
       </td>
       <td className="px-3 py-2 text-zinc-600">
         {isSelf ? (
